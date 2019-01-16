@@ -3,12 +3,13 @@ using Sanderling.Accumulation;
 using Sanderling.Motor;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 
 namespace Sanderling.ABot.Bot.Task
 {
-	static public class ModuleTaskExtension
+	public static class ModuleTaskExtension
 	{
-		static public bool? IsActive(
+		public static bool? IsActive(
 			this IShipUiModule module,
 			Bot bot)
 		{
@@ -28,7 +29,7 @@ namespace Sanderling.ABot.Bot.Task
 			if (module?.IsActive(bot) ?? true)
 				return null;
 
-			return new ModuleToggleTask { bot = bot, module = module };
+			return new ModuleToggleTask(bot, module);
 		}
 
 		static public IBotTask EnsureIsActive(
@@ -37,15 +38,11 @@ namespace Sanderling.ABot.Bot.Task
 			new BotTask { Component = setModule?.Select(module => bot?.EnsureIsActive(module)) };
 	}
 
-	public class ModuleToggleTask : IBotTask
+	public class ModuleToggleTask : SimpleBotTask
 	{
-		public Bot bot;
-
-		public IShipUiModule module;
-
-		public IEnumerable<IBotTask> Component => null;
-
-		public IEnumerable<MotionParam> Effects
+		public readonly IShipUiModule module;
+		
+		public override IEnumerable<MotionParam> Effects
 		{
 			get
 			{
@@ -56,6 +53,11 @@ namespace Sanderling.ABot.Bot.Task
 
 				yield return module?.MouseClick(MouseButtonIdEnum.Left);
 			}
+		}
+
+		public ModuleToggleTask(Bot bot, [NotNull] IShipUiModule module) : base(bot)
+		{
+			this.module = module;
 		}
 	}
 }

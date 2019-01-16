@@ -5,10 +5,36 @@ using System.Linq;
 using BotEngine.Common;
 using Bib3.Geometrik;
 using System;
+using WindowsInput.Native;
 using Bib3;
 
 namespace Sanderling.ABot.Bot.Task
 {
+	public class HotkeyTask : IBotTask
+	{
+		public HotkeyTask(VirtualKeyCode key, params VirtualKeyCode[] mods)
+		{
+			Key = key;
+			Modifiers = mods;
+		}
+		public VirtualKeyCode[] Modifiers;
+		public VirtualKeyCode Key;
+
+		public IEnumerable<IBotTask> Component => null;
+		
+		public IEnumerable<MotionParam> Effects
+		{
+			get
+			{
+				foreach (var m in Modifiers)
+					yield return m.KeyDown();
+				yield return Key.KeyboardPress();
+				foreach (var m in Modifiers.Reverse())
+					yield return m.KeyUp();
+			}
+		}
+	}
+
 	public class MenuPathTask : IBotTask
 	{
 		public Bot Bot;
@@ -16,6 +42,8 @@ namespace Sanderling.ABot.Bot.Task
 		public IUIElement RootUIElement;
 
 		public string[][] ListMenuListPriorityEntryRegexPattern;
+
+		public VirtualKeyCode ModifierKey;
 
 		public IEnumerable<IBotTask> Component => null;
 
@@ -66,6 +94,14 @@ namespace Sanderling.ABot.Bot.Task
 
 				var mouseClickOnRootAge = Bot?.MouseClickLastAgeStepCountFromUIElement(RootUIElement);
 
+				if (ListMenuListPriorityEntryRegexPattern == null)
+				{
+					yield return ModifierKey.KeyDown();
+					yield return RootUIElement?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left);
+					yield return ModifierKey.KeyUp();
+					yield break;
+				}
+
 				if (MenuOpenOnRootPossible() && mouseClickOnRootAge <= listMenu?.Length)
 				{
 					var levelCount = Math.Min(ListMenuListPriorityEntryRegexPattern?.Length ?? 0, listMenu?.Length ?? 0);
@@ -114,6 +150,16 @@ namespace Sanderling.ABot.Bot.Task
 				Bot = bot,
 				RootUIElement = rootUIElement,
 				ListMenuListPriorityEntryRegexPattern = new[] { new[] { menuEntryRegexPattern } },
+			};
+		}
+
+		public static MenuPathTask ClickWithModifier(this IUIElement element, Bot bot, VirtualKeyCode modifier)
+		{
+			return new MenuPathTask
+			{
+				Bot = bot,
+				RootUIElement = element,
+				ModifierKey = modifier,
 			};
 		}
 	}

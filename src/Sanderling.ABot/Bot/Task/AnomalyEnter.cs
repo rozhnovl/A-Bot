@@ -3,7 +3,9 @@ using System.Linq;
 using Sanderling.Motor;
 using Sanderling.Parse;
 using BotEngine.Common;
+using BotEngine.Interface;
 using Sanderling.ABot.Parse;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot.Task
 {
@@ -13,25 +15,23 @@ namespace Sanderling.ABot.Bot.Task
 
 		public Bot bot;
 
-		static public bool AnomalySuitableGeneral(Interface.MemoryStruct.IListEntry scanResult) =>
-			scanResult?.CellValueFromColumnHeader("Group")?.RegexMatchSuccessIgnoreCase("combat") ?? false;
+		public static bool AnomalySuitableGeneral(Interface.MemoryStruct.IListEntry scanResult) =>
+			scanResult?.CellValueFromColumnHeader("Group")
+				?.RegexMatchSuccessIgnoreCase("combat") ?? false;
 
 		public IEnumerable<IBotTask> Component
 		{
 			get
 			{
-				var memoryMeasurementAtTime = bot?.MemoryMeasurementAtTime;
-				var memoryMeasurementAccu = bot?.MemoryMeasurementAccu;
-
-				var memoryMeasurement = memoryMeasurementAtTime?.Value;
+				var memoryMeasurement = bot?.MemoryMeasurementAtTime?.Value;
 
 				if (!memoryMeasurement.ManeuverStartPossible())
 					yield break;
 
-				var probeScannerWindow = memoryMeasurement?.WindowProbeScanner?.FirstOrDefault();
-
 				var scanResultCombatSite =
-					probeScannerWindow?.ScanResultView?.Entry?.FirstOrDefault(AnomalySuitableGeneral);
+					memoryMeasurement?.WindowProbeScanner?.FirstOrDefault()
+						?.ScanResultView?.Entry?
+						.FirstOrDefault(AnomalySuitableGeneral);
 
 				if (null == scanResultCombatSite)
 					yield return new DiagnosticTask
@@ -40,7 +40,8 @@ namespace Sanderling.ABot.Bot.Task
 					};
 
 				if (null != scanResultCombatSite)
-					yield return scanResultCombatSite.ClickMenuEntryByRegexPattern(bot, ParseStatic.MenuEntryWarpToAtLeafRegexPattern);
+					yield return scanResultCombatSite.ClickMenuEntryByRegexPattern(bot, 
+						ParseStatic.MenuEntryWarpToAtLeafRegexPattern);
 			}
 		}
 

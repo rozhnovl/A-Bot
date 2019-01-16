@@ -4,12 +4,23 @@ using System.Linq;
 using Sanderling.Motor;
 using Sanderling.Parse;
 using System;
+using WindowsInput.Native;
 using Sanderling.Interface.MemoryStruct;
 using Sanderling.ABot.Parse;
 using Bib3;
 
 namespace Sanderling.ABot.Bot.Task
 {
+	public static class Hotkeys
+	{
+		public static HotkeyTask LaunchDrones =
+			new HotkeyTask(VirtualKeyCode.VK_F, VirtualKeyCode.CONTROL, VirtualKeyCode.SHIFT);
+
+		public static HotkeyTask ReturnDrones =
+			new HotkeyTask(VirtualKeyCode.VK_R, VirtualKeyCode.SHIFT);
+		public static HotkeyTask EngageDrones =
+			new HotkeyTask(VirtualKeyCode.VK_F);
+	}
 	public class CombatTask : IBotTask
 	{
 		const int TargetCountMax = 4;
@@ -47,6 +58,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (null != targetSelected)
 					if (shouldAttackTarget)
+						//yield return new HotkeyTask(VirtualKeyCode.F1);
 						yield return bot.EnsureIsActive(setModuleWeapon);
 					else
 						yield return targetSelected.ClickMenuEntryByRegexPattern(bot, "unlock");
@@ -76,22 +88,23 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (shouldAttackTarget)
 				{
-					if (0 < droneInBayCount && droneInLocalSpaceCount < 5)
-						yield return droneGroupInBay.ClickMenuEntryByRegexPattern(bot, @"launch");
+					if (0 < droneInBayCount && droneInLocalSpaceCount < 4)
+						yield return Hotkeys.LaunchDrones;
 
 					if (droneInLocalSpaceIdle)
-						yield return droneGroupInLocalSpace.ClickMenuEntryByRegexPattern(bot, @"engage");
+						yield return Hotkeys.EngageDrones;
 				}
 
 				var overviewEntryLockTarget =
 					listOverviewEntryToAttack?.FirstOrDefault(entry => !((entry?.MeTargeted ?? false) || (entry?.MeTargeting ?? false)));
 
 				if (null != overviewEntryLockTarget && !(TargetCountMax <= memoryMeasurement?.Target?.Length))
-					yield return overviewEntryLockTarget.ClickMenuEntryByRegexPattern(bot, @"^lock\s*target");
+					yield return overviewEntryLockTarget.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
+
 
 				if (!(0 < listOverviewEntryToAttack?.Length))
 					if (0 < droneInLocalSpaceCount)
-						yield return droneGroupInLocalSpace.ClickMenuEntryByRegexPattern(bot, @"return.*bay");
+						yield return Hotkeys.ReturnDrones;
 					else
 						Completed = true;
 			}

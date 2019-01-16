@@ -13,7 +13,7 @@ namespace Sanderling.ABot.Bot
 {
 	public class Bot
 	{
-		static public readonly Func<Int64> GetTimeMilli = Bib3.Glob.StopwatchZaitMiliSictInt;
+		static public readonly Func<long> GetTimeMilli = Bib3.Glob.StopwatchZaitMiliSictInt;
 
 		public BotStepInput StepLastInput { private set; get; }
 
@@ -29,13 +29,13 @@ namespace Sanderling.ABot.Bot
 
 		readonly public OverviewMemory OverviewMemory = new OverviewMemory();
 
-		readonly IDictionary<Int64, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<Int64, int>();
+		readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
 
 		readonly IDictionary<Accumulation.IShipUiModule, int> ToggleLastStepIndexFromModule = new Dictionary<Accumulation.IShipUiModule, int>();
 
 		public KeyValuePair<Deserialization, Config> ConfigSerialAndStruct { private set; get; }
 
-		public Int64? MouseClickLastAgeStepCountFromUIElement(Interface.MemoryStruct.IUIElement uiElement)
+		public long? MouseClickLastAgeStepCountFromUIElement(Interface.MemoryStruct.IUIElement uiElement)
 		{
 			if (null == uiElement)
 				return null;
@@ -45,7 +45,7 @@ namespace Sanderling.ABot.Bot
 			return stepIndex - interactionLastStepIndex;
 		}
 
-		public Int64? ToggleLastAgeStepCountFromModule(Accumulation.IShipUiModule module) =>
+		public long? ToggleLastAgeStepCountFromModule(Accumulation.IShipUiModule module) =>
 			module == null ? null :
 			stepIndex - ToggleLastStepIndexFromModule?.TryGetValueNullable(module);
 
@@ -97,19 +97,18 @@ namespace Sanderling.ABot.Bot
 
 				outputListTaskPath = StepOutputListTaskPath()?.ToArray();
 
-				foreach (var moduleToggle in outputListTaskPath.ConcatNullable().OfType<ModuleToggleTask>().Select(moduleToggleTask => moduleToggleTask?.module).WhereNotDefault())
+				foreach (var moduleToggle in outputListTaskPath.ConcatNullable().OfType<ModuleToggleTask>()
+					.Select(moduleToggleTask => moduleToggleTask?.module).WhereNotDefault())
 					ToggleLastStepIndexFromModule[moduleToggle] = stepIndex;
 
-				foreach (var taskPath in outputListTaskPath.EmptyIfNull())
+				foreach (var effect in outputListTaskPath.EmptyIfNull().SelectMany(taskPath =>
+					(taskPath?.LastOrDefault()?.ApplicableEffects()).EmptyIfNull()))
 				{
-					foreach (var effectParam in (taskPath?.LastOrDefault()?.ApplicableEffects()).EmptyIfNull())
+					listMotion.Add(new MotionRecommendation
 					{
-						listMotion.Add(new MotionRecommendation
-						{
-							Id = motionId++,
-							MotionParam = effectParam,
-						});
-					}
+						Id = motionId++,
+						MotionParam = effect,
+					});
 				}
 			}
 			catch (Exception e)
@@ -165,8 +164,12 @@ namespace Sanderling.ABot.Bot
 
 			yield return new UndockTask { MemoryMeasurement = MemoryMeasurementAtTime?.Value };
 
+			var lootTask = new LootTask(this);
 			if (combatTask.Completed)
-				yield return new AnomalyEnter { bot = this };
+				yield return lootTask;
+
+			if (combatTask.Completed && !lootTask.HasWreckToLoot)
+				yield return new AnomalyEnter {bot = this};
 		}
 
 		IEnumerable<IBotTask> EnumerateConfigDiagnostics()

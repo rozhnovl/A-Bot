@@ -4,13 +4,18 @@ using BotEngine.Interface;
 using System.Linq;
 using System.Collections.Generic;
 using System;
-using Sanderling.Motor;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Bot.Memory;
+using Sanderling.ABot.Bot.Strategies;
 using Sanderling.ABot.Serialization;
 
 namespace Sanderling.ABot.Bot
 {
+
+	internal interface IStrategy
+	{
+		IEnumerable<IBotTask> GetTasks(Bot bot);
+	}
 	public class Bot
 	{
 		static public readonly Func<long> GetTimeMilli = Bib3.Glob.StopwatchZaitMiliSictInt;
@@ -19,10 +24,14 @@ namespace Sanderling.ABot.Bot
 
 		public PropertyGenTimespanInt64<BotStepResult> StepLastResult { private set; get; }
 
+		private IStrategy strategy = new CorporationMissionTaker();
+
 		int motionId;
 
 		int stepIndex;
-
+		/// <summary>
+		/// Current measurements
+		/// </summary>
 		public FromProcessMeasurement<IMemoryMeasurement> MemoryMeasurementAtTime { private set; get; }
 
 		readonly public Accumulator.MemoryMeasurementAccumulator MemoryMeasurementAccu = new Accumulator.MemoryMeasurementAccumulator();
@@ -49,11 +58,6 @@ namespace Sanderling.ABot.Bot
 			module == null ? null :
 			stepIndex - ToggleLastStepIndexFromModule?.TryGetValueNullable(module);
 
-		IEnumerable<IBotTask[]> StepOutputListTaskPath() =>
-			((IBotTask)new BotTask { Component = RootTaskListComponent() })
-			?.EnumeratePathToNodeFromTreeDFirst(node => node?.Component)
-			?.Where(taskPath => (taskPath?.LastOrDefault()).ShouldBeIncludedInStepOutput())
-			?.TakeSubsequenceWhileUnwantedInferenceRuledOut();
 
 		void MemorizeStepInput(BotStepInput input)
 		{
@@ -95,7 +99,11 @@ namespace Sanderling.ABot.Bot
 			{
 				MemorizeStepInput(input);
 
-				outputListTaskPath = StepOutputListTaskPath()?.ToArray();
+				outputListTaskPath = ((IBotTask)new BotTask { Component = strategy.GetTasks(this) })
+					?.EnumeratePathToNodeFromTreeDFirst(node => node?.Component)
+					?.Where(taskPath => (taskPath?.LastOrDefault()).ShouldBeIncludedInStepOutput())
+					?.TakeSubsequenceWhileUnwantedInferenceRuledOut()
+					?.ToArray();
 
 				foreach (var moduleToggle in outputListTaskPath.ConcatNullable().OfType<ModuleToggleTask>()
 					.Select(moduleToggleTask => moduleToggleTask?.module).WhereNotDefault())
@@ -131,56 +139,16 @@ namespace Sanderling.ABot.Bot
 
 			return stepResult;
 		}
+		
+		//IEnumerable<IBotTask> EnumerateConfigDiagnostics()
+		//{
+		//	var configDeserializeException = ConfigSerialAndStruct.Key?.Exception;
 
-		IEnumerable<IBotTask> RootTaskListComponent() =>
-			StepLastInput?.RootTaskListComponentOverride ??
-			RootTaskListComponentDefault();
-
-		IEnumerable<IBotTask> RootTaskListComponentDefault()
-		{
-			yield return new BotTask { Component = EnumerateConfigDiagnostics() };
-
-			yield return new EnableInfoPanelCurrentSystem { MemoryMeasurement = MemoryMeasurementAtTime?.Value };
-
-			var saveShipTask = new SaveShipTask { Bot = this };
-
-			yield return saveShipTask;
-
-			yield return this.EnsureIsActive(MemoryMeasurementAccu?.ShipUiModule?.Where(module => module.ShouldBeActivePermanent(this)));
-
-			var moduleUnknown = MemoryMeasurementAccu?.ShipUiModule?.FirstOrDefault(module => null == module?.TooltipLast?.Value);
-
-			yield return new BotTask { Effects = new[] { moduleUnknown?.MouseMove() } };
-
-			if (!saveShipTask.AllowRoam)
-				yield break;
-
-			var combatTask = new CombatTask { bot = this };
-
-			yield return combatTask;
-
-			if (!saveShipTask.AllowAnomalyEnter)
-				yield break;
-
-			yield return new UndockTask { MemoryMeasurement = MemoryMeasurementAtTime?.Value };
-
-			var lootTask = new LootTask(this);
-			if (combatTask.Completed)
-				yield return lootTask;
-
-			if (combatTask.Completed && !lootTask.HasWreckToLoot)
-				yield return new AnomalyEnter {bot = this};
-		}
-
-		IEnumerable<IBotTask> EnumerateConfigDiagnostics()
-		{
-			var configDeserializeException = ConfigSerialAndStruct.Key?.Exception;
-
-			if (null != configDeserializeException)
-				yield return new DiagnosticTask { MessageText = "error parsing configuration: " + configDeserializeException.Message };
-			else
-				if (null == ConfigSerialAndStruct.Value)
-				yield return new DiagnosticTask { MessageText = "warning: no configuration supplied." };
-		}
+		//	if (null != configDeserializeException)
+		//		yield return new DiagnosticTask { MessageText = "error parsing configuration: " + configDeserializeException.Message };
+		//	else
+		//		if (null == ConfigSerialAndStruct.Value)
+		//		yield return new DiagnosticTask { MessageText = "warning: no configuration supplied." };
+		//}
 	}
 }

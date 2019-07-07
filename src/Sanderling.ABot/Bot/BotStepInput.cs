@@ -19,7 +19,5 @@ namespace Sanderling.ABot.Bot
 		public StringAtPath ConfigSerial;
 
 		public MotionResult[] StepLastMotionResult;
-
-		public IEnumerable<IBotTask> RootTaskListComponentOverride;
 	}
 }

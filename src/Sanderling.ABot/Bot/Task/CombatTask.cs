@@ -1,26 +1,17 @@
-﻿using BotEngine.Common;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using WindowsInput.Native;
+using Bib3;
+using BotEngine.Common;
+using BotEngine.Motor;
+using Sanderling.ABot.Parse;
+using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
 using Sanderling.Parse;
-using System;
-using WindowsInput.Native;
-using Sanderling.Interface.MemoryStruct;
-using Sanderling.ABot.Parse;
-using Bib3;
 
 namespace Sanderling.ABot.Bot.Task
 {
-	public static class Hotkeys
-	{
-		public static HotkeyTask LaunchDrones =
-			new HotkeyTask(VirtualKeyCode.VK_F, VirtualKeyCode.CONTROL, VirtualKeyCode.SHIFT);
-
-		public static HotkeyTask ReturnDrones =
-			new HotkeyTask(VirtualKeyCode.VK_R, VirtualKeyCode.SHIFT);
-		public static HotkeyTask EngageDrones =
-			new HotkeyTask(VirtualKeyCode.VK_F);
-	}
 	public class CombatTask : IBotTask
 	{
 		const int TargetCountMax = 4;
@@ -41,12 +32,24 @@ namespace Sanderling.ABot.Bot.Task
 				if (!memoryMeasurement.ManeuverStartPossible())
 					yield break;
 
+				var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
+					?.OrderByDescending(tab => tab?.LabelColorOpacityMilli ?? 1500)?.FirstOrDefault();
+				var OverviewTabCombat = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
+					?.Where(tab => tab?.Label.Text.RegexMatchSuccess(Config.CombatTabName) ?? false)
+					.FirstOrDefault();
+
+				// switch tabs for wrecks
+				if (OverviewTabCombat != OverviewTabActive)
+					yield return new BotTask { ClientActions = new[] { OverviewTabCombat?.MouseClick(MouseButtonIdEnum.Left) } };
+
+
 				var listOverviewEntryToAttack =
 					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.ListView?.Entry?.Where(entry => entry?.MainIcon?.Color?.IsRed() ?? false)
-					?.OrderBy(entry => bot.AttackPriorityIndex(entry))
-					?.ThenBy(entry => entry?.DistanceMax ?? int.MaxValue)
-					?.ToArray();
-
+						?.OrderBy(entry => bot.AttackPriorityIndex(entry))
+						?.ThenBy(entry => entry?.DistanceMax ?? int.MaxValue)
+						?.ToArray();
+				//TODO if (listOverviewEntryToAttack.Any())
+				//Bot.currentAnomalyLooted = false;
 				var targetSelected =
 					memoryMeasurement?.Target?.FirstOrDefault(target => target?.IsSelected ?? false);
 
@@ -66,7 +69,7 @@ namespace Sanderling.ABot.Bot.Task
 				var droneListView = memoryMeasurement?.WindowDroneView?.FirstOrDefault()?.ListView;
 
 				var droneGroupWithNameMatchingPattern = new Func<string, DroneViewEntryGroup>(namePattern =>
-						droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group => group?.LabelTextLargest()?.Text?.RegexMatchSuccessIgnoreCase(namePattern) ?? false));
+					droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group => group?.LabelTextLargest()?.Text?.RegexMatchSuccessIgnoreCase(namePattern) ?? false));
 
 				var droneGroupInBay = droneGroupWithNameMatchingPattern("bay");
 				var droneGroupInLocalSpace = droneGroupWithNameMatchingPattern("local space");
@@ -77,8 +80,8 @@ namespace Sanderling.ABot.Bot.Task
 				//	assuming that local space is bottommost group.
 				var setDroneInLocalSpace =
 					droneListView?.Entry?.OfType<DroneViewEntryItem>()
-					?.Where(drone => droneGroupInLocalSpace?.RegionCenter()?.B < drone?.RegionCenter()?.B)
-					?.ToArray();
+						?.Where(drone => droneGroupInLocalSpace?.RegionCenter()?.B < drone?.RegionCenter()?.B)
+						?.ToArray();
 
 				var droneInLocalSpaceSetStatus =
 					setDroneInLocalSpace?.Select(drone => drone?.LabelText?.Select(label => label?.Text?.StatusStringFromDroneEntryText()))?.ConcatNullable()?.WhereNotDefault()?.Distinct()?.ToArray();
@@ -89,10 +92,10 @@ namespace Sanderling.ABot.Bot.Task
 				if (shouldAttackTarget)
 				{
 					if (0 < droneInBayCount && droneInLocalSpaceCount < 4)
-						yield return Hotkeys.LaunchDrones;
+						yield return HotkeyRegistry.LaunchDrones;
 
 					if (droneInLocalSpaceIdle)
-						yield return Hotkeys.EngageDrones;
+						yield return HotkeyRegistry.EngageDrones;
 				}
 
 				var overviewEntryLockTarget =
@@ -104,12 +107,15 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (!(0 < listOverviewEntryToAttack?.Length))
 					if (0 < droneInLocalSpaceCount)
-						yield return Hotkeys.ReturnDrones;
+					{
+						if (!(droneInLocalSpaceSetStatus?.Any(droneStatus => droneStatus.RegexMatchSuccessIgnoreCase("Returning")) ?? false))
+							yield return HotkeyRegistry.ReturnDrones;
+					}
 					else
 						Completed = true;
 			}
 		}
 
-		public IEnumerable<MotionParam> Effects => null;
+		public IEnumerable<MotionParam> ClientActions => null;
 	}
 }

@@ -11,7 +11,7 @@ namespace Sanderling.ABot.Bot.Task
 
 		public IEnumerable<IBotTask> Component => null;
 
-		public IEnumerable<MotionParam> Effects
+		public IEnumerable<MotionParam> ClientActions
 		{
 			get
 			{

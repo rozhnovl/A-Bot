@@ -22,6 +22,9 @@ namespace Sanderling.ABot.Bot.Task
 
 		const int AllowAnomalyEnterSessionDurationMin = AllowRoamSessionDurationMin + 60 * 7;
 
+		/// <summary>
+		/// Checks that current chat contains only trusted chars
+		/// </summary>
 		static public bool ChatIsClean(WindowChatChannel chatWindow)
 		{
 			if (null == chatWindow)
@@ -43,26 +46,29 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				var memoryMeasurement = Bot?.MemoryMeasurementAtTime?.Value;
 
-				var charIsLocatedInHighsec = 500 < memoryMeasurement?.InfoPanelCurrentSystem?.SecurityLevelMilli;
+				var charIsLocatedInHighsec = 500 <= memoryMeasurement?.InfoPanelCurrentSystem?.SecurityLevelMilli;
+
+				if (charIsLocatedInHighsec)
+				{
+					AllowRoam = true;
+					AllowAnomalyEnter = AllowAnomalyEnterSessionDurationMin <=
+					                    memoryMeasurement?.SessionDurationRemaining;
+					yield break;
+				}
 
 				var setLocalChatWindowCandidate =
 					memoryMeasurement?.WindowChatChannel
 					?.Where(window => window?.Caption?.RegexMatchSuccessIgnoreCase(@"local") ?? false)
 					?.ToArray();
 
+
 				if (1 < setLocalChatWindowCandidate?.Length)
-					yield return new DiagnosticTask
-					{
-						MessageText = CannotIdentifyLocalChatWindowDiagnosticText,
-					};
+					yield return new DiagnosticTask(CannotIdentifyLocalChatWindowDiagnosticText);
 
 				var localChatWindow = setLocalChatWindowCandidate?.FirstOrDefault();
 
 				if (null == localChatWindow)
-					yield return new DiagnosticTask
-					{
-						MessageText = LocalChatWindowNotFoundDiagnosticText,
-					};
+					yield return new DiagnosticTask(LocalChatWindowNotFoundDiagnosticText);
 
 				var sessionDurationSufficient = AllowRoamSessionDurationMin <= memoryMeasurement?.SessionDurationRemaining;
 
@@ -80,6 +86,6 @@ namespace Sanderling.ABot.Bot.Task
 			}
 		}
 
-		public IEnumerable<MotionParam> Effects => null;
+		public IEnumerable<MotionParam> ClientActions => null;
 	}
 }

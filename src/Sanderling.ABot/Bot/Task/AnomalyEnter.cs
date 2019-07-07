@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Bib3;
 using Sanderling.Motor;
 using Sanderling.Parse;
 using BotEngine.Common;
-using BotEngine.Interface;
 using Sanderling.ABot.Parse;
-using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot.Task
 {
@@ -25,6 +24,12 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				var memoryMeasurement = bot?.MemoryMeasurementAtTime?.Value;
 
+				if (!memoryMeasurement.WindowTelecom.IsNullOrEmpty())
+				{
+					yield return memoryMeasurement.WindowTelecom.Single()
+						.ButtonText?.FirstOrDefault(text => text.Text.RegexMatchSuccessIgnoreCase("Close"))
+						.ClickWithModifier(bot, null);
+				}
 				if (!memoryMeasurement.ManeuverStartPossible())
 					yield break;
 
@@ -34,17 +39,15 @@ namespace Sanderling.ABot.Bot.Task
 						.FirstOrDefault(AnomalySuitableGeneral);
 
 				if (null == scanResultCombatSite)
-					yield return new DiagnosticTask
-					{
-						MessageText = NoSuitableAnomalyFoundDiagnosticMessage,
-					};
+					yield return new DiagnosticTask(NoSuitableAnomalyFoundDiagnosticMessage);
 
 				if (null != scanResultCombatSite)
 					yield return scanResultCombatSite.ClickMenuEntryByRegexPattern(bot, 
 						ParseStatic.MenuEntryWarpToAtLeafRegexPattern);
+
 			}
 		}
 
-		public IEnumerable<MotionParam> Effects => null;
+		public IEnumerable<MotionParam> ClientActions => null;
 	}
 }

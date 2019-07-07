@@ -75,7 +75,10 @@
     <Compile Include="Bot\BotTask.cs" />
     <Compile Include="Bot\Config.cs" />
     <Compile Include="Bot\Memory\OverviewMemory.cs" />
+    <Compile Include="Bot\Strategies\AnomalyHunting.cs" />
+    <Compile Include="Bot\Strategies\CorporationMissionTaker.cs" />
     <Compile Include="Bot\Task\AnomalyEnter.cs" />
+    <Compile Include="Bot\Task\CheckShipTask.cs" />
     <Compile Include="Bot\Task\Combat.cs" />
     <Compile Include="Bot\Task\DiagnosticTask.cs" />
     <Compile Include="Bot\Task\EnableInfoPanelCurrentSystem.cs" />
@@ -85,6 +88,7 @@
     <Compile Include="Bot\Task\Retreat.cs" />
     <Compile Include="Bot\Task\SaveShip.cs" />
     <Compile Include="Bot\Task\Undock.cs" />
+    <Compile Include="Decompiled\LockExtensions.cs" />
     <Compile Include="EnumerableExtension.cs" />
     <Compile Include="Parse\ParseExtension.cs" />
     <Compile Include="Parse\ParseStatic.cs" />

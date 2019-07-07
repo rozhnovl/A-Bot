@@ -1,0 +1,71 @@
+﻿using System.Collections.Generic;
+using Sanderling.ABot.Bot.Task;
+
+namespace Sanderling.ABot.Bot.Strategies
+{
+	class AnomalyHunting : IStrategy
+	{
+		public bool currentAnomalyLooted;
+		public IEnumerable<IBotTask> GetTasks(Bot bot)
+		{
+			//yield return new BotTask { Component = EnumerateConfigDiagnostics() };
+
+			yield return new EnableInfoPanelCurrentSystem { MemoryMeasurement = bot.MemoryMeasurementAtTime?.Value };
+
+			var saveShipTask = new SaveShipTask { Bot = bot };
+
+			yield return saveShipTask;
+
+			var shipFit = new ShipFit(bot.MemoryMeasurementAccu?.ShipUiModule,
+				new[]
+				{
+					new[]
+					{
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+					},
+					new[]
+					{
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
+					},
+					new[]
+					{
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc)
+					}
+				});
+
+			yield return bot.EnsureIsActive(shipFit.GetAlwaysActiveModules());
+
+			//var moduleUnknown = MemoryMeasurementAccu?.ShipUiModule?.FirstOrDefault(module => null == module?.TooltipLast?.Value);
+
+			//yield return new BotTask { ClientActions = new[] { moduleUnknown?.MouseMove() } };
+
+			if (!saveShipTask.AllowRoam)
+				yield break;
+
+
+			var combatTask = new CombatTask { bot = bot };
+
+			yield return combatTask;
+
+			if (!saveShipTask.AllowAnomalyEnter)
+				yield break;
+
+			yield return new UndockTask(bot.MemoryMeasurementAtTime?.Value);
+
+			if (combatTask.Completed)
+			{
+				if (!currentAnomalyLooted)
+				{
+					var lootTask = new LootTask(bot);
+					yield return lootTask;
+					if (!lootTask.HasWreckToLoot)
+						currentAnomalyLooted = true;
+				}
+				yield return new AnomalyEnter { bot = bot };
+			}
+		}
+	}
+}

@@ -18,7 +18,7 @@ namespace Sanderling.ABot.Bot.Task
 		}
 
 		public virtual IEnumerable<IBotTask> Component { get; } = null;
-		public virtual IEnumerable<MotionParam> Effects { get; } = null;
+		public virtual IEnumerable<MotionParam> ClientActions { get; } = null;
 		
 	}
 
@@ -37,7 +37,7 @@ namespace Sanderling.ABot.Bot.Task
 				var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
 					?.OrderByDescending(tab => tab?.LabelColorOpacityMilli ?? 1500)?.FirstOrDefault();
 				var OverviewTabLoot = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
-					?.Where(tab => tab?.Label.Text.RegexMatchSuccess(Config.OverviewTabName) ?? false)
+					?.Where(tab => tab?.Label.Text.RegexMatchSuccess(Config.LootTabName) ?? false)
 					.FirstOrDefault();
 
 				var propmod =
@@ -46,7 +46,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				// switch tabs for wrecks
 				if (OverviewTabLoot != OverviewTabActive)
-					yield return new BotTask {Effects = new[] {OverviewTabLoot?.MouseClick(MouseButtonIdEnum.Left)}};
+					yield return new BotTask {ClientActions = new[] {OverviewTabLoot?.MouseClick(MouseButtonIdEnum.Left)}};
 
 				var listOverviewCommanderWreck = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.ListView?.Entry
 					?.Where(entry => entry?.Type?.Contains("Commander") ?? true).ToList()
@@ -70,7 +70,7 @@ namespace Sanderling.ABot.Bot.Task
 					//	yield return bot?.DeactivateModule(propmod);
 
 					if (LootButton != null)
-						yield return new BotTask {Effects = new[] {LootButton?.MouseClick(MouseButtonIdEnum.Left)}};
+						yield return new BotTask { ClientActions = new[] {LootButton?.MouseClick(MouseButtonIdEnum.Left)}};
 				}
 				else
 				{
@@ -87,6 +87,7 @@ namespace Sanderling.ABot.Bot.Task
 
 	public static class Config
 	{
-		public static string OverviewTabName { get; } = "Loot";
+		public static string LootTabName { get; } = "Loot";
+		public static string CombatTabName { get; } = "General";
 	}
 }

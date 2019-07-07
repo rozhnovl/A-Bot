@@ -43,7 +43,7 @@ namespace Sanderling.ABot.Exe
 
 		void TimerConstruct()
 		{
-			var timer = new DispatcherTimer(TimeSpan.FromSeconds(1.0 / 10), DispatcherPriority.Normal, Timer_Tick, Dispatcher);
+			var timer = new DispatcherTimer(TimeSpan.FromSeconds(1.0 / 3), DispatcherPriority.Normal, Timer_Tick, Dispatcher);
 
 			timer.Start();
 		}

@@ -1,40 +1,14 @@
-﻿using System.Collections.Generic;
-using Sanderling.Motor;
-using Sanderling.Interface.MemoryStruct;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using BotEngine.Common;
-using Bib3.Geometrik;
-using System;
 using WindowsInput.Native;
 using Bib3;
+using BotEngine.Common;
+using Sanderling.Interface.MemoryStruct;
+using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
 {
-	public class HotkeyTask : IBotTask
-	{
-		public HotkeyTask(VirtualKeyCode key, params VirtualKeyCode[] mods)
-		{
-			Key = key;
-			Modifiers = mods;
-		}
-		public VirtualKeyCode[] Modifiers;
-		public VirtualKeyCode Key;
-
-		public IEnumerable<IBotTask> Component => null;
-		
-		public IEnumerable<MotionParam> Effects
-		{
-			get
-			{
-				foreach (var m in Modifiers)
-					yield return m.KeyDown();
-				yield return Key.KeyboardPress();
-				foreach (var m in Modifiers.Reverse())
-					yield return m.KeyUp();
-			}
-		}
-	}
-
 	public class MenuPathTask : IBotTask
 	{
 		public Bot Bot;
@@ -42,8 +16,7 @@ namespace Sanderling.ABot.Bot.Task
 		public IUIElement RootUIElement;
 
 		public string[][] ListMenuListPriorityEntryRegexPattern;
-
-		public VirtualKeyCode ModifierKey;
+		public VirtualKeyCode? ModifierKey { get; set; }
 
 		public IEnumerable<IBotTask> Component => null;
 
@@ -71,13 +44,13 @@ namespace Sanderling.ABot.Bot.Task
 					return false;
 			}
 
-			if (regionExpected.Region.Intersection(menu.Region.WithSizeExpandedPivotAtCenter(10)).IsEmpty())
-				return false;
+			//if (regionExpected.Region.Intersection(menu.Region.WithSizeExpandedPivotAtCenter(10)).IsEmpty())
+			//	return false;
 
 			return true;
 		}
 
-		public IEnumerable<MotionParam> Effects
+		public IEnumerable<MotionParam> ClientActions
 		{
 			get
 			{
@@ -96,9 +69,9 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (ListMenuListPriorityEntryRegexPattern == null)
 				{
-					yield return ModifierKey.KeyDown();
+					yield return ModifierKey?.KeyDown();
 					yield return RootUIElement?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left);
-					yield return ModifierKey.KeyUp();
+					yield return ModifierKey?.KeyUp();
 					yield break;
 				}
 
@@ -112,11 +85,11 @@ namespace Sanderling.ABot.Bot.Task
 
 						var menuEntry =
 							listPriorityEntryRegexPattern
-							?.WhereNotDefault()
-							?.Select(priorityEntryRegexPattern =>
-								listMenu[levelIndex]?.Entry
-								?.FirstOrDefault(c => c?.Text?.RegexMatchSuccessIgnoreCase(priorityEntryRegexPattern) ?? false))
-							?.WhereNotDefault()?.FirstOrDefault();
+								?.WhereNotDefault()
+								?.Select(priorityEntryRegexPattern =>
+									listMenu[levelIndex]?.Entry
+										?.FirstOrDefault(c => c?.Text?.RegexMatchSuccessIgnoreCase(priorityEntryRegexPattern) ?? false))
+								?.WhereNotDefault()?.FirstOrDefault();
 
 						if (null == menuEntry)
 							break;
@@ -128,39 +101,21 @@ namespace Sanderling.ABot.Bot.Task
 					}
 				}
 
-				yield return
-					menuEntryToContinue?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left) ??
-					RootUIElement?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Right);
+				var buttonToUse = ListMenuListPriorityEntryRegexPattern.IsNullOrEmpty() || menuEntryToContinue != null
+					? BotEngine.Motor.MouseButtonIdEnum.Left
+					: BotEngine.Motor.MouseButtonIdEnum.Right;
+				if (ModifierKey != null)
+				{
+					yield return ModifierKey.Value.KeyDown();
+					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse);
+					yield return ModifierKey.Value.KeyUp();
+				}
+				else
+				{
+					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse);
+				}
+
 			}
-		}
-	}
-
-	static public class MenuTaskExtension
-	{
-		static public MenuPathTask ClickMenuEntryByRegexPattern(
-			this IUIElement rootUIElement,
-			Bot bot,
-			string menuEntryRegexPattern)
-		{
-			if (null == rootUIElement)
-				return null;
-
-			return new MenuPathTask
-			{
-				Bot = bot,
-				RootUIElement = rootUIElement,
-				ListMenuListPriorityEntryRegexPattern = new[] { new[] { menuEntryRegexPattern } },
-			};
-		}
-
-		public static MenuPathTask ClickWithModifier(this IUIElement element, Bot bot, VirtualKeyCode modifier)
-		{
-			return new MenuPathTask
-			{
-				Bot = bot,
-				RootUIElement = element,
-				ModifierKey = modifier,
-			};
 		}
 	}
 }

@@ -40,9 +40,19 @@ namespace Sanderling.ABot.Bot.Task
 
 	public class ModuleToggleTask : SimpleBotTask
 	{
+<<<<<<< origin/master
 		public readonly IShipUiModule module;
 		
 		public override IEnumerable<MotionParam> Effects
+=======
+		public Bot bot;
+
+		public IShipUiModule module;
+
+		public IEnumerable<IBotTask> Component => null;
+
+		public IEnumerable<MotionParam> ClientActions
+>>>>>>> local
 		{
 			get
 			{

@@ -1,12 +1,13 @@
 ﻿using Bib3;
-using Bib3.Synchronization;
 using BotEngine.Interface;
 using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using ABot;
 
 namespace Sanderling.ABot.Exe
 {
@@ -42,6 +43,7 @@ namespace Sanderling.ABot.Exe
 		{
 			botLock.IfLockIsAvailableEnter(() =>
 			{
+				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} called BotProgress");
 				var memoryMeasurementLast = this.MemoryMeasurementLast;
 
 				var time = memoryMeasurementLast?.End;
@@ -64,7 +66,8 @@ namespace Sanderling.ABot.Exe
 
 				if (motionEnable)
 					BotMotion(memoryMeasurementLast, stepResult?.ListMotion);
-			});
+				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} finished BotProgress");
+			}, nameof(BotProgress));
 		}
 
 		void BotMotion(
@@ -77,10 +80,7 @@ namespace Sanderling.ABot.Exe
 				return;
 
 			var process = System.Diagnostics.Process.GetProcessById(processId.Value);
-
-			if (null == process)
-				return;
-
+			
 			var startTime = GetTimeStopwatch();
 
 			var motor = new WindowMotor(process.MainWindowHandle);

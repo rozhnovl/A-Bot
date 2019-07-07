@@ -4,13 +4,6 @@ using System.Collections.Generic;
 
 namespace Sanderling.ABot.Serialization
 {
-	public class Deserialization
-	{
-		public string Serial;
-
-		public Exception Exception;
-	}
-
 	static public class SerializationExtension
 	{
 		static public KeyValuePair<Deserialization, T> DeserializeIfDifferent<T>(

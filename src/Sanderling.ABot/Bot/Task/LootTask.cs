@@ -8,20 +8,7 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
 {
-	public abstract class SimpleBotTask : IBotTask
-	{
-		protected readonly Bot bot;
-
-		protected SimpleBotTask(Bot bot)
-		{
-			this.bot = bot;
-		}
-
-		public virtual IEnumerable<IBotTask> Component { get; } = null;
 		public virtual IEnumerable<MotionParam> ClientActions { get; } = null;
-		
-	}
-
 	public class LootTask : SimpleBotTask
 	{
 		public bool HasWreckToLoot = true;
@@ -84,10 +71,6 @@ namespace Sanderling.ABot.Bot.Task
 		{
 		}
 	}
-
-	public static class Config
-	{
 		public static string LootTabName { get; } = "Loot";
 		public static string CombatTabName { get; } = "General";
-	}
 }

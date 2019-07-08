@@ -10,6 +10,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		{
 			var memory = bot?.MemoryMeasurementAtTime?.Value;
 
+			return null;
 		}
 
 		public IBotTask GetStateExitActions(Bot bot)

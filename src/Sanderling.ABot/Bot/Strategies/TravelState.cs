@@ -24,7 +24,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				memory?.InfoPanelRoute?.RouteElementMarker
 					?.OrderByCenterDistanceToPoint(new Vektor2DInt(0, 0))?.FirstOrDefault();
 
-			if (RouteElementMarkerNext!=null)
+			if (RouteElementMarkerNext != null)
 			{
 				var undockTask = new UndockTask(bot.MemoryMeasurementAtTime.Value);
 				if (undockTask.ClientActions.Any())
@@ -36,14 +36,11 @@ namespace Sanderling.ABot.Bot.Strategies
 					arrived = true;
 				return null;
 			}
-			
+
 			return RouteElementMarkerNext.ClickMenuEntryByRegexPattern(bot, "Dock|Jump.*");
 		}
 
-		public IBotTask GetStateExitActions(Bot bot)
-		{
-			return null;
-		}
+		public IBotTask GetStateExitActions(Bot bot) => null;
 
 		public bool MoveToNext => arrived;
 	}

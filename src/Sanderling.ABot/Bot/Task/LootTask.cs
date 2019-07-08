@@ -8,7 +8,6 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
 {
-		public virtual IEnumerable<MotionParam> ClientActions { get; } = null;
 	public class LootTask : SimpleBotTask
 	{
 		public bool HasWreckToLoot = true;
@@ -33,7 +32,8 @@ namespace Sanderling.ABot.Bot.Task
 
 				// switch tabs for wrecks
 				if (OverviewTabLoot != OverviewTabActive)
-					yield return new BotTask {ClientActions = new[] {OverviewTabLoot?.MouseClick(MouseButtonIdEnum.Left)}};
+					yield return new BotTask
+						{ClientActions = new[] {OverviewTabLoot?.MouseClick(MouseButtonIdEnum.Left)}};
 
 				var listOverviewCommanderWreck = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.ListView?.Entry
 					?.Where(entry => entry?.Type?.Contains("Commander") ?? true).ToList()
@@ -57,7 +57,8 @@ namespace Sanderling.ABot.Bot.Task
 					//	yield return bot?.DeactivateModule(propmod);
 
 					if (LootButton != null)
-						yield return new BotTask { ClientActions = new[] {LootButton?.MouseClick(MouseButtonIdEnum.Left)}};
+						yield return new BotTask
+							{ClientActions = new[] {LootButton?.MouseClick(MouseButtonIdEnum.Left)}};
 				}
 				else
 				{
@@ -70,7 +71,8 @@ namespace Sanderling.ABot.Bot.Task
 		public LootTask(Bot bot) : base(bot)
 		{
 		}
-	}
+		
 		public static string LootTabName { get; } = "Loot";
 		public static string CombatTabName { get; } = "General";
+	}
 }

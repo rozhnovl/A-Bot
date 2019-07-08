@@ -78,7 +78,6 @@ namespace Sanderling.ABot.Exe
 
 			if (!processId.HasValue || null == sequenceMotion)
 				return;
-
 			var process = System.Diagnostics.Process.GetProcessById(processId.Value);
 			
 			var startTime = GetTimeStopwatch();
@@ -87,7 +86,7 @@ namespace Sanderling.ABot.Exe
 
 			var listMotionResult = new List<Bot.MotionResult>();
 
-			foreach (var motion in sequenceMotion.EmptyIfNull())
+			foreach (var motion in sequenceMotion)
 			{
 				var motionResult = motor.ActSequenceMotion(motion.MotionParam.AsSequenceMotion(memoryMeasurement?.Value));
 

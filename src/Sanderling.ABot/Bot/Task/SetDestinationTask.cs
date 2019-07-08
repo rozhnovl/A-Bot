@@ -22,7 +22,12 @@ namespace Sanderling.ABot.Bot.Task
 		}
 
 		public IEnumerable<IBotTask> Component => null;
-		public bool HasRoute { get; private set; }
+		public SetDestinationTaskResult? Result { get; private set; }
+
+		public enum SetDestinationTaskResult
+		{
+			RouteSet, NoSuitableBookmark,
+		}
 		public IEnumerable<MotionParam> ClientActions
 		{
 			get
@@ -31,10 +36,13 @@ namespace Sanderling.ABot.Bot.Task
 				//if (MemoryMeasurement?.InfoPanelRoute?.HeaderText!= "No Destination" && toogleButton != null)
 				//yield return toogleButton.MouseClick(MouseButtonIdEnum.Left);
 
-				HasRoute = (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ?? false)
+				var hasRoute = (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ?? false)
 				           || (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
-				if (HasRoute)
+				if (hasRoute)
+				{
+					Result = SetDestinationTaskResult.RouteSet;
 					yield break;
+				}
 
 				if (MemoryMeasurement?.WindowPeopleAndPlaces?.FirstOrDefault() == null)
 					yield return MemoryMeasurement?.Neocom?.PeopleAndPlacesButton.MouseClick(MouseButtonIdEnum.Left);
@@ -78,6 +86,10 @@ namespace Sanderling.ABot.Bot.Task
 					{
 						yield return action;
 					}
+				}
+				else
+				{
+					Result = SetDestinationTaskResult.NoSuitableBookmark;
 				}
 			}
 		}

@@ -11,11 +11,7 @@ using Sanderling.ABot.Serialization;
 
 namespace Sanderling.ABot.Bot
 {
-
-	internal interface IStrategy
-	{
-		IEnumerable<IBotTask> GetTasks(Bot bot);
-	}
+	
 	public class Bot
 	{
 		static public readonly Func<long> GetTimeMilli = Bib3.Glob.StopwatchZaitMiliSictInt;
@@ -40,6 +36,9 @@ namespace Sanderling.ABot.Bot
 
 		readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
 
+		/// <summary>
+		/// Step number on which modules have been activated last time. Prevents duplicate clicks on modules during their activation
+		/// </summary>
 		readonly IDictionary<Accumulation.IShipUiModule, int> ToggleLastStepIndexFromModule = new Dictionary<Accumulation.IShipUiModule, int>();
 
 		public KeyValuePair<Deserialization, Config> ConfigSerialAndStruct { private set; get; }
@@ -139,16 +138,5 @@ namespace Sanderling.ABot.Bot
 
 			return stepResult;
 		}
-		
-		//IEnumerable<IBotTask> EnumerateConfigDiagnostics()
-		//{
-		//	var configDeserializeException = ConfigSerialAndStruct.Key?.Exception;
-
-		//	if (null != configDeserializeException)
-		//		yield return new DiagnosticTask { MessageText = "error parsing configuration: " + configDeserializeException.Message };
-		//	else
-		//		if (null == ConfigSerialAndStruct.Value)
-		//		yield return new DiagnosticTask { MessageText = "warning: no configuration supplied." };
-		//}
 	}
 }

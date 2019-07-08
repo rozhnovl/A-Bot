@@ -34,12 +34,20 @@ namespace Sanderling.ABot.Bot.Strategies
 					throw new InvalidOperationException("Failed to parse mission name");
 				}
 
+				var agentNameWithLevel = agentDialogue.Caption.Substring(agentDialogue.Caption.IndexOf('-'));
+				var agentName = agentNameWithLevel.Substring(2, agentNameWithLevel.IndexOf('<') - 3);
+
 				var acceptButton = agentDialogue?.ButtonText?.FirstOrDefault(b => b.Text == "Accept");
 				if (acceptButton != null)
 				{
 					var missionName = MissionNameRegex.Match(missionDescription).Groups[1].Value;
 					if (!IgnoredMissions.Contains(missionName))
 					{
+						AcceptedMissions.Add(new CorporationMissionTaker.MissionDestination()
+						{
+							AgentName = agentName,
+							MissionName = missionName,
+						});
 						return acceptButton.ClickTask();
 					}
 					else if (!missionDescription.Contains("Declining a mission from this agent within the next"))
@@ -48,8 +56,7 @@ namespace Sanderling.ABot.Bot.Strategies
 							.ClickTask();
 				}
 
-				var agentNameWithLevel = agentDialogue.Caption.Substring(agentDialogue.Caption.IndexOf('-'));
-				CheckedAgents.Add(agentNameWithLevel.Substring(2, agentNameWithLevel.IndexOf('<') - 3));
+				CheckedAgents.Add(agentName);
 				return agentDialogue.ClickMenuEntryByRegexPattern(bot, ".*Close");
 			}
 
@@ -84,5 +91,6 @@ namespace Sanderling.ABot.Bot.Strategies
 		}
 
 		public bool MoveToNext => allMissionsProcessed;
+		public IList<CorporationMissionTaker.MissionDestination> AcceptedMissions = new List<CorporationMissionTaker.MissionDestination>();
 	}
 }

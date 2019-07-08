@@ -8,10 +8,16 @@ namespace Sanderling.ABot.Bot.Strategies
 	class SetDestinationState : IStragegyState
 	{
 		private SetDestinationTask task;
+		private readonly int currentDestinationId;
+
+		public SetDestinationState(int currentDestinationId)
+		{
+			this.currentDestinationId = currentDestinationId;
+		}
 
 		public IBotTask GetStateActions(Bot bot)
 		{
-			task = new SetDestinationTask(bot, new[] { "FW Route" }, 1, bot.MemoryMeasurementAtTime?.Value);
+			task = new SetDestinationTask(bot, new[] { "FW Route" }, currentDestinationId, bot.MemoryMeasurementAtTime?.Value);
 			return task;
 		}
 
@@ -31,6 +37,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			return null;
 		}
 
-		public bool MoveToNext => task?.HasRoute ?? false;
+		public SetDestinationTask.SetDestinationTaskResult? Result => task?.Result;
+		public bool MoveToNext => task?.Result !=null;
 	}
 }

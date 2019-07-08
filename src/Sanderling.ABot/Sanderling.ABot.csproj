@@ -51,6 +51,9 @@
     <Reference Include="Sanderling.Interface">
       <HintPath>..\..\lib\Sanderling.Interface.dll</HintPath>
     </Reference>
+    <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>..\packages\Serilog.2.8.0\lib\net46\Serilog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -77,8 +80,6 @@
     <Compile Include="Bot\IBotTask.cs" />
     <Compile Include="Bot\IStrategy.cs" />
     <Compile Include="Bot\Memory\OverviewMemory.cs" />
-    <Compile Include="Bot\Strategies\AnomalyHunting.cs" />
-    <Compile Include="Bot\Strategies\CorporationMissionTaker.cs" />
     <Compile Include="Bot\MotionRecommendation.cs" />
     <Compile Include="Bot\MotionResult.cs" />
     <Compile Include="Bot\ShipFit.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="Bot\Strategies\ShipCheckingState.cs" />
     <Compile Include="Bot\Strategies\TakeMissionsState.cs" />
     <Compile Include="Bot\Strategies\TravelState.cs" />
+    <Compile Include="Bot\Strategies\WaitForCommandState.cs" />
     <Compile Include="Bot\Task\AnomalyEnter.cs" />
     <Compile Include="Bot\Task\CheckShipTask.cs" />
     <Compile Include="Bot\Task\Hotkeys.cs" />
@@ -105,7 +107,6 @@
     <Compile Include="Bot\Task\MenuTaskExtension.cs" />
     <Compile Include="Bot\Task\ModuleTaskExtension.cs" />
     <Compile Include="Bot\Task\ModuleToggleTask.cs" />
-    <Compile Include="Decompiled\LockExtensions.cs" />
     <Compile Include="Bot\Task\RetreatTask.cs" />
     <Compile Include="Bot\Task\SaveShipTask.cs" />
     <Compile Include="Bot\Task\SetDestinationTask.cs" />

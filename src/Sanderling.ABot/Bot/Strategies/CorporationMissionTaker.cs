@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
@@ -9,9 +11,18 @@ namespace Sanderling.ABot.Bot.Strategies
 		IStragegyState nextState;
 		private bool isFinalizingTask;
 		private int currentDestinationId = 1;
+
+		public class MissionDestination
+		{
+			public string AgentName;
+			public string MissionName;
+		}
+
+		private Queue<MissionDestination> MissionsToBookmark = new Queue<MissionDestination>();
+
 		public CorporationMissionTaker()
 		{
-			currentState = new ShipCheckingState();// new ShipCheckingState();
+			currentState = new ShipCheckingState(); // new ShipCheckingState();
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -24,18 +35,32 @@ namespace Sanderling.ABot.Bot.Strategies
 					switch (currentState)
 					{
 						case ShipCheckingState _:
-							nextState = new SetDestinationState();
+							nextState = new SetDestinationState(currentDestinationId);
 							break;
-						case SetDestinationState _:
-							nextState = new TravelState();
+						case SetDestinationState setDestinationState:
+							if (setDestinationState.Result == SetDestinationTask.SetDestinationTaskResult.RouteSet)
+								nextState = new TravelState();
+							else
+							{
+								if (MissionsToBookmark.Any())
+									nextState = null; //TODO new CreateDynamicRouteState();
+								nextState = new WaitForCommandState();
+							}
+
 							break;
 						case TravelState _:
 							nextState = new TakeMissionsState();
 							break;
-						case TakeMissionsState _:
+						case TakeMissionsState takeMissionsState:
 						{
-							nextState = new SetDestinationState();
-							currentDestinationId++;
+							foreach (var mission in takeMissionsState.AcceptedMissions)
+								MissionsToBookmark.Enqueue(mission);
+							nextState = new SetDestinationState(++currentDestinationId);
+						}
+							break;
+						case WaitForCommandState waitForCommand:
+						{
+							nextState = waitForCommand.NextState;
 						}
 							break;
 						default:

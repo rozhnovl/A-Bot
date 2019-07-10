@@ -11,6 +11,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		IStragegyState nextState;
 		private bool isFinalizingTask;
 		private int currentDestinationId = 1;
+		private string[] SkippedFwSystems = null;
 
 		public class MissionDestination
 		{
@@ -22,7 +23,7 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public CorporationMissionTaker()
 		{
-			currentState = new ShipCheckingState(); // new ShipCheckingState();
+			currentState = new CheckAcceptableFWSystemsState(); // new ShipCheckingState();
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -35,8 +36,17 @@ namespace Sanderling.ABot.Bot.Strategies
 					switch (currentState)
 					{
 						case ShipCheckingState _:
-							nextState = new SetDestinationState(currentDestinationId);
+							nextState = SkippedFwSystems == null
+								? (IStragegyState) new CheckAcceptableFWSystemsState()
+								: new SetDestinationState(currentDestinationId, SkippedFwSystems);
 							break;
+						case CheckAcceptableFWSystemsState checkSystemsState:
+						{
+							SkippedFwSystems = checkSystemsState.SystemsToSkip;
+							nextState = new SetDestinationState(currentDestinationId, SkippedFwSystems);
+							break;
+						}
+
 						case SetDestinationState setDestinationState:
 							if (setDestinationState.Result == SetDestinationTask.SetDestinationTaskResult.RouteSet)
 								nextState = new TravelState();
@@ -55,7 +65,7 @@ namespace Sanderling.ABot.Bot.Strategies
 						{
 							foreach (var mission in takeMissionsState.AcceptedMissions)
 								MissionsToBookmark.Enqueue(mission);
-							nextState = new SetDestinationState(++currentDestinationId);
+							nextState = new SetDestinationState(++currentDestinationId, SkippedFwSystems);
 						}
 							break;
 						case WaitForCommandState waitForCommand:

@@ -12,13 +12,16 @@ namespace Sanderling.ABot.Bot.Task
 		private readonly string[] FoldersToOpen;
 		private readonly int currentDestinationId;
 		private readonly IMemoryMeasurement MemoryMeasurement;
+		private readonly string[] enemySystems;
 
-		public SetDestinationTask(Bot bot, string[] foldersToOpen, int currentDestinationId, IMemoryMeasurement memoryMeasurement)
+		public SetDestinationTask(Bot bot, string[] foldersToOpen, int currentDestinationId,
+			IMemoryMeasurement memoryMeasurement, string[] enemySystems)
 		{
 			this.bot = bot;
 			FoldersToOpen = foldersToOpen;
 			this.currentDestinationId = currentDestinationId;
 			MemoryMeasurement = memoryMeasurement;
+			this.enemySystems = enemySystems;
 		}
 
 		public IEnumerable<IBotTask> Component => null;
@@ -26,8 +29,11 @@ namespace Sanderling.ABot.Bot.Task
 
 		public enum SetDestinationTaskResult
 		{
-			RouteSet, NoSuitableBookmark,
+			RouteSet,
+			NoSuitableBookmark,
+			NextBookmarkIsEnemySystem
 		}
+
 		public IEnumerable<MotionParam> ClientActions
 		{
 			get
@@ -37,7 +43,7 @@ namespace Sanderling.ABot.Bot.Task
 				//yield return toogleButton.MouseClick(MouseButtonIdEnum.Left);
 
 				var hasRoute = (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ?? false)
-				           || (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
+				               || (MemoryMeasurement?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
 				if (hasRoute)
 				{
 					Result = SetDestinationTaskResult.RouteSet;
@@ -80,6 +86,8 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (nextWaypoint != null)
 				{
+					if (enemySystems.Any(es => nextWaypoint.Text.Contains(es)))
+						Result = SetDestinationTaskResult.NextBookmarkIsEnemySystem;
 					foreach (var action in nextWaypoint.ClickMenuEntryByRegexPattern(bot, "Set Destination")
 						.ClientActions
 					)

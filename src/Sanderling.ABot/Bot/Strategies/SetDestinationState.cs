@@ -9,15 +9,17 @@ namespace Sanderling.ABot.Bot.Strategies
 	{
 		private SetDestinationTask task;
 		private readonly int currentDestinationId;
+		private readonly string[] enemySystems;
 
-		public SetDestinationState(int currentDestinationId)
+		public SetDestinationState(int currentDestinationId, string[] enemySystems)
 		{
 			this.currentDestinationId = currentDestinationId;
+			this.enemySystems = enemySystems;
 		}
 
 		public IBotTask GetStateActions(Bot bot)
 		{
-			task = new SetDestinationTask(bot, new[] { "FW Route" }, currentDestinationId, bot.MemoryMeasurementAtTime?.Value);
+			task = new SetDestinationTask(bot, new[] { "FW Route" }, currentDestinationId, bot.MemoryMeasurementAtTime?.Value, enemySystems);
 			return task;
 		}
 

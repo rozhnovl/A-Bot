@@ -12,11 +12,19 @@ namespace Sanderling.ABot.Bot.Strategies
 {
 	class TakeMissionsState : IStragegyState
 	{
-		private ISet<string> AcceptedMissionLevels = new HashSet<string>() { "Level 3" , "Level 4" };
-		private ISet<string> IgnoredMissions = new HashSet<string>(){ "Gate Blitz", "Uproot", "Morale and Morality", "Roidier Rage", "Roidiest Rage", "Tightening the Noose", "Cutting the Net", "Shades of Grey", "Chain Reaction" };
+		private ISet<string> AcceptedMissionLevels = new HashSet<string>() {"Level 3", "Level 4"};
+
+		private ISet<string> IgnoredMissions = new HashSet<string>()
+		{
+			"Gate Blitz", "Uproot", "Morale and Morality", "Roidier Rage", "Tightening the Noose",
+			"Cutting the Net", "Shades of Grey", "Chain Reaction"
+		};
+
 		private ISet<string> CheckedAgents = new HashSet<string>();
 		private Regex MissionNameRegex = new Regex("<span id=subheader>([a-zA-Z0-9\\s]*)</span>");
 		private bool allMissionsProcessed;
+		private bool scrolledToBottom;
+
 		public IBotTask GetStateActions(Bot bot)
 		{
 			var memory = bot?.MemoryMeasurementAtTime?.Value;
@@ -61,9 +69,9 @@ namespace Sanderling.ABot.Bot.Strategies
 				return agentDialogue.ClickMenuEntryByRegexPattern(bot, ".*Close");
 			}
 
-			if (!memory.WindowStation.Single().LabelText.Any(lt => lt.Text == "Available to you")
-			    && memory.WindowStation.Single().AgentEntry.Any())
+			if (!scrolledToBottom && memory.WindowStation.Single().AgentEntry.Length > 6)
 			{
+				scrolledToBottom = true;
 				return new BotTask()
 				{
 					ClientActions = new List<MotionParam>()
@@ -75,12 +83,12 @@ namespace Sanderling.ABot.Bot.Strategies
 			}
 
 			//check if can speak to another
-			var agentsToCheck = memory.WindowStation.Single().AgentEntry.Where(a =>
-				a.LabelText.Any(lt => AcceptedMissionLevels.Any(aml => lt.Text.Contains(aml))));
+			var agentsToCheck = memory.WindowStation.Single().AgentEntry
+				.Where(a => a.LabelText.Any(lt => AcceptedMissionLevels.Any(aml => lt.Text.Contains(aml))))
+				.Where(a => a.LabelText.Any(t => t.Text == "Security"))
+				.Where(a => !a.LabelText.Any(t => t.Text.Contains("Accepted")));
 			var notCheckedYetAgents =
 				agentsToCheck
-					.Where(a => a.LabelText.Any(t => t.Text == "Security"))
-					.Where(a => !a.LabelText.Any(t => t.Text.Contains("Accepted")))
 					.Where(a => !a.LabelText.Any(t => CheckedAgents.Any(ca => t.Text.Contains(ca))));
 			var agentToTalk = notCheckedYetAgents.FirstOrDefault();
 			if (agentToTalk != null)
@@ -106,6 +114,8 @@ namespace Sanderling.ABot.Bot.Strategies
 		}
 
 		public bool MoveToNext => allMissionsProcessed;
-		public IList<CorporationMissionTaker.MissionDestination> AcceptedMissions = new List<CorporationMissionTaker.MissionDestination>();
+
+		public IList<CorporationMissionTaker.MissionDestination> AcceptedMissions =
+			new List<CorporationMissionTaker.MissionDestination>();
 	}
 }

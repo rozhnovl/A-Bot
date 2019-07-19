@@ -30,7 +30,7 @@ namespace Sanderling.ABot.Bot.Task
 					yield break;
 
 				yield return MemoryMeasurement?.WindowStation?.FirstOrDefault()?.ButtonText
-					.SingleOrDefault(b => !b.Text.Contains("Abort") && b.Text.Contains("Undock"))
+					.SingleOrDefault(b => !b.Text.Contains("Abort") && b.Text== "<center>Undock</center>")
 					?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left);
 			}
 		}

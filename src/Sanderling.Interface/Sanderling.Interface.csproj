@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>Sanderling.Interface</AssemblyName>
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Bib3.RefNezDif">
+      <HintPath>C:\Src\A-Bot\lib\Bib3.RefNezDif.dll</HintPath>
+    </Reference>
+    <Reference Include="BotEngine.Common">
+      <HintPath>C:\Src\A-Bot\lib\BotEngine.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Bib3">
+      <HintPath>C:\Src\A-Bot\src\Sanderling.ABot\bin\Debug\Bib3.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core">
+      <HintPath>C:\Windows\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="TLSchema">
+      <HintPath>..\packages\TLSchema.1.1.0\lib\netstandard2.0\TLSchema.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ChatMessage.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ChatParticipantEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ColumnHeader.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Container.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\DroneViewEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\DroneViewEntryGroup.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\DroneViewEntryItem.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Extension.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\HybridWindow.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IChatParticipantEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IColumnHeader.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IContainer.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IDroneViewEntryItem.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IExpandable.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInfoPanel.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInfoPanelMissions.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInfoPanelRoute.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInfoPanelSystem.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInSpaceBracket.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IInventory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IListEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IListViewAndControl.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IMemoryMeasurement.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IMenu.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IMenuEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\INeocom.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\InfoPanel.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\InfoPanelMissions.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\InfoPanelRoute.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\InfoPanelSystem.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\InSpaceBracket.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Inventory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IObjectIdInMemory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IOverviewEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IScroll.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISelectable.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IShipHitpointsAndEnergy.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IShipUi.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IShipUiModule.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IShipUiTarget.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IShipUiTimer.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISprite.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISquadronAbilityIcon.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISquadronContainer.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISquadronHealth.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISquadronsUI.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ISquadronUI.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ITreeViewEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IUIElement.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IUIElementInputText.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IUIElementText.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindow.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowAgent.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowAgentDialogue.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowAgentPane.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowDroneView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowInventory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowOverview.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowProbeScanner.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowSelectedItemView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowStation.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\IWindowSurveyScanView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ListEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ListViewAndControl.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\LobbyAgentEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MarketItemTypeDetails.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MarketItemTypeDetailsMarketData.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MarketMyOrders.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MarketOrderEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MemoryMeasurement.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Menu.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MenuEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\MessageBox.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Neocom.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ObjectIdInMemory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\OverviewEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\PanelGroup.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Scroll.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipHitpointsAndEnergy.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUi.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUiEWarElement.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUiModule.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUiTarget.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUiTargetAssignedGroup.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ShipUiTimer.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Sprite.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\SquadronAbilityIcon.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\SquadronContainer.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\SquadronHealth.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\SquadronsUI.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\SquadronUI.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Tab.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\TabGroup.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\ToStringStatic.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\TreeViewEntry.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\UIElement.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\UIElementInputText.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\UIElementText.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\Window.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowAgent.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowAgentBrowser.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowAgentDialogue.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowAgentPane.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowChatChannel.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowDroneView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowFittingMgmt.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowInventory.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowItemSell.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowMarketAction.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowOverView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowPeopleAndPlaces.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowProbeScanner.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowRegionalMarket.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowSelectedItemView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowShipFitting.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowStack.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowStation.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowSurveyScanView.cs" />
+    <Compile Include="Sanderling.Interface.MemoryStruct\WindowTelecom.cs" />
+    <Compile Include="Sanderling.Interface\FromInterfaceResponse.cs" />
+    <Compile Include="Sanderling.Interface\MemoryMeasurementInitParam.cs" />
+    <Compile Include="Sanderling.Interface\ToInterfaceRequest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BotEngine.Interface\BotEngine.Interface.csproj">
+      <Project>{6454678d-52c4-4d38-b149-ab5d67b7f4c9}</Project>
+      <Name>BotEngine.Interface</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

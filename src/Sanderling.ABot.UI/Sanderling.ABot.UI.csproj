@@ -42,9 +42,6 @@
     <Reference Include="BotEngine.Common">
       <HintPath>..\..\lib\BotEngine.Common.dll</HintPath>
     </Reference>
-    <Reference Include="BotEngine.Interface">
-      <HintPath>..\..\lib\BotEngine.Interface.dll</HintPath>
-    </Reference>
     <Reference Include="BotEngine.UI">
       <HintPath>..\..\lib\BotEngine.UI.dll</HintPath>
     </Reference>
@@ -52,9 +49,6 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="Sanderling">
       <HintPath>..\..\lib\Sanderling.dll</HintPath>
-    </Reference>
-    <Reference Include="Sanderling.Interface">
-      <HintPath>..\..\lib\Sanderling.Interface.dll</HintPath>
     </Reference>
     <Reference Include="Sanderling.UI">
       <HintPath>..\..\lib\Sanderling.UI.dll</HintPath>
@@ -88,9 +82,17 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BotEngine.Interface\BotEngine.Interface.csproj">
+      <Project>{6454678D-52C4-4D38-B149-AB5D67B7F4C9}</Project>
+      <Name>BotEngine.Interface</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Sanderling.ABot\Sanderling.ABot.csproj">
       <Project>{39a3be09-0a61-458e-8f73-dc55c1b58afb}</Project>
       <Name>Sanderling.ABot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Sanderling.Interface\Sanderling.Interface.csproj">
+      <Project>{6fa1faf5-fa91-4b49-a7d7-9d9a40206366}</Project>
+      <Name>Sanderling.Interface</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

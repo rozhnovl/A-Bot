@@ -9,6 +9,29 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
 {
+	public class EnterTextTask : IBotTask
+	{
+		private readonly string text;
+
+		public EnterTextTask(string text)
+		{
+			this.text = text;
+		}
+
+		public IEnumerable<IBotTask> Component { get; }
+
+		public IEnumerable<MotionParam> ClientActions
+		{
+			get
+			{
+				yield return new MotionParam()
+				{
+					TextEntry = text
+				};
+			}
+		}
+	}
+
 	public class MenuPathTask : IBotTask
 	{
 		public Bot Bot;

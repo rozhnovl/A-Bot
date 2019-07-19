@@ -1,0 +1,9 @@
+namespace BotEngine.Windows
+{
+	public enum PROCESS_CREATION_FLAG : uint
+	{
+		DEBUG_PROCESS = 1u,
+		DEBUG_ONLY_THIS_PROCESS = 2u,
+		EXTENDED_STARTUPINFO_PRESENT = 0x80000
+	}
+}

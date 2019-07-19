@@ -22,8 +22,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			var enemySystems =
 				fwWindow.LabelText.Where(lt => lt.Text.Contains("color") && lt.Text.Contains("0xFFC74232"))
 					.Select(lt => new String(lt.Text.Skip(18).TakeWhile(c => c != '<').ToArray()));
-
-			SystemsToSkip = enemySystems.ToArray();
+			if (enemySystems.Any())
+				SystemsToSkip = enemySystems.ToArray();
 
 			return null;
 		}

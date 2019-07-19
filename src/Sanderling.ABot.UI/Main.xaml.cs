@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using Sanderling.Interface;
 using System.Windows.Controls;
 
 namespace Sanderling.ABot.UI

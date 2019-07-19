@@ -91,7 +91,7 @@ namespace ABot
 				{
 					if (lockTaken)
 					{
-						Monitor.Exit(lockRef);
+						mutex.ReleaseMutex();
 					}
 				}
 

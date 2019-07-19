@@ -10,7 +10,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		private SetDestinationTask task;
 		private readonly int currentDestinationId;
 		private readonly string[] enemySystems;
-
+		private SetDestinationTask.SetDestinationTaskResult? result;
 		public SetDestinationState(int currentDestinationId, string[] enemySystems)
 		{
 			this.currentDestinationId = currentDestinationId;
@@ -19,7 +19,24 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public IBotTask GetStateActions(Bot bot)
 		{
-			task = new SetDestinationTask(bot, new[] { "FW Route" }, currentDestinationId, bot.MemoryMeasurementAtTime?.Value, enemySystems);
+			var hasRoute =
+				(bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ??
+				 false)
+				|| (bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
+			if (hasRoute)
+			{
+				result = SetDestinationTask.SetDestinationTaskResult.RouteSet;
+				return null;
+			}
+
+			var openFoldersTask = new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
+				new[] {"Corporation Locations", "FW Route"});
+
+			if (openFoldersTask.ClientActions.Any())
+				return new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
+					new[] {"Corporation Locations", "FW Route"});
+
+			task = new SetDestinationTask(bot, currentDestinationId, bot.MemoryMeasurementAtTime?.Value, enemySystems);
 			return task;
 		}
 
@@ -39,7 +56,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			return null;
 		}
 
-		public SetDestinationTask.SetDestinationTaskResult? Result => task?.Result;
-		public bool MoveToNext => task?.Result !=null;
+		public SetDestinationTask.SetDestinationTaskResult? Result => result ?? task?.Result;
+		public bool MoveToNext => (result ?? task?.Result) != null;
 	}
 }

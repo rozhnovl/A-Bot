@@ -42,32 +42,32 @@ namespace Sanderling.ABot.Exe
 		void BotProgress(bool motionEnable)
 		{
 			botLock.IfLockIsAvailableEnter(() =>
-			{
-				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} called BotProgress");
-				var memoryMeasurementLast = this.MemoryMeasurementLast;
-
-				var time = memoryMeasurementLast?.End;
-
-				if (!time.HasValue)
-					return;
-
-				if (time <= bot?.StepLastInput?.TimeMilli)
-					return;
-
-				BotConfigLoad();
-
-				var stepResult = bot.Step(new Bot.BotStepInput
 				{
-					TimeMilli = time.Value,
-					FromProcessMemoryMeasurement = memoryMeasurementLast,
-					StepLastMotionResult = BotStepLastMotionResult?.Value,
-					ConfigSerial = BotConfigLoaded?.Value.Value,
-				});
+					Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} called BotProgress");
+					var memoryMeasurementLast = this.MemoryMeasurementLast;
 
-				if (motionEnable)
-					BotMotion(memoryMeasurementLast, stepResult?.ListMotion);
-				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} finished BotProgress");
-			}, nameof(BotProgress));
+					var time = memoryMeasurementLast?.End;
+
+					if (!time.HasValue)
+						return;
+
+					if (time <= bot?.StepLastInput?.TimeMilli)
+						return;
+
+					BotConfigLoad();
+
+					var stepResult = bot.Step(new Bot.BotStepInput
+					{
+						TimeMilli = time.Value,
+						FromProcessMemoryMeasurement = memoryMeasurementLast,
+						StepLastMotionResult = BotStepLastMotionResult?.Value,
+						ConfigSerial = BotConfigLoaded?.Value.Value,
+					});
+
+					if (motionEnable)
+						BotMotion(memoryMeasurementLast, stepResult?.ListMotion);
+					Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} finished BotProgress");
+				}, nameof(BotProgress) + Process.GetCurrentProcess().Id);
 		}
 
 		void BotMotion(
@@ -76,27 +76,30 @@ namespace Sanderling.ABot.Exe
 		{
 			var processId = memoryMeasurement?.ProcessId;
 
-			if (!processId.HasValue || null == sequenceMotion)
+			if (!processId.HasValue || null == sequenceMotion ||sequenceMotion.IsNullOrEmpty())
 				return;
 			var process = System.Diagnostics.Process.GetProcessById(processId.Value);
-			
-			var startTime = GetTimeStopwatch();
-
-			var motor = new WindowMotor(process.MainWindowHandle);
 
 			var listMotionResult = new List<Bot.MotionResult>();
+			var startTime = GetTimeStopwatch();
 
-			foreach (var motion in sequenceMotion)
+			botLock.IfLockIsAvailableEnter(() =>
 			{
-				var motionResult = motor.ActSequenceMotion(motion.MotionParam.AsSequenceMotion(memoryMeasurement?.Value));
+				var motor = new WindowMotor(process.MainWindowHandle);
 
-				listMotionResult.Add(new Bot.MotionResult
+
+				foreach (var motion in sequenceMotion)
 				{
-					Id = motion.Id,
-					Success = motionResult?.Success ?? false,
-				});
-			}
+					var motionResult =
+						motor.ActSequenceMotion(motion.MotionParam.AsSequenceMotion(memoryMeasurement?.Value));
 
+					listMotionResult.Add(new Bot.MotionResult
+					{
+						Id = motion.Id,
+						Success = motionResult?.Success ?? false,
+					});
+				}
+			}, "MotionExecution");
 			BotStepLastMotionResult = new PropertyGenTimespanInt64<Bot.MotionResult[]>(listMotionResult.ToArray(), startTime, GetTimeStopwatch());
 
 			Thread.Sleep(FromMotionToMeasurementDelayMilli);

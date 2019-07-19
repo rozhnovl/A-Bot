@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sanderling.ABot", "Sanderling.ABot\Sanderling.ABot.csproj", "{39A3BE09-0A61-458E-8F73-DC55C1B58AFB}"
 EndProject
@@ -10,6 +10,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sanderling.ABot.UI", "Sanderling.ABot.UI\Sanderling.ABot.UI.csproj", "{C1A0220E-0F6A-4AD8-A1ED-8412685442BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sanderling.ABot.Test.Exe", "Sanderling.ABot.Test.Exe\Sanderling.ABot.Test.Exe.csproj", "{0914DF38-AE54-43FF-9B76-A1D8D62B48A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BotEngine.Interface", "BotEngine.Interface\BotEngine.Interface.csproj", "{6454678D-52C4-4D38-B149-AB5D67B7F4C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sanderling.Interface", "Sanderling.Interface\Sanderling.Interface.csproj", "{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,8 +37,19 @@ Global
 		{0914DF38-AE54-43FF-9B76-A1D8D62B48A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0914DF38-AE54-43FF-9B76-A1D8D62B48A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0914DF38-AE54-43FF-9B76-A1D8D62B48A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6454678D-52C4-4D38-B149-AB5D67B7F4C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6454678D-52C4-4D38-B149-AB5D67B7F4C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6454678D-52C4-4D38-B149-AB5D67B7F4C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6454678D-52C4-4D38-B149-AB5D67B7F4C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FA1FAF5-FA91-4B49-A7D7-9D9A40206366}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {097963EF-D612-433F-A955-DDC3FF259CF4}
 	EndGlobalSection
 EndGlobal

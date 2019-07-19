@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BotEngine.Motor;
 using Sanderling.ABot.Bot.Task;
+using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
@@ -10,7 +12,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		private IStragegyState currentState;
 		IStragegyState nextState;
 		private bool isFinalizingTask;
-		private int currentDestinationId = 1;
+		private int currentDestinationId = 2;
 		private string[] SkippedFwSystems = null;
 
 		public class MissionDestination
@@ -23,13 +25,16 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public CorporationMissionTaker()
 		{
-			currentState = new CheckAcceptableFWSystemsState(); // new ShipCheckingState();
+			currentState =
+				new TravelState(
+					true); // new CheckAcceptableFWSystemsState();//new WaitForCommandState("Integration test");// new ShipCheckingState();
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
 		{
 			if (!isFinalizingTask)
 			{
+				yield return new DiagnosticTask($"Current state is {currentState.GetType().Name}");
 				yield return currentState.GetStateActions(bot);
 				if (currentState.MoveToNext)
 				{
@@ -48,15 +53,26 @@ namespace Sanderling.ABot.Bot.Strategies
 						}
 
 						case SetDestinationState setDestinationState:
-							if (setDestinationState.Result == SetDestinationTask.SetDestinationTaskResult.RouteSet)
-								nextState = new TravelState();
-							else
+							switch (setDestinationState.Result)
 							{
-								if (MissionsToBookmark.Any())
-									nextState = null; //TODO new CreateDynamicRouteState();
-								nextState = new WaitForCommandState();
+								case SetDestinationTask.SetDestinationTaskResult.RouteSet:
+									nextState = new TravelState(false);
+									break;
+								case SetDestinationTask.SetDestinationTaskResult.NoSuitableBookmark:
+								{
+									if (MissionsToBookmark.Any())
+										nextState = new CreateDynamicRouteState();
+									nextState = new WaitForCommandState("No destination left to set");
+								}
+									break;
+								case SetDestinationTask.SetDestinationTaskResult.NextBookmarkIsEnemySystem:
+									nextState = new SetDestinationState(++currentDestinationId, SkippedFwSystems);
+									break;
+								case null:
+									break;
+								default:
+									throw new ArgumentOutOfRangeException();
 							}
-
 							break;
 						case TravelState _:
 							nextState = new TakeMissionsState();
@@ -93,5 +109,42 @@ namespace Sanderling.ABot.Bot.Strategies
 				}
 			}
 		}
+	}
+
+	internal class CreateDynamicRouteState : IStragegyState
+	{
+		private SetDestinationTask task;
+
+		private List<string> takenMissions = new List<string>();
+
+		public CreateDynamicRouteState()
+		{
+		}
+
+		public IBotTask GetStateActions(Bot bot)
+		{
+			return new SetMissionDestinationTask(bot, takenMissions.ToArray());
+			return null;
+
+		}
+
+		public IBotTask GetStateExitActions(Bot bot)
+		{
+			var fittingWindow = bot.MemoryMeasurementAtTime?.Value?.WindowPeopleAndPlaces?.FirstOrDefault();
+			if (fittingWindow != null)
+				return new BotTask()
+				{
+					ClientActions = new[]
+					{
+						bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.MouseClick(
+							MouseButtonIdEnum
+								.Left)
+					}
+				};
+			return null;
+		}
+
+		public SetDestinationTask.SetDestinationTaskResult? Result => task?.Result;
+		public bool MoveToNext => task?.Result != null;
 	}
 }

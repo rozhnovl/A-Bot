@@ -55,9 +55,6 @@
     <Reference Include="BotEngine.Common">
       <HintPath>..\..\lib\BotEngine.Common.dll</HintPath>
     </Reference>
-    <Reference Include="BotEngine.Interface">
-      <HintPath>..\..\lib\BotEngine.Interface.dll</HintPath>
-    </Reference>
     <Reference Include="BotEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\lib\BotEngine.UI.dll</HintPath>
@@ -80,19 +77,12 @@
       <HintPath>..\packages\AvalonEdit.5.0.3\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="protobuf-net, Version=2.1.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <HintPath>..\packages\protobuf-net.2.1.0\lib\net451\protobuf-net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Sanderling">
       <HintPath>..\..\lib\Sanderling.dll</HintPath>
-    </Reference>
-    <Reference Include="Sanderling.Interface">
-      <HintPath>..\..\lib\Sanderling.Interface.dll</HintPath>
     </Reference>
     <Reference Include="Sanderling.MemoryReading">
       <HintPath>..\..\lib\Sanderling.MemoryReading.dll</HintPath>
@@ -184,6 +174,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BotEngine.Interface\BotEngine.Interface.csproj">
+      <Project>{6454678D-52C4-4D38-B149-AB5D67B7F4C9}</Project>
+      <Name>BotEngine.Interface</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Sanderling.ABot.UI\Sanderling.ABot.UI.csproj">
       <Project>{c1a0220e-0f6a-4ad8-a1ed-8412685442bd}</Project>
       <Name>Sanderling.ABot.UI</Name>
@@ -191,6 +185,10 @@
     <ProjectReference Include="..\Sanderling.ABot\Sanderling.ABot.csproj">
       <Project>{39a3be09-0a61-458e-8f73-dc55c1b58afb}</Project>
       <Name>Sanderling.ABot</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Sanderling.Interface\Sanderling.Interface.csproj">
+      <Project>{6fa1faf5-fa91-4b49-a7d7-9d9a40206366}</Project>
+      <Name>Sanderling.Interface</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

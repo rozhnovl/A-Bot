@@ -18,9 +18,9 @@ namespace Sanderling.ABot.Bot.Task
 
 		public bool AllowAnomalyEnter;
 
-		const int AllowRoamSessionDurationMin = 60 * 7;
+		private const int AllowRoamSessionDurationMin = 60 * 7;
 
-		const int AllowAnomalyEnterSessionDurationMin = AllowRoamSessionDurationMin + 60 * 7;
+		private const int AllowAnomalyEnterSessionDurationMin = AllowRoamSessionDurationMin + 60 * 7;
 
 		/// <summary>
 		/// Checks that current chat contains only trusted chars
@@ -86,6 +86,6 @@ namespace Sanderling.ABot.Bot.Task
 			}
 		}
 
-		public IEnumerable<MotionParam> ClientActions => null;
+		public IEnumerable<MotionRecommendation> ClientActions => null;
 	}
 }

@@ -39,7 +39,7 @@ namespace Sanderling.ABot.Exe
 			var measurementRequestTime = MeasurementRequestTime() ?? 0;
 
 			if (eveOnlineClientProcessId.HasValue && measurementRequestTime <= GetTimeStopwatch())
-				if (MemoryMeasurementRequestRateLimit.AttemptPass(GetTimeStopwatch(), 700))
+				if (MemoryMeasurementRequestRateLimit.AttemptPass(GetTimeStopwatch(), 200))
 					Task.Run(() => botLock.IfLockIsAvailableEnter(() => MeasurementMemoryTake(eveOnlineClientProcessId.Value, measurementRequestTime)));
 		}
 

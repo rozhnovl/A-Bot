@@ -19,6 +19,13 @@ namespace Sanderling.ABot.Bot.Task
 			return module?.RampActive;
 		}
 
+		public static bool IsReloading(
+			this IShipUiModule module,
+			Bot bot)
+		{
+			return !module.IsActive() && module.RampRotationMilli.HasValue && module.RampRotationMilli.Value > 0;
+		}
+
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
 			IShipUiModule module)
@@ -26,12 +33,23 @@ namespace Sanderling.ABot.Bot.Task
 			if (module?.IsActive(bot) ?? true)
 				return null;
 
-			return new ModuleToggleTask(bot, module);
+			return new ModuleToggleTask(module);
+		}
+
+		static public IBotTask EnsureIsInactive(
+			this Bot bot,
+			IShipUiModule module)
+		{
+			if (module?.IsActive(bot) ?? false)
+
+				return new ModuleToggleTask(module);
+			return null;
 		}
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
 			IEnumerable<IShipUiModule> setModule) =>
-			new BotTask { Component = setModule?.Select(module => bot?.EnsureIsActive(module)) };
+			new BotTask(nameof(EnsureIsActive) + " for list of modules")
+				{Component = setModule?.Select(module => bot?.EnsureIsActive(module))};
 	}
 }

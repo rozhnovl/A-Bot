@@ -20,21 +20,11 @@ namespace Sanderling.ABot.Bot.Task
 				ListMenuListPriorityEntryRegexPattern = new[] { new[] { menuEntryRegexPattern } },
 			};
 		}
-		
-		public static MenuPathTask ClickWithModifier(this IUIElement element, Bot bot, VirtualKeyCode? modifier)
-		{
-			return new MenuPathTask
-			{
-				Bot = bot,
-				RootUIElement = element,
-				ModifierKey = modifier,
-			};
-		}
 
-		static public MenuPathTask ClickMenuEntryWithModifierKey(
+		static public MenuPathTask ClickMenuEntryByRegexPattern(
 			this IUIElement rootUIElement,
 			Bot bot,
-			VirtualKeyCode modifierKey)
+			string firstMenu, string secondMenu)
 		{
 			if (null == rootUIElement)
 				return null;
@@ -43,7 +33,33 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				Bot = bot,
 				RootUIElement = rootUIElement,
-				ModifierKey = modifierKey,
+				ListMenuListPriorityEntryRegexPattern = new[] { new[] { firstMenu }, new[] { secondMenu } },
+			};
+		}
+
+		public static MenuPathTask ClickWithModifier(this IUIElement element, Bot bot, params VirtualKeyCode[] modifiers)
+		{
+			return new MenuPathTask
+			{
+				Bot = bot,
+				RootUIElement = element,
+				ModifierKeys = modifiers,
+			};
+		}
+
+		static public MenuPathTask ClickMenuEntryWithModifierKey(
+			this IUIElement rootUIElement,
+			Bot bot,
+			VirtualKeyCode? modifierKey)
+		{
+			if (null == rootUIElement)
+				return null;
+
+			return new MenuPathTask
+			{
+				Bot = bot,
+				RootUIElement = rootUIElement,
+				ModifierKeys = modifierKey != null ? new[] { modifierKey.Value } : null,
 			};
 		}
 	}

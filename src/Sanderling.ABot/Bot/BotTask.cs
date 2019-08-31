@@ -3,10 +3,17 @@ using System.Collections.Generic;
 
 namespace Sanderling.ABot.Bot
 {
-	public class BotTask : IBotTask
+	public class BotTask : ISerializableBotTask
 	{
+		private readonly string description;
+
+		public BotTask(string description)
+		{
+			this.description = description;
+		}
 		public IEnumerable<IBotTask> Component { set; get; }
 
-		public IEnumerable<MotionParam> ClientActions { set; get; }
+		public IEnumerable<MotionRecommendation> ClientActions { set; get; }
+		public string ToJson() => description;
 	}
 }

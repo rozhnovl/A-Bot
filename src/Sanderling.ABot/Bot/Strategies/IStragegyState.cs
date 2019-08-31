@@ -1,6 +1,6 @@
 ﻿namespace Sanderling.ABot.Bot.Strategies
 {
-	interface IStragegyState
+	internal interface IStragegyState
 	{
 		IBotTask GetStateActions(Bot bot);
 		IBotTask GetStateExitActions(Bot bot);

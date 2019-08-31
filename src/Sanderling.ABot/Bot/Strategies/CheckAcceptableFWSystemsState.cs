@@ -4,7 +4,7 @@ using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class CheckAcceptableFWSystemsState : IStragegyState
+	internal class CheckAcceptableFWSystemsState : IStragegyState
 	{
 		public string[] SystemsToSkip = null;
 

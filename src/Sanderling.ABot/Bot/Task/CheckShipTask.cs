@@ -19,12 +19,12 @@ namespace Sanderling.ABot.Bot.Task
 
 		public IEnumerable<IBotTask> Component => null;
 
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
 				if (MemoryMeasurement?.WindowShipFitting?.FirstOrDefault() == null)
-					yield return MemoryMeasurement.Neocom.FittingButton.MouseClick(MouseButtonIdEnum.Left);
+					yield return MemoryMeasurement.Neocom.FittingButton.MouseClick(MouseButtonIdEnum.Left).AsRecommendation();
 
 				var fittingWindow = MemoryMeasurement?.WindowShipFitting?.FirstOrDefault();
 				if (fittingWindow != null)

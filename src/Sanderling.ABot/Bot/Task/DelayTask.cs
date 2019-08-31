@@ -10,7 +10,7 @@ namespace Sanderling.ABot.Bot.Task
 		private const int delayMs = 350;
 		private VirtualKeyCode Key { get; }
 		public IEnumerable<IBotTask> Component => null;
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{

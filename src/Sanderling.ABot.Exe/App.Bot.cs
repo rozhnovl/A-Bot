@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using ABot;
 
@@ -83,11 +84,10 @@ namespace Sanderling.ABot.Exe
 			var listMotionResult = new List<Bot.MotionResult>();
 			var startTime = GetTimeStopwatch();
 
-			botLock.IfLockIsAvailableEnter(() =>
+			botLock.WhenLockIsAvailableEnter(300, () =>
 			{
 				var motor = new WindowMotor(process.MainWindowHandle);
-
-
+				
 				foreach (var motion in sequenceMotion)
 				{
 					var motionResult =
@@ -99,10 +99,10 @@ namespace Sanderling.ABot.Exe
 						Success = motionResult?.Success ?? false,
 					});
 				}
-			}, "MotionExecution");
+			},"MotionExecution");
 			BotStepLastMotionResult = new PropertyGenTimespanInt64<Bot.MotionResult[]>(listMotionResult.ToArray(), startTime, GetTimeStopwatch());
 
-			Thread.Sleep(FromMotionToMeasurementDelayMilli);
+			Thread.Sleep(sequenceMotion.Max(sm => sm.DelayAfterMs ?? FromMotionToMeasurementDelayMilli));
 		}
 
 		void BotConfigLoad()

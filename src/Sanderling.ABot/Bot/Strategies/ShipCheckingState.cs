@@ -5,7 +5,7 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class ShipCheckingState : IStragegyState
+	internal class ShipCheckingState : IStragegyState
 	{
 		private CheckShipTask task;
 
@@ -19,15 +19,8 @@ namespace Sanderling.ABot.Bot.Strategies
 		{
 			var fittingWindow = bot.MemoryMeasurementAtTime?.Value?.WindowShipFitting?.FirstOrDefault();
 			if (fittingWindow != null)
-				return new BotTask()
-				{
-					ClientActions = new[]
-					{
-						bot.MemoryMeasurementAtTime?.Value?.Neocom?.FittingButton?.MouseClick(
-							MouseButtonIdEnum
-								.Left)
-					}
-				};
+				return bot.MemoryMeasurementAtTime?.Value?.Neocom?.FittingButton?.ClickTask();
+					
 			return null;
 		}
 

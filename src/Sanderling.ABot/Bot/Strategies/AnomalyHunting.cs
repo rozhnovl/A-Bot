@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class AnomalyHunting : IStrategy
+	internal class AnomalyHunting : IStrategy
 	{
 		public bool currentAnomalyLooted;
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -36,7 +37,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					}
 				});
 
-			yield return bot.EnsureIsActive(shipFit.GetAlwaysActiveModules());
+			yield return bot.EnsureIsActive(shipFit.GetAlwaysActiveModules().Select(m => m.UiModule));
 
 			//var moduleUnknown = MemoryMeasurementAccu?.ShipUiModule?.FirstOrDefault(module => null == module?.TooltipLast?.Value);
 

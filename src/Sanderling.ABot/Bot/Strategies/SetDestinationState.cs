@@ -5,7 +5,7 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class SetDestinationState : IStragegyState
+	internal class SetDestinationState : IStragegyState
 	{
 		private SetDestinationTask task;
 		private readonly int currentDestinationId;
@@ -44,15 +44,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		{
 			var fittingWindow = bot.MemoryMeasurementAtTime?.Value?.WindowPeopleAndPlaces?.FirstOrDefault();
 			if (fittingWindow != null)
-				return new BotTask()
-				{
-					ClientActions = new[]
-					{
-						bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.MouseClick(
-							MouseButtonIdEnum
-								.Left)
-					}
-				};
+				return bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.ClickTask();
 			return null;
 		}
 

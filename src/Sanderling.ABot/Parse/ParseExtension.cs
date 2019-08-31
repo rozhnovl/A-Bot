@@ -16,7 +16,7 @@ namespace Sanderling.ABot.Parse
 		/// <summary>
 		/// Hobgoblin I ( <color=0xFF00FF00>Idle</color> )
 		/// </summary>
-		const string StatusStringFromDroneEntryTextRegexPattern = @"\((.*)\)";
+		private const string StatusStringFromDroneEntryTextRegexPattern = @"\((.*)\)";
 
 		static public string StatusStringFromDroneEntryText(this string droneEntryText) =>
 			droneEntryText?.RegexMatchIfSuccess(StatusStringFromDroneEntryTextRegexPattern)?.Groups[1]?.Value?.RemoveXmlTag()?.Trim();

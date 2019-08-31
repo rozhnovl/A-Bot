@@ -84,11 +84,7 @@ namespace BotEngine.Interface
 				LicenseClientConfig obj = licenseClientConfig ?? LicenseClientConfig;
 				licenseClientConfig = obj;
 				LicenseClientConfig = obj;
-				LicenseClient licenseClient = LicenseClient;
-				if (licenseClient == null)
-				{
-					licenseClient = (LicenseClient = new LicenseClient());
-				}
+				LicenseClient licenseClient = LicenseClient ?? (LicenseClient = new LicenseClient());
 				if (licenseClientConfig != null)
 				{
 					licenseClient.ServerAddress = licenseClientConfig?.ApiVersionAddress;
@@ -98,16 +94,8 @@ namespace BotEngine.Interface
 				{
 					IRateLimitStateInt exchangePayloadRateLimit = ExchangePayloadRateLimit;
 					long timeMilli = GetTimeMilli();
-					int? obj2;
-					if (licenseClient == null)
-					{
-						obj2 = null;
-					}
-					else
-					{
-						PropertyGenTimespanInt64<HttpExchangeReport<AuthRequest, AuthResponse>> exchangeAuthLast = licenseClient.ExchangeAuthLast;
-						obj2 = ((exchangeAuthLast == null) ? null : exchangeAuthLast.Value?.Response?.RequestTimeDistanceMaxMilli) - skipIfNotNeededForSessionKeepAliveSafetyMarginMilli;
-					}
+					var obj2 = licenseClient?.ExchangeAuthLast?.Value?.Response?.RequestTimeDistanceMaxMilli -
+					            skipIfNotNeededForSessionKeepAliveSafetyMarginMilli;
 					if (!exchangePayloadRateLimit.AttemptPass(timeMilli, Math.Max(1000, obj2 ?? 0)))
 					{
 						return null;
@@ -120,7 +108,7 @@ namespace BotEngine.Interface
 					else
 					{
 						PropertyGenTimespanInt64<HttpExchangeReport<AuthRequest, AuthResponse>> exchangeAuthLast2 = licenseClient.ExchangeAuthLast;
-						obj3 = ((exchangeAuthLast2 == null) ? null : exchangeAuthLast2.Value?.Response?.SessionId);
+						obj3 = exchangeAuthLast2?.Value?.Response?.SessionId;
 					}
 					string sessionId = (string)obj3;
 					FromClientToServerMessage request = new FromClientToServerMessage
@@ -130,7 +118,7 @@ namespace BotEngine.Interface
 						Time = GetTimeMilli()
 					};
 					propertyGenTimespanInt = licenseClient?.ExchangePayload(request);
-					FromServerToClientMessage fromServerToClientMessage = (propertyGenTimespanInt == null) ? null : propertyGenTimespanInt.Value?.Response;
+					FromServerToClientMessage fromServerToClientMessage = propertyGenTimespanInt?.Value?.Response;
 					if (fromServerToClientMessage != null)
 					{
 						InterfaceAppManager?.FromServer(fromServerToClientMessage.Interface);

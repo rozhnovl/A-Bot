@@ -10,6 +10,11 @@ namespace Sanderling.ABot.Bot
 		/// <summary>
 		/// ClientActions to apply to the eve online client.
 		/// </summary>
-		IEnumerable<MotionParam> ClientActions { get; }
+		IEnumerable<MotionRecommendation> ClientActions { get; }
+	}
+
+	public interface ISerializableBotTask : IBotTask
+	{
+		string ToJson();
 	}
 }

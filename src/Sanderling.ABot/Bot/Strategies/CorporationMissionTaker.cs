@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using BotEngine.Motor;
 using Sanderling.ABot.Bot.Task;
-using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class CorporationMissionTaker : IStrategy
+	internal class CorporationMissionTaker : IStrategy
 	{
 		private IStragegyState currentState;
-		IStragegyState nextState;
+		private IStragegyState nextState;
 		private bool isFinalizingTask;
 		private int currentDestinationId = 2;
 		private string[] SkippedFwSystems = null;
@@ -25,9 +23,18 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public CorporationMissionTaker()
 		{
-			currentState =
-				new TravelState(
-					true); // new CheckAcceptableFWSystemsState();//new WaitForCommandState("Integration test");// new ShipCheckingState();
+			var startState = Environment.GetCommandLineArgs().Skip(2).FirstOrDefault();
+
+			switch (startState)
+			{
+				case "takeMissions":
+				case null:
+					currentState = new CheckAcceptableFWSystemsState();
+					break;
+				case "bookmark":
+					currentState = new TravelState(true);
+					break;
+			}
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -109,42 +116,5 @@ namespace Sanderling.ABot.Bot.Strategies
 				}
 			}
 		}
-	}
-
-	internal class CreateDynamicRouteState : IStragegyState
-	{
-		private SetDestinationTask task;
-
-		private List<string> takenMissions = new List<string>();
-
-		public CreateDynamicRouteState()
-		{
-		}
-
-		public IBotTask GetStateActions(Bot bot)
-		{
-			return new SetMissionDestinationTask(bot, takenMissions.ToArray());
-			return null;
-
-		}
-
-		public IBotTask GetStateExitActions(Bot bot)
-		{
-			var fittingWindow = bot.MemoryMeasurementAtTime?.Value?.WindowPeopleAndPlaces?.FirstOrDefault();
-			if (fittingWindow != null)
-				return new BotTask()
-				{
-					ClientActions = new[]
-					{
-						bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.MouseClick(
-							MouseButtonIdEnum
-								.Left)
-					}
-				};
-			return null;
-		}
-
-		public SetDestinationTask.SetDestinationTaskResult? Result => task?.Result;
-		public bool MoveToNext => task?.Result != null;
 	}
 }

@@ -20,11 +20,11 @@ namespace Sanderling.ABot.Bot
 
 		public PropertyGenTimespanInt64<BotStepResult> StepLastResult { private set; get; }
 
-		private IStrategy strategy = new CorporationMissionTaker();
+		private IStrategy strategy = new AbyssalRunner();// new CorporationMissionTaker();
 
-		int motionId;
+		private int motionId;
 
-		int stepIndex;
+		public int stepIndex;
 		/// <summary>
 		/// Current measurements
 		/// </summary>
@@ -34,12 +34,12 @@ namespace Sanderling.ABot.Bot
 
 		readonly public OverviewMemory OverviewMemory = new OverviewMemory();
 
-		readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
+		private readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
 
 		/// <summary>
 		/// Step number on which modules have been activated last time. Prevents duplicate clicks on modules during their activation
 		/// </summary>
-		readonly IDictionary<Accumulation.IShipUiModule, int> ToggleLastStepIndexFromModule = new Dictionary<Accumulation.IShipUiModule, int>();
+		private readonly IDictionary<Accumulation.IShipUiModule, int> ToggleLastStepIndexFromModule = new Dictionary<Accumulation.IShipUiModule, int>();
 
 		public KeyValuePair<Deserialization, Config> ConfigSerialAndStruct { private set; get; }
 
@@ -58,7 +58,7 @@ namespace Sanderling.ABot.Bot
 			stepIndex - ToggleLastStepIndexFromModule?.TryGetValueNullable(module);
 
 
-		void MemorizeStepInput(BotStepInput input)
+		private void MemorizeStepInput(BotStepInput input)
 		{
 			ConfigSerialAndStruct = (input?.ConfigSerial?.String).DeserializeIfDifferent(ConfigSerialAndStruct);
 
@@ -69,7 +69,7 @@ namespace Sanderling.ABot.Bot
 			OverviewMemory.Aggregate(MemoryMeasurementAtTime);
 		}
 
-		void MemorizeStepResult(BotStepResult stepResult)
+		private void MemorizeStepResult(BotStepResult stepResult)
 		{
 			var setMotionMouseWaypointUIElement =
 				stepResult?.ListMotion
@@ -98,7 +98,7 @@ namespace Sanderling.ABot.Bot
 			{
 				MemorizeStepInput(input);
 
-				outputListTaskPath = ((IBotTask)new BotTask { Component = strategy.GetTasks(this) })
+				outputListTaskPath = ((IBotTask)new BotTask(null) { Component = strategy.GetTasks(this) })
 					?.EnumeratePathToNodeFromTreeDFirst(node => node?.Component)
 					?.Where(taskPath => (taskPath?.LastOrDefault()).ShouldBeIncludedInStepOutput())
 					?.TakeSubsequenceWhileUnwantedInferenceRuledOut()
@@ -111,11 +111,7 @@ namespace Sanderling.ABot.Bot
 				foreach (var effect in outputListTaskPath.EmptyIfNull().SelectMany(taskPath =>
 					(taskPath?.LastOrDefault()?.ApplicableEffects()).EmptyIfNull()))
 				{
-					listMotion.Add(new MotionRecommendation
-					{
-						Id = motionId++,
-						MotionParam = effect,
-					});
+					listMotion.Add(effect);
 				}
 			}
 			catch (Exception e)

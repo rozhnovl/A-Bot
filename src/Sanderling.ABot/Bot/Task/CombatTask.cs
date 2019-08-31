@@ -14,7 +14,7 @@ namespace Sanderling.ABot.Bot.Task
 {
 	public class CombatTask : IBotTask
 	{
-		const int TargetCountMax = 4;
+		private const int TargetCountMax = 4;
 
 		public Bot bot;
 
@@ -40,7 +40,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				// switch tabs for wrecks
 				if (OverviewTabCombat != OverviewTabActive)
-					yield return new BotTask { ClientActions = new[] { OverviewTabCombat?.MouseClick(MouseButtonIdEnum.Left) } };
+					yield return OverviewTabCombat.ClickTask();
 
 
 				var listOverviewEntryToAttack =
@@ -116,6 +116,6 @@ namespace Sanderling.ABot.Bot.Task
 			}
 		}
 
-		public IEnumerable<MotionParam> ClientActions => null;
+		public IEnumerable<MotionRecommendation> ClientActions => null;
 	}
 }

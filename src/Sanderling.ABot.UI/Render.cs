@@ -27,7 +27,7 @@ namespace Sanderling.ABot.UI
 		static public string RenderTaskPathToUIText(IBotTask[] taskPath) =>
 			taskPath.IsNullOrEmpty() ? null :
 			RenderBotLeafTaskTypeToString(taskPath?.LastOrDefault()) +
-			"(" + string.Join("->", taskPath.Select(taskPathNode => taskPathNode?.GetType()?.Name)) + ")";
+			"(" + string.Join("->", taskPath.Select(taskPathNode => taskPathNode?.ToString())) + ")";
 
 		static public string RenderBotStepToUIText(this BotStepResult stepResult) =>
 			string.Join(Environment.NewLine, new[]

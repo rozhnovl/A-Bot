@@ -20,30 +20,30 @@ namespace Sanderling.ABot.Bot.Task
 
 		public IEnumerable<IBotTask> Component { get; }
 
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
 				yield return new MotionParam()
 				{
 					TextEntry = text
-				};
+				}.AsRecommendation();
 			}
 		}
 	}
 
-	public class MenuPathTask : IBotTask
+	public class MenuPathTask : ISerializableBotTask
 	{
 		public Bot Bot;
 
 		public IUIElement RootUIElement;
 
 		public string[][] ListMenuListPriorityEntryRegexPattern;
-		public VirtualKeyCode? ModifierKey { get; set; }
+		public VirtualKeyCode[] ModifierKeys { get; set; }
 
 		public IEnumerable<IBotTask> Component => null;
 
-		bool MenuOpenOnRootPossible()
+		private bool MenuOpenOnRootPossible()
 		{
 			var memoryMeasurement = Bot?.MemoryMeasurementAtTime?.Value;
 
@@ -52,7 +52,7 @@ namespace Sanderling.ABot.Bot.Task
 			if (null == menu)
 				return false;
 
-			var overviewEntry = RootUIElement as IOverviewEntry;
+			var overviewEntry = RootUIElement as Sanderling.Parse.IOverviewEntry;
 
 			IUIElement regionExpected = RootUIElement;
 
@@ -73,13 +73,11 @@ namespace Sanderling.ABot.Bot.Task
 			return true;
 		}
 
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
-				var memoryMeasurement = Bot?.MemoryMeasurementAtTime?.Value;
-
-				var listMenu = memoryMeasurement?.Menu?.ToArray();
+				var listMenu = Bot?.MemoryMeasurementAtTime?.Value?.Menu?.ToArray();
 
 				var rootUIElement = RootUIElement;
 
@@ -92,9 +90,11 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (ListMenuListPriorityEntryRegexPattern == null)
 				{
-					yield return ModifierKey?.KeyDown();
-					yield return RootUIElement?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left);
-					yield return ModifierKey?.KeyUp();
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyDown()?.AsRecommendation();
+					yield return RootUIElement?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left)?.AsRecommendation();
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyUp()?.AsRecommendation();
 					yield break;
 				}
 
@@ -127,18 +127,28 @@ namespace Sanderling.ABot.Bot.Task
 				var buttonToUse = ListMenuListPriorityEntryRegexPattern.IsNullOrEmpty() || menuEntryToContinue != null
 					? BotEngine.Motor.MouseButtonIdEnum.Left
 					: BotEngine.Motor.MouseButtonIdEnum.Right;
-				if (ModifierKey != null)
+				if (ModifierKeys != null)
 				{
-					yield return ModifierKey.Value.KeyDown();
-					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse);
-					yield return ModifierKey.Value.KeyUp();
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyDown()?.AsRecommendation();
+					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse)?.AsRecommendation();
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyUp()?.AsRecommendation();
 				}
 				else
 				{
-					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse);
+					yield return (menuEntryToContinue ?? RootUIElement)?.MouseClick(buttonToUse)?.AsRecommendation();
 				}
 
 			}
+		}
+
+		public string ToJson() => ToString();
+
+		public override string ToString()
+		{
+			return
+				$"{nameof(MenuPathTask)}[{RootUIElement}@{string.Join("=>", ListMenuListPriorityEntryRegexPattern?.Select(a => string.Join("|", a)) ?? new string[0])}";
 		}
 	}
 }

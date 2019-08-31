@@ -3,7 +3,7 @@ using SlackAPI;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class WaitForCommandState : IStragegyState
+	internal class WaitForCommandState : IStragegyState
 	{
 		private SlackClient slack;
 

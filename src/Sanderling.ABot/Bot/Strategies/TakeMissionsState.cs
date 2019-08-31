@@ -10,18 +10,24 @@ using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	class TakeMissionsState : IStragegyState
+	internal class TakeMissionsState : IStragegyState
 	{
-		private ISet<string> AcceptedMissionLevels = new HashSet<string>() {"Level 3", "Level 4"};
+		private ISet<string> AcceptedMissionLevels = new HashSet<string>() { "Level 4", "Level 3" };
 
 		private ISet<string> IgnoredMissions = new HashSet<string>()
 		{
-			"Gate Blitz", "Uproot", "Morale and Morality", "Roidier Rage", "Tightening the Noose",
-			"Cutting the Net", "Shades of Grey", "Chain Reaction"
+			"Gate Blitz", "Uproot", "Morale and Morality", "Roidier Rage", "Roidiest Rage", "Tightening the Noose",
+			"Cutting the Net", "Shades of Grey", "Chain Reaction", "Supply Interdiction"
+		};
+		private ISet<string> IgnoredSystems = new HashSet<string>()
+		{
+			"Harroule", "Jovainnon", "Muetralle", "Loes", "Indregulle"
 		};
 
 		private ISet<string> CheckedAgents = new HashSet<string>();
 		private Regex MissionNameRegex = new Regex("<span id=subheader>([a-zA-Z0-9\\s]*)</span>");
+		private Regex MissionLocationRegex = new Regex(">([a-zA-Z\\s]*)</a> <font color=#E3170D>\\(Low Sec Warning!\\)</font>");
+		private Regex AgentStandingRegex = new Regex("Effective Standing: ([0-9]?.?[0-9]?)");
 		private bool allMissionsProcessed;
 		private bool scrolledToBottom;
 
@@ -50,7 +56,8 @@ namespace Sanderling.ABot.Bot.Strategies
 				if (acceptButton != null)
 				{
 					var missionName = MissionNameRegex.Match(missionDescription).Groups[1].Value;
-					if (!IgnoredMissions.Contains(missionName))
+					var missionLocation = MissionLocationRegex.Match(missionTarget).Groups[1].Value;
+					if (!IgnoredMissions.Contains(missionName) && !IgnoredSystems.Contains(missionLocation))
 					{
 						AcceptedMissions.Add(new CorporationMissionTaker.MissionDestination()
 						{
@@ -59,10 +66,17 @@ namespace Sanderling.ABot.Bot.Strategies
 						});
 						return acceptButton.ClickTask();
 					}
-					else if (!missionDescription.Contains("Declining a mission from this agent within the next"))
-						return agentDialogue.ButtonText
-							.First(bt => bt.Text == "Decline")
-							.ClickTask();
+					else
+					{
+						var effectiveStanding = double.Parse(AgentStandingRegex.Match(missionDescription).Groups[1].Value);
+						if (!missionDescription.Contains("Declining a mission from this agent within the next") ||
+						    effectiveStanding > 8)
+							return agentDialogue.ButtonText
+								.First(bt => bt.Text == "Decline")
+								.ClickTask();
+
+					}
+
 				}
 
 				CheckedAgents.Add(agentName);
@@ -72,12 +86,12 @@ namespace Sanderling.ABot.Bot.Strategies
 			if (!scrolledToBottom && memory.WindowStation.Single().AgentEntry.Length > 6)
 			{
 				scrolledToBottom = true;
-				return new BotTask()
+				return new BotTask("Scroll agents list")
 				{
-					ClientActions = new List<MotionParam>()
+					ClientActions = new List<MotionRecommendation>()
 					{
-						memory.WindowStation.Single().AgentEntry.FirstOrDefault().MouseClick(MouseButtonIdEnum.Left),
-						VirtualKeyCode.END.KeyboardPress(),
+						memory.WindowStation.Single().AgentEntry.FirstOrDefault().MouseClick(MouseButtonIdEnum.Left).AsRecommendation(),
+						VirtualKeyCode.END.KeyboardPress().AsRecommendation(),
 					}
 				};
 			}
@@ -101,15 +115,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		{
 			var fittingWindow = bot.MemoryMeasurementAtTime?.Value?.WindowPeopleAndPlaces?.FirstOrDefault();
 			if (fittingWindow != null)
-				return new BotTask()
-				{
-					ClientActions = new[]
-					{
-						bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.MouseClick(
-							MouseButtonIdEnum
-								.Left)
-					}
-				};
+				return bot.MemoryMeasurementAtTime?.Value?.Neocom?.PeopleAndPlacesButton?.ClickTask();
 			return null;
 		}
 

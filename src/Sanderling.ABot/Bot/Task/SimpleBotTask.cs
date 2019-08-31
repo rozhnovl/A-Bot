@@ -13,7 +13,7 @@ namespace Sanderling.ABot.Bot.Task
 		}
 
 		public virtual IEnumerable<IBotTask> Component { get; } = null;
-		public virtual IEnumerable<MotionParam> ClientActions { get; } = null;
+		public virtual IEnumerable<MotionRecommendation> ClientActions { get; } = null;
 		
 	}
 }

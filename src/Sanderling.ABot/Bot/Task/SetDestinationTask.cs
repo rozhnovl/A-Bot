@@ -19,13 +19,15 @@ namespace Sanderling.ABot.Bot.Task
 
 		public IEnumerable<IBotTask> Component { get; }
 
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
 				bool groupFound = false;
 				if (MemoryMeasurement?.WindowPeopleAndPlaces?.FirstOrDefault() == null)
-					yield return MemoryMeasurement?.Neocom?.PeopleAndPlacesButton.MouseClick(MouseButtonIdEnum.Left);
+					yield return MemoryMeasurement?.Neocom?.PeopleAndPlacesButton
+						.MouseClick(MouseButtonIdEnum.Left)
+						.AsRecommendation();
 
 				if (MemoryMeasurement?.WindowPeopleAndPlaces
 					    ?.FirstOrDefault()
@@ -36,7 +38,8 @@ namespace Sanderling.ABot.Bot.Task
 						?.FirstOrDefault()
 						?.LabelText
 						?.FirstOrDefault(text => text.Text == "Places");
-					yield return places.MouseClick(MouseButtonIdEnum.Left);
+					yield return places.MouseClick(MouseButtonIdEnum.Left)
+						.AsRecommendation();
 				}
 
 				foreach (var folder in FoldersToOpen.Reverse())
@@ -53,7 +56,8 @@ namespace Sanderling.ABot.Bot.Task
 						?.Entry
 						?.FirstOrDefault(e => e.LabelText.SingleOrDefault().Text.StartsWith(folder));
 					if (waypointsGroup != null && !waypointsGroup.IsExpanded.Value)
-						yield return waypointsFolder.MouseClick(MouseButtonIdEnum.Left);
+						yield return waypointsFolder.MouseClick(MouseButtonIdEnum.Left)
+							.AsRecommendation();
 					if (waypointsGroup != null)
 						groupFound = true;
 				}
@@ -67,7 +71,8 @@ namespace Sanderling.ABot.Bot.Task
 						?.Entry
 						?.FirstOrDefault(e => e.IsExpanded.Value);
 					if (waypointsGroup != null && waypointsGroup.IsExpanded.Value)
-						yield return waypointsGroup.GroupExpander.MouseClick(MouseButtonIdEnum.Left);
+						yield return waypointsGroup.GroupExpander.MouseClick(MouseButtonIdEnum.Left)
+							.AsRecommendation();
 				}
 			}
 		}
@@ -99,7 +104,7 @@ namespace Sanderling.ABot.Bot.Task
 			NextBookmarkIsEnemySystem
 		}
 
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
@@ -149,18 +154,20 @@ namespace Sanderling.ABot.Bot.Task
 			NoSuitableBookmark,
 			NextBookmarkIsEnemySystem
 		}
-		public IEnumerable<MotionParam> ClientActions
+		public IEnumerable<MotionRecommendation> ClientActions
 		{
 			get
 			{
 				var activeMissionWindow =
 					MemoryMeasurement.WindowOther.SingleOrDefault(w => w.Caption.Contains("Mission journal"));
-				yield return activeMissionWindow.Sprite.ToArray()[12].MouseClick(MouseButtonIdEnum.Left);
+				yield return activeMissionWindow.Sprite.ToArray()[12].MouseClick(MouseButtonIdEnum.Left)
+					.AsRecommendation();
 				yield break;
 				var missionsWindow = MemoryMeasurement?.WindowOther?.FirstOrDefault(w => w.Caption == "Journal");
 				if (missionsWindow == null)
 					yield return MemoryMeasurement?.Neocom?.Button.Single(bt => bt.TexturePath.Contains("journal"))
-						.MouseClick(MouseButtonIdEnum.Left);
+						.MouseClick(MouseButtonIdEnum.Left)
+						.AsRecommendation();
 
 				var acceptedMissions = missionsWindow.LabelText.Where(lt => lt.Text.Contains(">Accepted<"));
 
@@ -168,7 +175,8 @@ namespace Sanderling.ABot.Bot.Task
 					acceptedMissions.FirstOrDefault(am => processedMissions.All(pm => !am.Text.Contains(pm)));
 				if (missionToAddDestination != null)
 				{
-					yield return missionToAddDestination.MouseDoubleClick(MouseButtonIdEnum.Left);
+					yield return missionToAddDestination.MouseDoubleClick(MouseButtonIdEnum.Left)
+						.AsRecommendation();
 				}
 			}
 		}

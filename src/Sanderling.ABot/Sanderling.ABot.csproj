@@ -39,6 +39,9 @@
     <Reference Include="BotEngine.Common">
       <HintPath>..\..\lib\BotEngine.Common.dll</HintPath>
     </Reference>
+    <Reference Include="Fasterflect, Version=2.1.3.0, Culture=neutral, PublicKeyToken=38d18473284c1ca7, processorArchitecture=MSIL">
+      <HintPath>..\packages\fasterflect.2.1.3\lib\net40\Fasterflect.dll</HintPath>
+    </Reference>
     <Reference Include="JetBrains.Annotations, Version=10.2.1.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
       <HintPath>..\packages\JetBrains.Annotations.10.2.1\lib\net\JetBrains.Annotations.dll</HintPath>
     </Reference>
@@ -113,30 +116,45 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bot\ActiveTargetsContoller.cs" />
     <Compile Include="Bot\Bot.cs" />
     <Compile Include="Bot\BotExtension.cs" />
     <Compile Include="Bot\BotStepInput.cs" />
     <Compile Include="Bot\BotStepResult.cs" />
     <Compile Include="Bot\BotTask.cs" />
     <Compile Include="Bot\Config.cs" />
+    <Compile Include="Bot\DronesContoller.cs" />
     <Compile Include="Bot\IBotTask.cs" />
+    <Compile Include="Bot\IInventoryProvider.cs" />
+    <Compile Include="Bot\IOverviewEntry.cs" />
+    <Compile Include="Bot\IOverviewProvider.cs" />
     <Compile Include="Bot\IStrategy.cs" />
+    <Compile Include="Bot\ITarget.cs" />
+    <Compile Include="Bot\MemoryProxyInventoryProvider.cs" />
+    <Compile Include="Bot\MemoryProxyOverviewEntry.cs" />
+    <Compile Include="Bot\MemoryProxyOverviewProvider.cs" />
     <Compile Include="Bot\Memory\OverviewMemory.cs" />
     <Compile Include="Bot\MotionRecommendation.cs" />
     <Compile Include="Bot\MotionResult.cs" />
     <Compile Include="Bot\ShipFit.cs" />
+    <Compile Include="Bot\ShipState.cs" />
+    <Compile Include="Bot\SimpleOverviewEntry.cs" />
+    <Compile Include="Bot\SimpleTargetInfo.cs" />
     <Compile Include="Bot\Strategies\AnomalyHunting.cs" />
     <Compile Include="Bot\Strategies\CheckAcceptableFWSystemsState.cs" />
+    <Compile Include="Bot\Strategies\AbyssalRunner.cs" />
     <Compile Include="Bot\Strategies\CorporationMissionTaker.cs" />
+    <Compile Include="Bot\Strategies\CreateDynamicRouteState.cs" />
     <Compile Include="Bot\Strategies\IStragegyState.cs" />
+    <Compile Include="Bot\Strategies\ReloadAtStationState.cs" />
     <Compile Include="Bot\Strategies\SetDestinationState.cs" />
     <Compile Include="Bot\Strategies\ShipCheckingState.cs" />
     <Compile Include="Bot\Strategies\TakeMissionsState.cs" />
     <Compile Include="Bot\Strategies\TravelState.cs" />
     <Compile Include="Bot\Strategies\WaitForCommandState.cs" />
+    <Compile Include="Bot\Strategies\WarpToBookmarkInSystemState.cs" />
     <Compile Include="Bot\Task\AnomalyEnter.cs" />
     <Compile Include="Bot\Task\CheckShipTask.cs" />
-    <Compile Include="Bot\Task\Hotkeys.cs" />
     <Compile Include="Bot\Task\CombatTask.cs" />
     <Compile Include="Bot\Task\Config.cs" />
     <Compile Include="Bot\Task\DelayTask.cs" />
@@ -156,6 +174,7 @@
     <Compile Include="Bot\Task\UndockTask.cs" />
     <Compile Include="Decompiled\LockExtension.cs" />
     <Compile Include="EnumerableExtension.cs" />
+    <Compile Include="MotionExtension.cs" />
     <Compile Include="Parse\ParseExtension.cs" />
     <Compile Include="Parse\ParseStatic.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

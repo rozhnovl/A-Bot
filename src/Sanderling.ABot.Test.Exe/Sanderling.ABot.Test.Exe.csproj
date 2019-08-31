@@ -92,6 +92,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Abyssal\AbyssalStrategyTest.cs" />
     <Compile Include="BotStep.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

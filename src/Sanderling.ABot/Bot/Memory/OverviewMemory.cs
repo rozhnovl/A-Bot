@@ -9,12 +9,12 @@ namespace Sanderling.ABot.Bot.Memory
 {
 	public class OverviewMemory
 	{
-		readonly IDictionary<Int64, HashSet<EWarTypeEnum>> setEWarTypeFromOverviewEntryId = new Dictionary<Int64, HashSet<EWarTypeEnum>>();
+		private readonly IDictionary<Int64, HashSet<EWarTypeEnum>> setEWarTypeFromOverviewEntryId = new Dictionary<Int64, HashSet<EWarTypeEnum>>();
 
-		public IEnumerable<EWarTypeEnum> SetEWarTypeFromOverviewEntry(IOverviewEntry entry) =>
+		public IEnumerable<EWarTypeEnum> SetEWarTypeFromOverviewEntry(Sanderling.Parse.IOverviewEntry entry) =>
 			setEWarTypeFromOverviewEntryId?.TryGetValueOrDefault(entry?.Id ?? -1);
 
-		static readonly IEnumerable<ShipManeuverTypeEnum> setManeuverReset =
+		private static readonly IEnumerable<ShipManeuverTypeEnum> setManeuverReset =
 			new[] { ShipManeuverTypeEnum.Warp, ShipManeuverTypeEnum.Docked, ShipManeuverTypeEnum.Jump };
 
 		public void Aggregate(FromProcessMeasurement<IMemoryMeasurement> memoryMeasurementAtTime)

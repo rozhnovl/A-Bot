@@ -32,8 +32,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				// switch tabs for wrecks
 				if (OverviewTabLoot != OverviewTabActive)
-					yield return new BotTask
-						{ClientActions = new[] {OverviewTabLoot?.MouseClick(MouseButtonIdEnum.Left)}};
+					yield return OverviewTabLoot.ClickTask();
 
 				var listOverviewCommanderWreck = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.ListView?.Entry
 					?.Where(entry => entry?.Type?.Contains("Commander") ?? true).ToList()
@@ -57,8 +56,7 @@ namespace Sanderling.ABot.Bot.Task
 					//	yield return bot?.DeactivateModule(propmod);
 
 					if (LootButton != null)
-						yield return new BotTask
-							{ClientActions = new[] {LootButton?.MouseClick(MouseButtonIdEnum.Left)}};
+						yield return LootButton.ClickTask();
 				}
 				else
 				{

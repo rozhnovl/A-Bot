@@ -2,10 +2,29 @@
 using System.Collections.Generic;
 using System.Linq;
 using WindowsInput.Native;
+using Microsoft.EntityFrameworkCore;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot
 {
+
+	public class AbyssEnemySpawnContext: DbContext
+	{
+		public System.Data.Entity.DbSet<AbyssEnemySpawn> Spawns { get; set; }
+		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+		{
+			optionsBuilder.UseSqlServer(@"Server=.\RESTO;Database=EveBot;Trusted_Connection=True;");
+		}
+	}
+
+	public class AbyssEnemySpawn
+	{
+		public Guid Id { get; set; }
+		public DateTime Time { get; set; }
+		public string[] Enemies { get; set; }
+
+	}
+
 	public class ShipFit
 	{
 		private ModuleInfo[] High { get; }
@@ -96,12 +115,19 @@ namespace Sanderling.ABot.Bot
 
 			public Accumulation.IShipUiModule UiModule { get; set; }
 
-			public ISerializableBotTask EnsureActive(Bot bot, bool shouldBeActive)
+			public ISerializableBotTask EnsureActive(Bot bot, bool shouldBeActive, bool shouldBeOverloaded)
 			{
-				if (shouldBeActive && !(UiModule.IsActive(bot) ?? true))
-					return new ModuleToggleTask(this);
+				if (shouldBeActive)
+				{
+					if (shouldBeOverloaded && !(UiModule.OverloadOn ?? false))
+						return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
+					if (!(UiModule.IsActive(bot) ?? true)) return new ModuleToggleTask(this, null);
+				}
+
 				if (!shouldBeActive && (UiModule.IsActive(bot) ?? false))
-					return new ModuleToggleTask(this);
+					return new ModuleToggleTask(this, null);
+				if (!shouldBeOverloaded && (UiModule.OverloadOn ?? false))
+					return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
 
 				return null;
 			}

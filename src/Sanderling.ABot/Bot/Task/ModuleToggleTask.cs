@@ -40,10 +40,12 @@ namespace Sanderling.ABot.Bot.Task
 			this.module = module;
 		}
 
-		public ModuleToggleTask([NotNull] ShipFit.ModuleInfo module)
+		public ModuleToggleTask([NotNull] ShipFit.ModuleInfo module, VirtualKeyCode? modifier)
 		{
 			this.module = module.UiModule;
 			this.hotKey = module.HotKey.NullIfEmpty();
+			if (modifier != null)
+				hotKey = new[] {modifier.Value}.Concat(hotKey).ToArray();
 		}
 
 		public override string ToString()

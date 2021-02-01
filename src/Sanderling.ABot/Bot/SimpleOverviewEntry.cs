@@ -6,7 +6,7 @@
 			bool meActiveTarget, long id)
 		{
 			Type = type;
-			Name = name;
+			Name = name??type;
 			IsEnemy = isEnemy;
 			Distance = distance;
 			MeTargeted = meTargeted;

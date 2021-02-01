@@ -8,7 +8,7 @@ using IMemoryMeasurement = Sanderling.Parse.IMemoryMeasurement;
 
 namespace Sanderling.ABot.Bot
 {
-	public class ShipState
+	public class ShipState : IShipState
 	{
 		private readonly Bot bot;
 		private readonly IMemoryMeasurement memory;
@@ -25,7 +25,7 @@ namespace Sanderling.ABot.Bot
 			Drones = new DronesContoller(memory);
 		}
 
-		public ShipFit Fit { get; }
+		private ShipFit Fit { get; }
 
 		public bool ManeuverStartPossible => memory.ManeuverStartPossible();
 		[NotNull] public IShipHitpointsAndEnergy HitpointsAndEnergy => memory.ShipUi.HitpointsAndEnergy;
@@ -39,7 +39,7 @@ namespace Sanderling.ABot.Bot
 
 		public ISerializableBotTask GetTurnOnAlwaysActiveModulesTask()
 		{
-			return Fit.GetAlwaysActiveModules().Select(m => m.EnsureActive(bot, true))
+			return Fit.GetAlwaysActiveModules().Select(m => m.EnsureActive(bot, true,false))
 				.FirstOrDefault(t => t != null);
 		}
 
@@ -51,7 +51,7 @@ namespace Sanderling.ABot.Bot
 					var weaponGroup = Fit.GetWeapon();
 					if (!weaponGroup.UiModule.IsReloading(bot))
 					{
-						return weaponGroup.EnsureActive(bot, shouldBeActive);
+						return weaponGroup.EnsureActive(bot, shouldBeActive, false);
 					}
 
 					break;
@@ -59,7 +59,7 @@ namespace Sanderling.ABot.Bot
 				case ShipFit.ModuleType.ShieldBooster:
 				case ShipFit.ModuleType.MWD:
 				case ShipFit.ModuleType.Etc:
-					return Fit.GetAllByType(type).Select(m => m.EnsureActive(bot, shouldBeActive))
+					return Fit.GetAllByType(type).Select(m => m.EnsureActive(bot, shouldBeActive, false))
 						.FirstOrDefault(t => t != null);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -77,14 +77,17 @@ namespace Sanderling.ABot.Bot
 				if (estimatedIncomingDps <= 150)
 				{
 					task.With($"Incoming DPS is {estimatedIncomingDps}. Turning on single SB");
-					return shieldBoosters.FirstOrDefault().EnsureActive(bot, true)
-					       ?? shieldBoosters.Skip(1).Select(sb => sb.EnsureActive(bot, false))
+					return shieldBoosters.FirstOrDefault().EnsureActive(bot, true, false)
+					       ?? shieldBoosters.Skip(1).Select(sb => sb.EnsureActive(bot, false, false))
 						       .FirstOrDefault(t => t != null);
 				}
 				else
 				{
-					return shieldBoosters.Select(sb => sb.EnsureActive(bot, true))
+					var activateSbTask = shieldBoosters
+						.Select(sb => sb.EnsureActive(bot, true, HitpointsAndEnergy.Shield < 150))
 						.FirstOrDefault(t => t != null);
+					if (activateSbTask != null)
+						return activateSbTask;
 				}
 			}
 			else
@@ -94,7 +97,7 @@ namespace Sanderling.ABot.Bot
 					task.With("Shield HP OK, energy low, turning off SB.");
 					foreach (var sb in shieldBoosters)
 					{
-						var t = sb.EnsureActive(bot, false);
+						var t = sb.EnsureActive(bot, false, false);
 						if (t != null) return t;
 					}
 				}
@@ -120,7 +123,7 @@ namespace Sanderling.ABot.Bot
 		public ISerializableBotTask GetPopupButtonTask(string buttonText)
 		{
 			return memory?.WindowOther?.SelectMany(w => w.ButtonText)
-				?.FirstOrDefault(bt => bt != null ? (bt.Text == buttonText) : false).ClickTask();
+				?.FirstOrDefault(bt => bt != null && (bt.Text == buttonText)).ClickTask();
 		}
 	}
 }

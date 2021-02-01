@@ -13,10 +13,14 @@ namespace Sanderling.ABot.Bot.Task
 		public const string NoSuitableAnomalyFoundDiagnosticMessage = "no suitable anomaly found. waiting for anomaly to appear.";
 
 		public Bot bot;
+		private static string[] TargetAnomalies = new string[] { ".* Refuge" , ".* Hideaway" };
 
 		public static bool AnomalySuitableGeneral(Interface.MemoryStruct.IListEntry scanResult) =>
-			scanResult?.CellValueFromColumnHeader("Group")
-				?.RegexMatchSuccessIgnoreCase("combat") ?? false;
+			TargetAnomalies != null
+				? TargetAnomalies.Any(taName =>
+					scanResult.CellValueFromColumnHeader("Name")?.RegexMatchSuccessIgnoreCase(taName) ?? false)
+				: scanResult?.CellValueFromColumnHeader("Group") 
+					  ?.RegexMatchSuccessIgnoreCase("combat") ?? false;
 
 		public IEnumerable<IBotTask> Component
 		{

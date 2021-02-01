@@ -20,7 +20,7 @@ namespace Sanderling.ABot.Bot
 
 		public PropertyGenTimespanInt64<BotStepResult> StepLastResult { private set; get; }
 
-		private IStrategy strategy = new AbyssalRunner();// new CorporationMissionTaker();
+		private IStrategy strategy = new AnomalyHunting();// new AbyssalRunner();// new CorporationMissionTaker();
 
 		private int motionId;
 

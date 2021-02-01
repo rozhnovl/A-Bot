@@ -13,10 +13,14 @@ namespace Sanderling.ABot.Bot.Strategies
 {
 	internal class AbyssalFightState : IStragegyState
 	{
-		private const int maxTargetDistance = 55000;
+		private const int MaxTargetDistance = 55000;
 
 		[NotNull] private static StreamWriter sw;
-		[NotNull] private Stopwatch StateStopwatch;
+		[NotNull] private readonly Stopwatch StateStopwatch;
+		private readonly NpcInfoProvider npcInfoProvider = new NpcInfoProvider();
+
+		AbyssEnemySpawnContext dbContext = new AbyssEnemySpawnContext();
+
 		private bool enteredAbyss;
 
 		static AbyssalFightState()
@@ -32,126 +36,6 @@ namespace Sanderling.ABot.Bot.Strategies
 			StateStopwatch.Start();
 		}
 
-		private readonly Dictionary<string, double> DpsPerEntry = new Dictionary<string, double>()
-		{
-			{"Sparkneedle Tessella", 25},
-			{"Emberneedle Tessella", 25},
-			{"Strikeneedle Tessella", 25},
-			{"Blastneedle Tessella", 25},
-			{"Snarecaster Tessella", 10},
-			{"Spotlighter Tessella", 10},
-			{"Fogcaster Tessella", 10},
-			{"Gazedimmer Tessella", 10},
-			{"Sparklance Tessella", 50},
-			{"Emberlance Tessella", 50},
-			{"Strikelance Tessella", 50},
-			{"Blastlance Tessella", 50},
-			{"Fieldweaver Tessella", 0},
-			{"Plateforger Tessella", 0},
-			{"Sparkgrip Tessera", 191},
-			{"Embergrip Tessera", 191},
-			{"Strikegrip Tessera", 191},
-			{"Blastgrip Tessera", 191},
-			{"Photic Abyssal Overmind", 108.6419753},
-			{"Twilit Abyssal Overmind", 264},
-			{"Bathyic Abyssal Overmind", 375.3084112},
-			{"Hadal Abyssal Overmind", 457.5575221},
-			{"Benthic Abyssal Overmind", 594.861461},
-			{"Drifter Foothold Battleship", 100},
-			{"Drifter Rearguard Battleship", 200},
-			{"Drifter Frontline Battleship", 300},
-			{"Drifter Vanguard Battleship", 400},
-			{"Drifter Assault Battleship", 500},
-			{"Drifter Entanglement Cruiser", 40},
-			{"Drifter Nullwarp Cruiser", 40},
-			{"Drifter Nullcharge Cruiser", 40},
-			{"Ghosting Damavik", 36},
-			{"Tangling Damavik", 36},
-			{"Anchoring Damavik", 36},
-			{"Starving Damavik", 36},
-			{"Striking Damavik", 36},
-			{"Striking Vila Damavik", 9 + 40},
-			{"Tangling Vila Damavik", 9 + 40},
-			{"Anchoring Vila Damavik", 9 + 40},
-			{"Shining Vila Damavik", 9 + 40},
-			{"Blinding Vila Damavik", 9 + 40},
-			{"Ghosting Vila Damavik", 9 + 40},
-			{"Starving Vedmak", 237.6},
-			{"Harrowing Vedmak", 237.6},
-			{"Harrowing Vila Vedmak", 118.8 + 40},
-			{"Striking Leshak", 147.84},
-			{"Renewing Leshak", 147.84},
-			{"Tangling Leshak", 147.84},
-			{"Starving Leshak", 147.84},
-			{"Warding Leshak", 147.84},
-			{"Blinding Leshak", 147.84},
-			{"Lucid Escort", 24},
-			{"Lucid Warden", 20},
-			{"Lucid Aegis", 36},
-			{"Lucid Firewatcher", 30},
-			{"Lucid Preserver", 0},
-			{"Lucid Watchman", 48},
-			{"Lucid Upholder", 40},
-			{"Lucid Sentinel", 40},
-			{"Lucid Deepwatcher", 160},
-			{"Ephialtes Lancer", 30},
-			{"Ephialtes Entangler", 20},
-			{"Ephialtes Spearfisher", 20},
-			{"Ephialtes Illuminator", 20},
-			{"Ephialtes Dissipator", 20},
-			{"Ephialtes Obfuscator", 20},
-			{"Ephialtes Confuser", 20},
-			{"Vila Swarmer", 0},
-			{"Triglavian Bioadaptive Cache", 0},
-		};
-
-		private double CalculateApproximateDps(IList<IOverviewEntry> entries)
-		{
-			return entries.Select(e =>
-					DpsPerEntry.TryGetValue(e.Type.Trim(), out var dpsValue)
-						? dpsValue
-						: throw new KeyNotFoundException(e.Type))
-				.Sum();
-		}
-
-		private int CalcTargetPriority(IOverviewEntry entry)
-		{
-			if (entry.Name.Contains("Anchoring"))
-				return 1;
-
-			if (entry.Name.Contains("Firewatcher"))
-				return 2;
-
-			if (entry.Name.Contains("Renewing"))
-				return 3;
-			if (entry.Name.Contains("Entangler") || entry.Name.Contains("Snarecaster"))
-				return 6;
-			if (entry.Name.Contains("Scylla"))
-				return 8;
-			if (entry.Name.Contains("Tyrannos"))
-				return 8;
-			if (entry.Name.Contains("Extraction"))
-				return 10;
-			if (entry.Name.Contains("Bioadaptive"))
-				return 1000;
-			if (entry.Type.Contains("Battleship") && entry.Type.Contains("Drifter"))
-				return 9000;
-
-			return 800 - (int) (CalculateApproximateDps(new List<IOverviewEntry>() {entry}));
-		}
-
-		private bool IsOrbitBeacon(IOverviewEntry entry)
-		{
-			if (entry.Name.Contains("Leshak"))
-				return true;
-
-			if (entry.Name.Contains("Overmind"))
-				return true;
-
-			if (entry.Name.Contains("Battleship"))
-				return true;
-			return false;
-		}
 
 		private int MwdLastTurnOnAttempt = 0;
 
@@ -185,7 +69,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			var overviewProvider = new MemoryProxyOverviewProvider(bot);
 			var inventoryProvider = new MemoryProxyInventoryProvider(bot);
 			sw.WriteLine(
-				$"InputStates[{StateStopwatch.Elapsed}]: {JsonConvert.SerializeObject(new Object[] {shipState, overviewProvider, inventoryProvider})}");
+				$"InputStates[{StateStopwatch.Elapsed}]: {JsonConvert.SerializeObject(new StateInput(shipState, overviewProvider, inventoryProvider))}");
 			try
 			{
 				var task = GetActions(shipState, overviewProvider, inventoryProvider);
@@ -207,21 +91,41 @@ namespace Sanderling.ABot.Bot.Strategies
 		private Dictionary<long, int> lastTargetingAttemptSteps = new Dictionary<long, int>();
 		private TimeSpan? LeavingAbyssTimestamp;
 
-		public ISerializableBotTask GetActions([NotNull] ShipState shipState,
-			[NotNull] MemoryProxyOverviewProvider overviewProvider,
-			[NotNull] MemoryProxyInventoryProvider inventoryProvider)
+		public class StateInput
+		{
+			public StateInput(ShipState shipState, MemoryProxyOverviewProvider overviewProvider,
+				MemoryProxyInventoryProvider inventoryProvider)
+			{
+				ShipState = shipState;
+				OverviewProvider = overviewProvider;
+				InventoryProvider = inventoryProvider;
+			}
+
+			public IShipState ShipState { get; set; }
+			public IOverviewProvider OverviewProvider { get; set; }
+			public IInventoryProvider InventoryProvider { get; set; }
+		}
+
+		public ISerializableBotTask GetActions([NotNull] IShipState shipState,
+			[NotNull] IOverviewProvider overviewProvider,
+			[NotNull] IInventoryProvider inventoryProvider)
 		{
 			stepIndex++;
 			var task = new DynamicTask();
 			if (!shipState.ManeuverStartPossible)
 				return null;
 
-			if (LeavingAbyssTimestamp.HasValue &&
-			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromMinutes(1.2)) > StateStopwatch.Elapsed)
+			var conduit = overviewProvider.Entries
+				?.Where(entry =>
+					(entry.Name ?? entry.Type).Contains("Conduit") && !(entry.Name ?? entry.Type).Contains("Proving"))
+				?.SingleOrDefault();
+			if (conduit == null && LeavingAbyssTimestamp.HasValue &&
+			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
 				return task.With(
 					$"Left abyss. Waiting {LeavingAbyssTimestamp.Value.Add(TimeSpan.FromMinutes(1.2)) - StateStopwatch.Elapsed} to leave invulnerability");
-
-			if (!shipState.IsInAbyss)
+			dbContext.Spawns.Add(new AbyssEnemySpawn()
+				{Enemies = overviewProvider.Entries.Select(e => e.Name).ToArray(), Id = Guid.NewGuid(), Time = DateTime.Now});
+			if (conduit == null)
 			{
 				if (enteredAbyss)
 				{
@@ -245,24 +149,21 @@ namespace Sanderling.ABot.Bot.Strategies
 			if (turnOnAlwaysActiveModulesTask != null)
 				return task.With(turnOnAlwaysActiveModulesTask);
 
-			var overviewEntries = overviewProvider.Entries;
-			var offensiveOverviewEntries = overviewEntries
+			var offensiveOverviewEntries = overviewProvider.Entries
 				?.Where(entry => entry.IsEnemy)
 				?.Where(entry => !entry.Name.Contains("Extraction"))
 				?.Where(e => e.Type != "Vila Swarmer")
 				?.ToList();
 			var listOverviewEntryToAttack = offensiveOverviewEntries
-				?.Where(entry => entry.Distance <= maxTargetDistance)
+				?.Where(entry => entry.Distance <= MaxTargetDistance)
 				?.Where(entry => entry.Name != "Vila Swarmer")
-				?.OrderBy(CalcTargetPriority)
+				?.OrderBy(npcInfoProvider.CalcTargetPriority)
 				?.ThenBy(entry => entry?.Distance ?? int.MaxValue)
 				?.ToArray();
 
-			var estimatedIncomingDps = CalculateApproximateDps(offensiveOverviewEntries);
-			var conduit = overviewEntries
-				?.Where(entry => entry.Name.Contains("Conduit") && !entry.Name.Contains("Proving"))
-				?.SingleOrDefault();
-			var orbitBeacon = overviewEntries?.Where(IsOrbitBeacon)?.OrderBy(CalcTargetPriority)?.FirstOrDefault() ??
+			var estimatedIncomingDps = npcInfoProvider.CalculateApproximateDps(overviewProvider);
+			var orbitBeacon = overviewProvider.Entries?.Where(npcInfoProvider.IsOrbitBeacon)
+				                  ?.OrderBy(npcInfoProvider.CalcTargetPriority)?.FirstOrDefault() ??
 			                  conduit;
 			task.With($"Current maneuver is {shipState.Maneuver}." +
 			          Environment.NewLine +
@@ -294,7 +195,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					return task.With(conduit.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
 
 				task.With($"Distance to target is {conduit.Distance}.");
-				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, conduit.Distance > 5000);
+				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, conduit.Distance > 2000);
 
 				if (mwdTask != null)
 					return task.With(mwdTask);
@@ -309,13 +210,17 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			targetProcessing:
 
-			#region drones
-
-			var drones = shipState.Drones;
-
-			#endregion
-
-			//task.With($"Weapon status: IsActive = {weaponGroup.UiModule.IsActive(bot)}. IsReloading = {weaponGroup.UiModule.IsReloading(bot)}. Ramp = {weaponGroup.UiModule.RampRotationMilli}");
+			var wrongTargetedEntries =
+				shipState.ActiveTargets?.List?.Where(t =>
+					((!t.Name.Contains("Extraction") && !offensiveOverviewEntries.Any(oe => oe.Name == t.Name))
+					 || (t.Name.Contains("Extraction") && t.Distance > 50000)));
+			if (wrongTargetedEntries?.Any() ?? false)
+			{
+				task.With(
+					$"Wrong targeted entries: {string.Join(",", wrongTargetedEntries.Select(wte => wte.Name + "@" + wte.Distance + "[" + offensiveOverviewEntries.Any(oe => oe.Name == wte.Name) + "]"))}");
+				return task.With(wrongTargetedEntries.FirstOrDefault().GetUnlockTask());
+			}
+            
 			if (shipState.ActiveTargets.Count > 0)
 			{
 				task.With($"Targets selected: {shipState.ActiveTargets.Count}");
@@ -331,7 +236,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				if (shouldDronesAttack)
 				{
 					task.With($"No target attacked. Launching drones.");
-					if (drones.ShouldLaunch)
+					if (shipState.Drones.ShouldLaunch)
 						return task.With(HotkeyRegistry.LaunchDrones);
 
 					return task.With(HotkeyRegistry.EngageDrones);
@@ -353,30 +258,20 @@ namespace Sanderling.ABot.Bot.Strategies
 				}
 			}
 
-			var wrongTargetedEntries =
-				shipState.ActiveTargets?.List?.Where(t =>
-					((!t.Name.Contains("Extraction") && !offensiveOverviewEntries.Any(oe => oe.Name == t.Name))
-					 || (t.Name.Contains("Extraction") && t.Distance > 50000)));
-			if (wrongTargetedEntries?.Any() ?? false)
-			{
-				task.With(
-					$"Wrong targeted entries: {string.Join(",", wrongTargetedEntries.Select(wte => wte.Name + "@" + wte.Distance + "[" + offensiveOverviewEntries.Any(oe => oe.Name == wte.Name) + "]"))}");
-				return task.With(wrongTargetedEntries.FirstOrDefault().GetUnlockTask());
-			}
 
 			if (!(0 < listOverviewEntryToAttack?.Length))
 			{
 				var reloadTask = shipState.GetReloadTask();
-				if (drones.HasNonReturningDronesInSpace)
+				if (shipState.Drones.HasNonReturningDronesInSpace)
 					return task.With(HotkeyRegistry.ReturnDrones);
 				else if (reloadTask != null)
 					return task.With(reloadTask);
 			}
 
 			looting:
-			if (overviewEntries.Any(e => e.Name.Contains("Bioadaptive")))
+			if (overviewProvider.Entries.Any(e => e.Name.Contains("Bioadaptive")))
 			{
-				if (conduit.Distance < 2000 && !overviewEntries.Any(e => e.Name.Contains("Tractor")))
+				if (conduit.Distance < 2000 && !overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
 				{
 					var openInventoryTask = inventoryProvider.GetOpenWindowTask();
 					if (openInventoryTask != null)
@@ -389,9 +284,9 @@ namespace Sanderling.ABot.Bot.Strategies
 						return task.With(launchTractorTask);
 				}
 			}
-			else if (overviewEntries.Any(e => e.Name.Contains("Tractor")))
+			else if (overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
 			{
-				var tractorEntry = overviewEntries.Single(e => e.Name.Contains("Tractor"));
+				var tractorEntry = overviewProvider.Entries.Single(e => e.Name.Contains("Tractor"));
 
 				var lootWindowProvider = inventoryProvider.GetLootableWindow();
 
@@ -425,8 +320,8 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		private bool enteringAbyss;
 
-		private ISerializableBotTask EnterAbyssIfNeeded([NotNull] ShipState shipState,
-			[NotNull] MemoryProxyInventoryProvider inventoryProvider)
+		private ISerializableBotTask EnterAbyssIfNeeded([NotNull] IShipState shipState,
+			[NotNull] IInventoryProvider inventoryProvider)
 		{
 			var activateTask = shipState.GetPopupButtonTask("Activate");
 			if (activateTask != null)
@@ -437,8 +332,9 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			if (enteringAbyss)
 				return null;
-			if (inventoryProvider.GetOpenWindowTask() != null)
-				return inventoryProvider.GetOpenWindowTask();
+			var openTask = inventoryProvider.GetOpenWindowTask();
+			if (openTask != null)
+				return openTask;
 
 			return inventoryProvider.GetActvateItemIfPresentTask("Raging Exotic Filament", "Use .*");
 		}

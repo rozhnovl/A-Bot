@@ -22,18 +22,23 @@ namespace Sanderling.ABot.Bot.Strategies
 				{
 					new[]
 					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-					},
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
+						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
 					},
 					new[]
 					{
 						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc)
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+					},
+					new[]
+					{
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
+						//new ShipFit.ModuleInfo(ShipFit.ModuleType.ShieldBooster)
 					}
 				});
 

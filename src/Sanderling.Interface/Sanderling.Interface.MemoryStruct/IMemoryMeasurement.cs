@@ -85,15 +85,17 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 		}
 
-		IInfoPanelSystem InfoPanelCurrentSystem
-		{
-			get;
-		}
+		IInfoPanelContainer InfoPanelContainer { get; }
 
-		IInfoPanelRoute InfoPanelRoute
-		{
-			get;
-		}
+		//IInfoPanelSystem InfoPanelCurrentSystem
+		//{
+		//	get;
+		//}
+
+		//IInfoPanelRoute InfoPanelRoute
+		//{
+		//	get;
+		//}
 
 		IInfoPanelMissions InfoPanelMissions
 		{

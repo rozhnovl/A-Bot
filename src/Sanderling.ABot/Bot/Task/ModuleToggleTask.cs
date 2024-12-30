@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using WindowsInput.Native;
 using Bib3;
 using BotEngine.Motor;
-using JetBrains.Annotations;
 using Sanderling.Accumulation;
 using Sanderling.Motor;
 
@@ -11,7 +11,7 @@ namespace Sanderling.ABot.Bot.Task
 {
 	public class ModuleToggleTask : ISerializableBotTask
 	{
-		public readonly IShipUiModule module;
+		public readonly Sanderling.Accumulation.IShipUiModule module;
 		private VirtualKeyCode[] hotKey;
 
 		public IEnumerable<IBotTask> Component { get; }
@@ -35,7 +35,7 @@ namespace Sanderling.ABot.Bot.Task
 				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : module.TooltipLast.Value.LabelText.FirstOrDefault()?.Text)}]";
 		}
 
-		public ModuleToggleTask([NotNull] IShipUiModule module)
+		public ModuleToggleTask([NotNull] Sanderling.Accumulation.IShipUiModule module)
 		{
 			this.module = module;
 		}

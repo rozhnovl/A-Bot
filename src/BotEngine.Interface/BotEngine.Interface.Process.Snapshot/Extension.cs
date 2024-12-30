@@ -1,16 +1,7 @@
-using Bib3;
-using Bib3.FCL;
-using BotEngine.WinApi;
 using BotEngine.Windows;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Windows.Media.Imaging;
+using Bib3;
 
 namespace BotEngine.Interface.Process.Snapshot
 {
@@ -28,21 +19,24 @@ namespace BotEngine.Interface.Process.Snapshot
 
 		public static ProcessSnapshot ProcessSnapshotFromWindowHandle(IntPtr mainWindowHandle)
 		{
-			User32.GetWindowThreadProcessId(mainWindowHandle, out uint lpdwProcessId);
-			RangeOfPages[] setRangeOfPages = BotEngine.Windows.Extension.ListRangeOfPagesFromProcessWithId(lpdwProcessId, pageContentRead: true);
+			WinApi.User32.GetWindowThreadProcessId(mainWindowHandle, out uint lpdwProcessId);
+			RangeOfPages[] setRangeOfPages =
+				BotEngine.Windows.Extension.ListRangeOfPagesFromProcessWithId(lpdwProcessId, pageContentRead: true);
 			System.Diagnostics.Process processById = System.Diagnostics.Process.GetProcessById((int)lpdwProcessId);
 			return new ProcessSnapshot(setRangeOfPages);
 		}
 
 		public static WindowSnapshot WindowSnapshotFromWindowHandle(IntPtr mainWindowHandle)
 		{
-			KeyValuePair<uint[], int> clientRectRaster = BotEngine.Windows.Extension.Raster32BitVonClientRectVonWindowMitHandle(mainWindowHandle);
+			KeyValuePair<uint[], int> clientRectRaster =
+				BotEngine.Windows.Extension.Raster32BitVonClientRectVonWindowMitHandle(mainWindowHandle);
 			return new WindowSnapshot(clientRectRaster);
 		}
 
 		public static Snapshot SnapshotFromWindowHandle(IntPtr mainWindowHandle)
 		{
-			return new Snapshot(ProcessSnapshotFromWindowHandle(mainWindowHandle), WindowSnapshotFromWindowHandle(mainWindowHandle));
+			return new Snapshot(ProcessSnapshotFromWindowHandle(mainWindowHandle),
+				WindowSnapshotFromWindowHandle(mainWindowHandle));
 		}
 
 		public static string MemoryEntryName(long baseAddress)
@@ -61,11 +55,13 @@ namespace BotEngine.Interface.Process.Snapshot
 			{
 				return null;
 			}
+
 			Match match = Regex.Match(memoryEntryName, "0x([\\d\\w]+)");
 			if (!match.Success)
 			{
 				return null;
 			}
+
 			return match.Groups[1].Value?.TryParseInt64(NumberStyles.HexNumber);
 		}
 
@@ -75,6 +71,9 @@ namespace BotEngine.Interface.Process.Snapshot
 			{
 				return null;
 			}
+
+			throw new NotImplementedException();
+			/*
 			MemoryStream memoryStream = new MemoryStream();
 			RangeOfPages[] obj = snapshot?.ProcessSnapshot?.RangeOfPages?.Select((RangeOfPages rangeOfPages) => new RangeOfPages(rangeOfPages.BasicInfo))?.ToArray();
 			byte[] entryListOctet = obj.SerializeToUtf8();
@@ -101,21 +100,24 @@ namespace BotEngine.Interface.Process.Snapshot
 				}
 			}
 			memoryStream.Seek(0L, SeekOrigin.Begin);
-			return memoryStream.LeeseGesamt();
+			return memoryStream.LeeseGesamt();*/
 		}
 
 		public static Snapshot SnapshotFromZipArchive(this byte[] zipArchiveSerial)
 		{
-			using (ZipArchive zipArchive = new ZipArchive(new MemoryStream(zipArchiveSerial), ZipArchiveMode.Read))
-			{
-				IEnumerable<ZipArchiveEntry> enumerable = zipArchive.EntryFromDirectory("Process\\Memory", StringComparison.OrdinalIgnoreCase);
-				RangeOfPages[] rangeOfPages = zipArchive.GetEntry("Process\\RangeOfPages")?.ReadListOctet()?.DeserializeFromUtf8<RangeOfPages[]>();
-				return new Snapshot(new ProcessSnapshot(rangeOfPages, (enumerable?.Select((ZipArchiveEntry entry) => new
-				{
-					BaseAddress = BaseAddressFromMemoryEntryName(entry.Name),
-					ListOctet = entry.ReadListOctet()
-				})?.ToArray())?.Where(addressAndListOctet => addressAndListOctet.BaseAddress.HasValue && addressAndListOctet.ListOctet != null)?.Select(addressAndListOctet => new KeyValuePair<long, byte[]>(addressAndListOctet.BaseAddress ?? 0, addressAndListOctet.ListOctet))?.ToArray()), null);
-			}
+			throw new NotImplementedException();
+/*
+using (ZipArchive zipArchive = new ZipArchive(new MemoryStream(zipArchiveSerial), ZipArchiveMode.Read))
+{
+	IEnumerable<ZipArchiveEntry> enumerable = zipArchive.EntryFromDirectory("Process\\Memory", StringComparison.OrdinalIgnoreCase);
+	RangeOfPages[] rangeOfPages = zipArchive.GetEntry("Process\\RangeOfPages")?.ReadListOctet()?.DeserializeFromUtf8<RangeOfPages[]>();
+	return new Snapshot(new ProcessSnapshot(rangeOfPages, (enumerable?.Select((ZipArchiveEntry entry) => new
+	{
+		BaseAddress = BaseAddressFromMemoryEntryName(entry.Name),
+		ListOctet = entry.ReadListOctet()
+	})?.ToArray())?.Where(addressAndListOctet => addressAndListOctet.BaseAddress.HasValue && addressAndListOctet.ListOctet != null)?.Select(addressAndListOctet => new KeyValuePair<long, byte[]>(addressAndListOctet.BaseAddress ?? 0, addressAndListOctet.ListOctet))?.ToArray()), null);
+}
+}*/
 		}
 	}
 }

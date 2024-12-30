@@ -1,15 +1,16 @@
 ﻿using System.Linq;
-using SlackAPI;
+using System.Net.Mime;
+//using SlackAPI;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
 	internal class WaitForCommandState : IStragegyState
 	{
-		private SlackClient slack;
+		//private SlackClient slack;
 
 		public WaitForCommandState(string messageToSend)
 		{
-			slack = new SlackClient("https://hooks.slack.com/services/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");
+			/*slack = new SlackClient("https://hooks.slack.com/services/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");
 			slack.GetChannelList(_ => { });
 			var channelId = slack.Channels.FirstOrDefault().id;
 			slack.PostMessage(pr => { }, channelId, "testMessageV2", "EveBot1", blocks: new[]
@@ -19,10 +20,10 @@ namespace Sanderling.ABot.Bot.Strategies
 
 					block_id = "t1", elements = new[]
 					{
-						new ButtonElement() {action_id = "hooray", text = new Text(){text = "Hooray"}},
+						new ButtonElement() {action_id = "hooray", text = new MediaTypeNames.Text(){text = "Hooray"}},
 					}
 				}
-			});
+			});*/
 		}
 
 		public IBotTask GetStateActions(Bot bot)

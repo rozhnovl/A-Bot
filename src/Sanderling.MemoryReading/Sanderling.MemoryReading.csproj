@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Sanderling.MemoryReading</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net9.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <PackageReference Include="fasterflect" Version="3.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bib3.Converted\Bib3.Converted.csproj" />
+    <ProjectReference Include="..\Bib3.RefNezDif\Bib3.RefNezDif\Bib3.RefNezDif.csproj" />
+    <ProjectReference Include="..\Sanderling.Interface\Sanderling.Interface.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Sanderling.Interface" />
+    <Reference Include="BotEngine.Interface" />
+    <Reference Include="Fasterflect" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>

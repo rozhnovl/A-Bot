@@ -8,7 +8,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Lifetime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -103,14 +102,15 @@ namespace BotEngine.Interface
 
 		public override object InitializeLifetimeService()
 		{
-			ILease lease = (ILease)base.InitializeLifetimeService();
+			throw new NotImplementedException();
+			/*ILease lease = (ILease)base.InitializeLifetimeService();
 			if (lease.CurrentState == LeaseState.Initial)
 			{
 				lease.InitialLeaseTime = TimeSpan.FromMinutes(60.0);
 				lease.SponsorshipTimeout = TimeSpan.FromMinutes(60.0);
 				lease.RenewOnCallTime = TimeSpan.FromMinutes(60.0);
 			}
-			return lease;
+			return lease;*/
 		}
 
 		private InterfaceProxyMessage NaacKonsumentAusgangSctrukt()

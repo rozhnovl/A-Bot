@@ -5,6 +5,7 @@ using BotEngine.Client;
 using BotEngine.Common;
 using System;
 using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace BotEngine.Interface
 {

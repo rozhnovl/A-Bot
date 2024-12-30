@@ -2,6 +2,7 @@ using Bib3;
 using BotEngine.Windows;
 using System.Collections.Generic;
 using System.Linq;
+using Bib3.Geometrik;
 
 namespace BotEngine.Interface.Process.Snapshot
 {

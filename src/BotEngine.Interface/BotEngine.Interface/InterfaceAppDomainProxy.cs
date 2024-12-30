@@ -38,7 +38,8 @@ namespace BotEngine.Interface
 			AppDomain.MonitoringIsEnabled = true;
 			AppDomainSetupType = appDomainSetupType;
 			PermissionSet grantSet = new PermissionSet(PermissionState.Unrestricted);
-			AppDomain appDomain = AppDomain.CreateDomain("Interface", null, new AppDomainSetup
+			throw new NotImplementedException();
+			/*AppDomain appDomain = AppDomain.CreateDomain("Interface", null, new AppDomainSetup
 			{
 				ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
 			}, grantSet);
@@ -57,7 +58,7 @@ namespace BotEngine.Interface
 			Type typeFromHandle = typeof(AppDomainProxyByte);
 			InterfaceAppDomainSetup.Setup();
 			Proxy = (AppDomainProxyByte)appDomain.CreateInstanceAndUnwrap(typeFromHandle.Assembly.FullName, typeFromHandle.FullName);
-			InterfaceAppDomain = appDomain;
+			InterfaceAppDomain = appDomain;*/
 		}
 
 		private byte[] ToServerOutputListeOktet()

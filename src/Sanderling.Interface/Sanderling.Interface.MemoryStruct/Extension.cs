@@ -1,11 +1,11 @@
 using Bib3;
 using Bib3.Geometrik;
-using Bib3.RefBaumKopii;
 using Bib3.RefNezDiferenz;
 using BotEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bib3.RefBaumKopii;
 
 namespace Sanderling.Interface.MemoryStruct
 {
@@ -19,7 +19,7 @@ namespace Sanderling.Interface.MemoryStruct
 		public static T Largest<T>(this IEnumerable<T> source) where T : class, IUIElement
 		{
 			IOrderedEnumerable<T> orderedEnumerable = from item in source
-			orderby item?.Region.Area() ?? (-1) descending
+			orderby item?.Region?.Area() ?? (-1) descending
 			select item;
 			return (orderedEnumerable != null) ? orderedEnumerable.FirstOrDefault() : null;
 		}
@@ -46,22 +46,23 @@ namespace Sanderling.Interface.MemoryStruct
 				Region = region
 			};
 		}
-
+		
 		public static IUIElement WithRegionSizePivotAtCenter(this IUIElement @base, Vektor2DInt regionSize)
 		{
-			return @base?.WithRegion(@base.Region.WithSizePivotAtCenter(regionSize));
+			return @base?.WithRegion(@base.Region.Value.WithSizePivotAtCenter(regionSize));
 		}
-
+		
 		public static IUIElement WithRegionSizeBoundedMaxPivotAtCenter(this IUIElement @base, Vektor2DInt regionSizeMax)
 		{
-			return @base?.WithRegion(@base.Region.WithSizeBoundedMaxPivotAtCenter(regionSizeMax));
+			throw new NotImplementedException();
+			//return @base?.WithRegion(@base.Region.WithSizeBoundedMaxPivotAtCenter(regionSizeMax));
 		}
 
 		public static Vektor2DInt? RegionCenter(this IUIElement uiElement)
 		{
 			return (uiElement?.Region)?.Center();
 		}
-
+		/*
 		public static Vektor2DInt? RegionSize(this IUIElement uiElement)
 		{
 			return (uiElement?.Region)?.Size();
@@ -76,7 +77,7 @@ namespace Sanderling.Interface.MemoryStruct
 		{
 			return uiElement?.Region.MaxPoint();
 		}
-
+		*/
 		public static IEnumerable<ITreeViewEntry> EnumerateChildNodeTransitive(this ITreeViewEntry treeViewEntry)
 		{
 			return treeViewEntry?.EnumerateNodeFromTreeBFirst((ITreeViewEntry node) => node.Child);

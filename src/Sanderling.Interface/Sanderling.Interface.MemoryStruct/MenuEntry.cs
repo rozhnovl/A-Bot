@@ -1,6 +1,5 @@
 using BotEngine;
 using System.Linq;
-using TLSchema.Messages;
 
 namespace Sanderling.Interface.MemoryStruct
 {

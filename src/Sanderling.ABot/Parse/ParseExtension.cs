@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Sanderling.ABot.Parse
 {
-	static public class ParseExtension
+	static public partial class ParseExtension
 	{
 		static public int? CountFromDroneGroupCaption(this string groupCaption) =>
 			groupCaption?.RegexMatchIfSuccess(@"\((\d+)\)")?.Groups[1]?.Value?.TryParseInt();
@@ -30,7 +30,7 @@ namespace Sanderling.ABot.Parse
 		static public Int64 Height(this RectInt rect) => rect.Side1Length();
 
 		static public bool IsScrollable(this MemoryStruct.IScroll scroll) =>
-			scroll?.ScrollHandle?.Region.Height() < scroll?.ScrollHandleBound?.Region.Height() - 4;
+			scroll?.ScrollHandle?.Region?.Height() < scroll?.ScrollHandleBound?.Region?.Height() - 4;
 
 		static public bool IsNeutralOrEnemy(this MemoryStruct.IChatParticipantEntry participantEntry) =>
 			!(participantEntry?.FlagIcon?.Any(flagIcon =>

@@ -34,44 +34,45 @@ namespace Sanderling.ABot.Bot.Strategies
 					return bookmarkTask;
 			}
 
+			throw new NotImplementedException();
 
-			//	from the set of route element markers in the Info Panel pick the one that represents the next Waypoint/System.
-			//	We assume this is the one which is nearest to the topleft corner of the Screen which is at (0,0)
-			var RouteElementMarkerNext =
-				memory?.InfoPanelRoute?.RouteElementMarker
-					?.OrderByCenterDistanceToPoint(new Vektor2DInt(0, 0))?.FirstOrDefault();
-			if (RouteElementMarkerNext != null)
-			{
-				var undockTask = new UndockTask(bot.MemoryMeasurementAtTime.Value);
-				if (undockTask.ClientActions.Any())
-					return undockTask;
-			}
-			else
-			{
-				if ((memory?.IsDocked ?? false))
-					arrived = true;
-				return null;
-			}
+			////	from the set of route element markers in the Info Panel pick the one that represents the next Waypoint/System.
+			////	We assume this is the one which is nearest to the topleft corner of the Screen which is at (0,0)
+			//var RouteElementMarkerNext =
+			//	memory?.InfoPanelRoute?.RouteElementMarker
+			//		?.OrderByCenterDistanceToPoint(new Vektor2DInt(0, 0))?.FirstOrDefault();
+			//if (RouteElementMarkerNext != null)
+			//{
+			//	var undockTask = new UndockTask(bot.MemoryMeasurementAtTime.Value);
+			//	if (undockTask.ClientActions.Any())
+			//		return undockTask;
+			//}
+			//else
+			//{
+			//	if ((memory?.IsDocked ?? false))
+			//		arrived = true;
+			//	return null;
+			//}
 
-			var nextSystemLabel = memory?.InfoPanelRoute?.NextLabel.Text;
-			var nextSystemExists = nextSystemLabel.Contains("Next System in Route");
-			if (nextSystemExists)
-			{
-				var ns1 = nextSystemLabel.Substring(nextSystemLabel.IndexOf("Next System"));
-				var ns2 = ns1.Substring(ns1.IndexOf(">") + 1);
-				var nextSystemName = ns2.Substring(0, ns2.IndexOf("<"));
+			//var nextSystemLabel = memory?.InfoPanelRoute?.NextLabel.Text;
+			//var nextSystemExists = nextSystemLabel.Contains("Next System in Route");
+			//if (nextSystemExists)
+			//{
+			//	var ns1 = nextSystemLabel.Substring(nextSystemLabel.IndexOf("Next System"));
+			//	var ns2 = ns1.Substring(ns1.IndexOf(">") + 1);
+			//	var nextSystemName = ns2.Substring(0, ns2.IndexOf("<"));
 
-				if (memory.WindowSelectedItemView.Single().Sprite != null
-					&& memory.WindowSelectedItemView.Single().Sprite
-						.Any(a => a.TexturePath.Equals("res:/UI/Texture/icons/44_32_39.png"))
-					&& memory.WindowSelectedItemView.Single().LabelText.Any(lt => lt.Text.Contains(nextSystemName)))
-				{
-					return memory.WindowSelectedItemView.Single().Sprite
-						.Single(a => a.TexturePath.Equals("res:/UI/Texture/icons/44_32_39.png")).ClickTask();
-				}
-			}
+			//	if (memory.WindowSelectedItemView.Single().Sprite != null
+			//		&& memory.WindowSelectedItemView.Single().Sprite
+			//			.Any(a => a.TexturePath.Equals("res:/UI/Texture/icons/44_32_39.png"))
+			//		&& memory.WindowSelectedItemView.Single().LabelText.Any(lt => lt.Text.Contains(nextSystemName)))
+			//	{
+			//		return memory.WindowSelectedItemView.Single().Sprite
+			//			.Single(a => a.TexturePath.Equals("res:/UI/Texture/icons/44_32_39.png")).ClickTask();
+			//	}
+			//}
 
-			return RouteElementMarkerNext.ClickMenuEntryByRegexPattern(bot, "Dock|Jump.*");
+			//return RouteElementMarkerNext.ClickMenuEntryByRegexPattern(bot, "Dock|Jump.*");
 		}
 
 		private IList<string> missionsToBookmark;

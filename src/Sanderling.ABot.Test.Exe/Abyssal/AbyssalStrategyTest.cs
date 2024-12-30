@@ -128,6 +128,11 @@ namespace Sanderling.ABot.Test.Exe.Abyssal
 		{
 			[JsonProperty]
 			public IList<IOverviewEntry> Entries { get; set; }
+
+			public int CalculateApproximateDps(NpcInfoProvider npcInfoProvider)
+			{
+				return 0;
+			}
 		}
 	}
 }

@@ -10,11 +10,12 @@ namespace Sanderling.ABot.Bot
 
 	public class AbyssEnemySpawnContext: DbContext
 	{
+		/*
 		public System.Data.Entity.DbSet<AbyssEnemySpawn> Spawns { get; set; }
 		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		{
 			optionsBuilder.UseSqlServer(@"Server=.\RESTO;Database=EveBot;Trusted_Connection=True;");
-		}
+		}*/
 	}
 
 	public class AbyssEnemySpawn
@@ -33,7 +34,7 @@ namespace Sanderling.ABot.Bot
 
 		public ShipFit(IEnumerable<Accumulation.IShipUiModule> memoryModules, ModuleInfo[][] fitInfo)
 		{
-			var modulesByY = memoryModules.GroupBy(m => m.Region.Min1).OrderBy(g => g.Key).ToArray();
+			var modulesByY = memoryModules.GroupBy(m => m.Region?.Min1).OrderBy(g => g.Key).ToArray();
 			if (modulesByY.Count() != 3)
 				throw new ArgumentException("Couldn't determine 3 module groups");
 			High = modulesByY[0].Select((m, i) =>

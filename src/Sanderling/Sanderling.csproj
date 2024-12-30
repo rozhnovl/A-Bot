@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.72" />
+    <PackageReference Include="InputSimulator" Version="1.0.4" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.12.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bib3.RefNezDif\Bib3.RefNezDif\Bib3.RefNezDif.csproj" />
+    <ProjectReference Include="..\BotEngine.Common\BotEngine.Common.csproj" />
+    <ProjectReference Include="..\PythonStructures\PythonStructures.csproj" />
+    <ProjectReference Include="..\Sanderling.Interface\Sanderling.Interface.csproj" />
+    <ProjectReference Include="..\Sanderling.MemoryReading\Sanderling.MemoryReading.csproj" />
+  </ItemGroup>
+
+</Project>

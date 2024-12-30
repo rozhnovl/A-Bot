@@ -1,5 +1,6 @@
 using BotEngine;
 using System.Collections.Generic;
+using BotEngine.Interface;
 
 namespace Sanderling.Interface.MemoryStruct
 {

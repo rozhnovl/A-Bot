@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>BotEngine.Common</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net9.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <PackageReference Include="Castle.Core" Version="5.1.1" />
+    <PackageReference Include="InputSimulator" Version="1.0.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="protobuf-net" Version="3.2.45" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bib3.Converted\Bib3.Converted.csproj" />
+    <ProjectReference Include="..\Bib3.RefNezDif\Bib3.RefNezDif\Bib3.RefNezDif.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="protobuf-net" />
+    <Reference Include="WindowsInput" />
+    <Reference Include="Castle.Core" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+</Project>

@@ -1,162 +1,20 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ProjectGuid>{6454678D-52C4-4D38-B149-AB5D67B7F4C9}</ProjectGuid>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <LangVersion>7.3</LangVersion>
-    <AssemblyName>BotEngine.Interface</AssemblyName>
-    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>bin\Debug\</OutputPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <OutputPath>bin\Release\</OutputPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Bib3">
-      <HintPath>..\..\lib\Bib3.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System">
-      <HintPath>C:\Windows\Microsoft.Net\assembly\GAC_MSIL\System\v4.0_4.0.0.0__b77a5c561934e089\System.dll</HintPath>
-    </Reference>
-    <Reference Include="Bib3.RefNezDif">
-      <HintPath>C:\Src\A-Bot\lib\Bib3.RefNezDif.dll</HintPath>
-    </Reference>
-    <Reference Include="BotEngine.Common">
-      <HintPath>C:\Src\A-Bot\lib\BotEngine.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core">
-      <HintPath>C:\Windows\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Management">
-      <HintPath>C:\WINDOWS\Microsoft.NET\assembly\GAC_MSIL\System.Management\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Management.dll</HintPath>
-    </Reference>
-    <Reference Include="PresentationCore">
-      <HintPath>C:\Windows\Microsoft.Net\assembly\GAC_64\PresentationCore\v4.0_4.0.0.0__31bf3856ad364e35\PresentationCore.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression">
-      <HintPath>C:\WINDOWS\Microsoft.NET\assembly\GAC_MSIL\System.IO.Compression\v4.0_4.0.0.0__b77a5c561934e089\System.IO.Compression.dll</HintPath>
-    </Reference>
-    <Reference Include="Bib3.FCL">
-      <HintPath>C:\Src\Sanderling\lib\Bib3.FCL.dll</HintPath>
-    </Reference>
-    <Reference Include="WindowsBase" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BotEngine.Interface.Process.Snapshot\Extension.cs" />
-    <Compile Include="BotEngine.Interface.Process.Snapshot\ProcessSnapshot.cs" />
-    <Compile Include="BotEngine.Interface.Process.Snapshot\Snapshot.cs" />
-    <Compile Include="BotEngine.Interface.Process.Snapshot\SnapshotReader.cs" />
-    <Compile Include="BotEngine.Interface.Process.Snapshot\WindowSnapshot.cs" />
-    <Compile Include="BotEngine.Interface.Windows\ProcessInfoFromWMI.cs" />
-    <Compile Include="BotEngine.Interface.Windows\WMIExtension.cs" />
-    <Compile Include="BotEngine.Interface\AppDomainProxyByte.cs" />
-    <Compile Include="BotEngine.Interface\ColorHSV.cs" />
-    <Compile Include="BotEngine.Interface\ColorORGB.cs" />
-    <Compile Include="BotEngine.Interface\ColorORGBVal.cs" />
-    <Compile Include="BotEngine.Interface\Extension.cs" />
-    <Compile Include="BotEngine.Interface\FromConsumerToInterfaceProxyMessage.cs" />
-    <Compile Include="BotEngine.Interface\FromInterfaceProxyToConsumerMessage.cs" />
-    <Compile Include="BotEngine.Interface\FromProcessMeasurement.cs" />
-    <Compile Include="BotEngine.Interface\IAppDomainProxyByte.cs" />
-    <Compile Include="BotEngine.Interface\IInterfaceKomponente.cs" />
-    <Compile Include="BotEngine.Interface\IInterfaceKomponenteImplementationOfType.cs" />
-    <Compile Include="BotEngine.Interface\IMemoryReader.cs" />
-    <Compile Include="BotEngine.Interface\InterfaceAppDomainProxy.cs" />
-    <Compile Include="BotEngine.Interface\InterfaceAppDomainSetup.cs" />
-    <Compile Include="BotEngine.Interface\InterfaceAppManager.cs" />
-    <Compile Include="BotEngine.Interface\InterfaceKomponenteKonstrukt.cs" />
-    <Compile Include="BotEngine.Interface\InterfaceProxyMessage.cs" />
-    <Compile Include="BotEngine.Interface\LicenseClient.cs" />
-    <Compile Include="BotEngine.Interface\MemoryReaderExtension.cs" />
-    <Compile Include="BotEngine.Interface\MemoryReaderModuleInfo.cs" />
-    <Compile Include="BotEngine.Interface\ProcessMemoryReader.cs" />
-    <Compile Include="BotEngine.Interface\Protobuf.cs" />
-    <Compile Include="BotEngine.Interface\SictOrdnetNaacSclüselInt.cs" />
-    <Compile Include="BotEngine.Interface\SimpleInterfaceServerDispatcher.cs" />
-    <Compile Include="BotEngine.Interface\VonInterfaceNaacServerZuusctand.cs" />
-    <Compile Include="BotEngine.Interface\VonServerNaacInterfaceZuusctand.cs" />
-    <Compile Include="BotEngine.Interface\WebClient.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="BotEngine.Interface\WindowMeasurement.cs" />
-    <Compile Include="BotEngine.WinApi\GDI32.cs" />
-    <Compile Include="BotEngine.WinApi\Kernel32.cs" />
-    <Compile Include="BotEngine.WinApi\ntdll.cs" />
-    <Compile Include="BotEngine.WinApi\psapi.cs" />
-    <Compile Include="BotEngine.WinApi\SictMessageTyp.cs" />
-    <Compile Include="BotEngine.WinApi\SictVirtualKeyCode.cs" />
-    <Compile Include="BotEngine.WinApi\User32.cs" />
-    <Compile Include="BotEngine.Windows\ALLOCATION_TYPE.cs" />
-    <Compile Include="BotEngine.Windows\CREATE_PROCESS_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\CREATE_THREAD_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\CURSORINFO.cs" />
-    <Compile Include="BotEngine.Windows\DEBUG_CONTINUE_STATUS.cs" />
-    <Compile Include="BotEngine.Windows\DEBUG_EVENT.cs" />
-    <Compile Include="BotEngine.Windows\DEBUG_EVENT_CODE.cs" />
-    <Compile Include="BotEngine.Windows\EXCEPTION_CODE.cs" />
-    <Compile Include="BotEngine.Windows\EXCEPTION_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\EXCEPTION_RECORD32.cs" />
-    <Compile Include="BotEngine.Windows\EXIT_PROCESS_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\EXIT_THREAD_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\Extension.cs" />
-    <Compile Include="BotEngine.Windows\FLOATING_SAVE_AREA.cs" />
-    <Compile Include="BotEngine.Windows\Glob.cs" />
-    <Compile Include="BotEngine.Windows\ICONINFO.cs" />
-    <Compile Include="BotEngine.Windows\LOAD_DLL_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\MEMORY_BASIC_INFORMATION.cs" />
-    <Compile Include="BotEngine.Windows\MEMORY_PROTECTION_FLAG.cs" />
-    <Compile Include="BotEngine.Windows\OUTPUT_DEBUG_STRING_INFO.cs" />
-    <Compile Include="BotEngine.Windows\POINT.cs" />
-    <Compile Include="BotEngine.Windows\PROCESSINFOCLASS.cs" />
-    <Compile Include="BotEngine.Windows\PROCESS_ACCESS_RIGHT.cs" />
-    <Compile Include="BotEngine.Windows\PROCESS_BASIC_INFORMATION.cs" />
-    <Compile Include="BotEngine.Windows\PROCESS_CREATION_FLAG.cs" />
-    <Compile Include="BotEngine.Windows\PROCESS_INFORMATION.cs" />
-    <Compile Include="BotEngine.Windows\RangeOfPages.cs" />
-    <Compile Include="BotEngine.Windows\RECT.cs" />
-    <Compile Include="BotEngine.Windows\RIP_INFO.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_HEAP.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_HEAP_ENTRY.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_HEAP_LIST_LOOKUP.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_HEAP_SUBSEGMENT.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_LFH_BLOCK_ZONE.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_LFH_HEAP.cs" />
-    <Compile Include="BotEngine.Windows\SictNtdll_LIST_ENTRY.cs" />
-    <Compile Include="BotEngine.Windows\SictProcessEnvironmentBlock.cs" />
-    <Compile Include="BotEngine.Windows\SictProcessModuleInfo.cs" />
-    <Compile Include="BotEngine.Windows\SictStructAusrictungTyp.cs" />
-    <Compile Include="BotEngine.Windows\STARTUPINFO.cs" />
-    <Compile Include="BotEngine.Windows\STATUS.cs" />
-    <Compile Include="BotEngine.Windows\SYSTEM_ERROR_CODE.cs" />
-    <Compile Include="BotEngine.Windows\THREAD_ACCESS_RIGHT.cs" />
-    <Compile Include="BotEngine.Windows\THREAD_CONTEXT32.cs" />
-    <Compile Include="BotEngine.Windows\THREAD_CONTEXT_FLAG.cs" />
-    <Compile Include="BotEngine.Windows\UNLOAD_DLL_DEBUG_INFO.cs" />
-    <Compile Include="BotEngine.Windows\WINDOWINFO.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="InputSimulator" Version="1.0.4" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	  <PackageReference Include="System.Management" Version="9.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Bib3.Converted\Bib3.Converted.csproj" />
+	  <ProjectReference Include="..\Bib3.RefNezDif\Bib3.RefNezDif\Bib3.RefNezDif.csproj" />
+	  <ProjectReference Include="..\BotEngine.Common\BotEngine.Common.csproj" />
+	</ItemGroup>
 </Project>

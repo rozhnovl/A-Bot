@@ -6,6 +6,7 @@ using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
 using Sanderling.Parse;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using WindowsInput.Native;
 using BotEngine.Motor;
@@ -60,7 +61,7 @@ namespace Sanderling.ABot.Bot
 
 			var setLabelIntersectingHorizontalCenter =
 				tooltip?.LabelText
-					?.Where(label => label?.Region.Min0 < tooltipHorizontalCenter && tooltipHorizontalCenter < label?.Region.Max0);
+					?.Where(label => label?.Region?.Min0 < tooltipHorizontalCenter && tooltipHorizontalCenter < label?.Region?.Max0);
 
 			return
 				setLabelIntersectingHorizontalCenter
@@ -107,7 +108,7 @@ namespace Sanderling.ABot.Bot
 				$" IsHardener: {module?.TooltipLast?.Value?.IsHardener}" +
 			                                   $" IsActive: {module.IsActive(bot)}" +
 			                                   $" RampActive: {module.RampActive}" +
-				$" ;RegionX: {module.Region.Min0};RegionY: {module.Region.Min1}");
+				$" ;RegionX: {module.Region?.Min0};RegionY: {module.Region?.Min1}");
 			
 			if(module?.TooltipLast?.Value?.IsHardener?? false)
 				return true;

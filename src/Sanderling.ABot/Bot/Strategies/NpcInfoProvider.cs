@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	internal class NpcInfoProvider
+	public class NpcInfoProvider
 	{
 		private readonly Dictionary<string, double> DpsPerEntry = new Dictionary<string, double>()
 		{

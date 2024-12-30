@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--Project was exported from assembly: C:\Src\A-Bot\lib\Sanderling.UI.dll-->
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A7B539A9-6201-4C33-B1B4-35D7912E9F31}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Sanderling.UI</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <ApplicationVersion>2018.324.0.0</ApplicationVersion>
+    <FileAlignment>512</FileAlignment>
+    <RootNamespace>Sanderling.UI</RootNamespace>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Bib3">
+      <HintPath>lib\Bib3.dll</HintPath>
+    </Reference>
+    <Reference Include="Bib3.FCL">
+      <HintPath>lib\Bib3.FCL.dll</HintPath>
+    </Reference>
+    <Reference Include="Bib3.RefNezDif">
+      <HintPath>lib\Bib3.RefNezDif.dll</HintPath>
+    </Reference>
+    <Reference Include="Bib3.Terz">
+      <HintPath>lib\Bib3.Terz.dll</HintPath>
+    </Reference>
+    <Reference Include="BotEngine.Common">
+      <HintPath>lib\BotEngine.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="BotEngine.UI">
+      <HintPath>lib\BotEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="BotSharp.UI">
+      <HintPath>lib\BotSharp.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="Sanderling">
+      <HintPath>lib\Sanderling.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApiTreeViewNodeTypeMemberView.cs" />
+    <Compile Include="ApiTreeViewNodeTypeView.cs" />
+    <Compile Include="ApiTreeViewNodeView.cs" />
+    <Compile Include="BotsNavigation.cs" />
+    <Compile Include="Extension.cs" />
+    <Compile Include="InterfaceToEve.xaml.cs">
+      <DependentUpon>interfacetoeve.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MemoryMeasurement.xaml.cs">
+      <DependentUpon>memorymeasurement.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="BotAPIExplorer.xaml.cs">
+      <DependentUpon>botapiexplorer.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Main.xaml.cs">
+      <DependentUpon>main.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="resource.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="botapiexplorer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="interfacetoeve.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="main.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="memorymeasurement.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

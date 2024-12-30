@@ -1,13 +1,14 @@
 ﻿using Bib3;
-using Sanderling.Parse;
 using BotEngine.Interface;
 using System.Linq;
 using System.Collections.Generic;
 using System;
+using Bib3.Geometrik;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Bot.Memory;
 using Sanderling.ABot.Bot.Strategies;
 using Sanderling.ABot.Serialization;
+using Sanderling.Parse;
 
 namespace Sanderling.ABot.Bot
 {
@@ -28,7 +29,7 @@ namespace Sanderling.ABot.Bot
 		/// <summary>
 		/// Current measurements
 		/// </summary>
-		public FromProcessMeasurement<IMemoryMeasurement> MemoryMeasurementAtTime { private set; get; }
+		public FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement> MemoryMeasurementAtTime { private set; get; }
 
 		readonly public Accumulator.MemoryMeasurementAccumulator MemoryMeasurementAccu = new Accumulator.MemoryMeasurementAccumulator();
 

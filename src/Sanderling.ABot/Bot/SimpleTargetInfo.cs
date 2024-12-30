@@ -1,8 +1,10 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.Parse;
+using IShipUiTarget = Sanderling.Parse.IShipUiTarget;
 
 namespace Sanderling.ABot.Bot
 {

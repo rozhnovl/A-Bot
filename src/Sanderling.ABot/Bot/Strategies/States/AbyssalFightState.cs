@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using WindowsInput.Native;
@@ -123,8 +124,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
 				return task.With(
 					$"Left abyss. Waiting {LeavingAbyssTimestamp.Value.Add(TimeSpan.FromMinutes(1.2)) - StateStopwatch.Elapsed} to leave invulnerability");
-			dbContext.Spawns.Add(new AbyssEnemySpawn()
-				{Enemies = overviewProvider.Entries.Select(e => e.Name).ToArray(), Id = Guid.NewGuid(), Time = DateTime.Now});
+			/*dbContext.Spawns.Add(new AbyssEnemySpawn()
+				{Enemies = overviewProvider.Entries.Select(e => e.Name).ToArray(), Id = Guid.NewGuid(), Time = DateTime.Now});*/
 			if (conduit == null)
 			{
 				if (enteredAbyss)

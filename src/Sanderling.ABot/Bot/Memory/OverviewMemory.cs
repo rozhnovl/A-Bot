@@ -17,7 +17,7 @@ namespace Sanderling.ABot.Bot.Memory
 		private static readonly IEnumerable<ShipManeuverTypeEnum> setManeuverReset =
 			new[] { ShipManeuverTypeEnum.Warp, ShipManeuverTypeEnum.Docked, ShipManeuverTypeEnum.Jump };
 
-		public void Aggregate(FromProcessMeasurement<IMemoryMeasurement> memoryMeasurementAtTime)
+		public void Aggregate(FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement> memoryMeasurementAtTime)
 		{
 			var memoryMeasurement = memoryMeasurementAtTime?.Value;
 

@@ -7,7 +7,7 @@ namespace Sanderling.ABot.Bot.Task
 	public static class ModuleTaskExtension
 	{
 		public static bool? IsActive(
-			this IShipUiModule module,
+			this Sanderling.Accumulation.IShipUiModule module,
 			Bot bot)
 		{
 			if (bot?.MouseClickLastAgeStepCountFromUIElement(module) <= 1)
@@ -20,7 +20,7 @@ namespace Sanderling.ABot.Bot.Task
 		}
 
 		public static bool IsReloading(
-			this IShipUiModule module,
+			this Sanderling.Accumulation.IShipUiModule module,
 			Bot bot)
 		{
 			return !module.IsActive() && module.RampRotationMilli.HasValue && module.RampRotationMilli.Value > 0;
@@ -28,7 +28,7 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
-			IShipUiModule module)
+			Sanderling.Accumulation.IShipUiModule module)
 		{
 			if (module?.IsActive(bot) ?? true)
 				return null;
@@ -38,7 +38,7 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsInactive(
 			this Bot bot,
-			IShipUiModule module)
+			Sanderling.Accumulation.IShipUiModule module)
 		{
 			if (module?.IsActive(bot) ?? false)
 
@@ -48,7 +48,7 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
-			IEnumerable<IShipUiModule> setModule) =>
+			IEnumerable<Sanderling.Accumulation.IShipUiModule> setModule) =>
 			new BotTask(nameof(EnsureIsActive) + " for list of modules")
 				{Component = setModule?.Select(module => bot?.EnsureIsActive(module))};
 	}

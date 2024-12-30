@@ -1,0 +1,72 @@
+<UserControl x:Class="Sanderling.UI.Main"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Sanderling.UI"
+             xmlns:Bib3.FCL.GBS="clr-namespace:Bib3.FCL.GBS;assembly=Bib3.FCL"
+             xmlns:Bib3.FCL.UI="clr-namespace:Bib3.FCL.UI;assembly=Bib3.FCL"
+             xmlns:BotEngine.UI="clr-namespace:BotEngine.UI;assembly=BotEngine.UI"
+             xmlns:BotEngine.UI.ViewModel="clr-namespace:BotEngine.UI.ViewModel;assembly=BotEngine.UI"
+             xmlns:BotSharp.UI.Wpf="clr-namespace:BotSharp.UI.Wpf;assembly=BotSharp.UI">
+  <FrameworkElement.Resources>
+    <ResourceDictionary Source="pack://application:,,,/Sanderling.UI;component/resource.xaml"/>
+  </FrameworkElement.Resources>
+  <Grid>
+    <TabControl>
+      <FrameworkElement.Resources>
+        <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource ContentControlHeaderWithStatusIcon}"/>
+      </FrameworkElement.Resources>
+      <TabItem>
+        <HeaderedContentControl.Header>
+          <BotEngine.UI.ViewModel:ContentAndStatusIcon x:Name="InterfaceHeader" x:FieldModifier="public" Content="EVE Online Client"/>
+        </HeaderedContentControl.Header>
+        <local:InterfaceToEve x:Name="Interface" x:FieldModifier="public"/>
+      </TabItem>
+      <TabItem IsSelected="true">
+        <HeaderedContentControl.Header>
+          <BotEngine.UI.ViewModel:ContentAndStatusIcon x:Name="BotHeader" x:FieldModifier="public">
+            <BotEngine.UI.ViewModel:ContentAndStatusIcon.Content>
+              <StackPanel Orientation="Horizontal">
+                <Grid Name="PanelMeasureDesiredHeight" VerticalAlignment="Center">
+                  <TextBlock Text="Bot"/>
+                </Grid>
+                <Grid Column="2" Height="{Binding ElementName=PanelMeasureDesiredHeight, Path=ActualHeight}">
+                  <Viewbox Stretch="Uniform" StretchDirection="Both" Margin="2,-1">
+                    <Bib3.FCL.GBS:ToggleButtonHorizBinär x:Name="ToggleButtonMotionEnable" x:FieldModifier="public">
+                      <Bib3.FCL.GBS:ToggleButtonHorizBinär.ButtonLinxContent>
+                        <TextBlock Text="pause" ToolTip="pause script execution by clicking here or by pressing Ctrl + Alt."/>
+                      </Bib3.FCL.GBS:ToggleButtonHorizBinär.ButtonLinxContent>
+                      <Bib3.FCL.GBS:ToggleButtonHorizBinär.ButtonReczContent>
+                        <TextBlock Text="play" ToolTip="resume script execution."/>
+                      </Bib3.FCL.GBS:ToggleButtonHorizBinär.ButtonReczContent>
+                    </Bib3.FCL.GBS:ToggleButtonHorizBinär>
+                  </Viewbox>
+                </Grid>
+                <Grid Width="3"/>
+              </StackPanel>
+            </BotEngine.UI.ViewModel:ContentAndStatusIcon.Content>
+          </BotEngine.UI.ViewModel:ContentAndStatusIcon>
+        </HeaderedContentControl.Header>
+        <ContentControl.Content>
+          <Grid>
+            <FrameworkElement.Resources>
+              <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource TabItemStyleFromBotEngine}"/>
+            </FrameworkElement.Resources>
+            <BotSharp.UI.Wpf:BotsNavigation x:Name="BotsNavigation" x:FieldModifier="public"/>
+          </Grid>
+        </ContentControl.Content>
+      </TabItem>
+      <TabItem Style="{StaticResource TabItemStyleFromBotEngine}" Header="Development Tools">
+        <TabControl>
+          <TabItem Style="{StaticResource TabItemStyleFromBotEngine}" Header="API Explorer">
+            <local:BotAPIExplorer x:Name="DevToolsAPIExplorer" x:FieldModifier="public"/>
+          </TabItem>
+        </TabControl>
+      </TabItem>
+      <TabItem Style="{StaticResource TabItemStyleFromBotEngine}" Header="About">
+        <BotEngine.UI:AppProperty DataContext="{StaticResource AppProperty}"/>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

@@ -5,7 +5,7 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public class UIElement : ObjectIdInMemory, IUIElement, IObjectIdInMemory, IObjectIdInt64
 	{
-		public RectInt Region
+		public RectInt? Region
 		{
 			get;
 			set;

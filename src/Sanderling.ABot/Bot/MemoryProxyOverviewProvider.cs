@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Sanderling.ABot.Bot.Strategies;
 
 namespace Sanderling.ABot.Bot
 {
@@ -12,5 +13,9 @@ namespace Sanderling.ABot.Bot
 		}
 
 		public IList<IOverviewEntry> Entries { get; }
+		public int CalculateApproximateDps(NpcInfoProvider npcInfoProvider)
+		{
+			throw new System.NotImplementedException();
+		}
 	}
 }

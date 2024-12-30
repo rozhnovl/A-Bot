@@ -1,4 +1,5 @@
 ﻿using Bib3.Synchronization;
+using BotEngine.Client;
 using BotEngine.Interface;
 using Sanderling.Interface.MemoryStruct;
 using System;
@@ -27,7 +28,7 @@ namespace Sanderling.ABot.Exe
 		{
 			InterfaceAppDomainSetupType = typeof(InterfaceAppDomainSetup),
 			InterfaceAppDomainSetupTypeLoadFromMainModule = true,
-			LicenseClientConfig = Sanderling.ExeConfig.LicenseClientDefault,
+			LicenseClientConfig = new LicenseClientConfig(),
 		};
 
 		readonly Bib3.RateLimit.IRateLimitStateInt MemoryMeasurementRequestRateLimit = new Bib3.RateLimit.RateLimitStateIntSingle();

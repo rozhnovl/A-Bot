@@ -19,25 +19,26 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public IBotTask GetStateActions(Bot bot)
 		{
-			var hasRoute =
-				(bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ??
-				 false)
-				|| (bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
-			if (hasRoute)
-			{
-				result = SetDestinationTask.SetDestinationTaskResult.RouteSet;
-				return null;
-			}
+			throw new NotImplementedException();
+			//var hasRoute =
+			//	(bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Current Destination") ??
+			//	 false)
+			//	|| (bot.MemoryMeasurementAtTime.Value?.InfoPanelRoute?.HeaderText?.Contains("Jump") ?? false);
+			//if (hasRoute)
+			//{
+			//	result = SetDestinationTask.SetDestinationTaskResult.RouteSet;
+			//	return null;
+			//}
 
-			var openFoldersTask = new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
-				new[] {"Corporation Locations", "FW Route"});
+			//var openFoldersTask = new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
+			//	new[] {"Corporation Locations", "FW Route"});
 
-			if (openFoldersTask.ClientActions.Any())
-				return new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
-					new[] {"Corporation Locations", "FW Route"});
+			//if (openFoldersTask.ClientActions.Any())
+			//	return new OpenBookmarksFolderTask(bot.MemoryMeasurementAtTime.Value,
+			//		new[] {"Corporation Locations", "FW Route"});
 
-			task = new SetDestinationTask(bot, currentDestinationId, bot.MemoryMeasurementAtTime?.Value, enemySystems);
-			return task;
+			//task = new SetDestinationTask(bot, currentDestinationId, bot.MemoryMeasurementAtTime?.Value, enemySystems);
+			//return task;
 		}
 
 		public IBotTask GetStateExitActions(Bot bot)

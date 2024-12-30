@@ -5,6 +5,8 @@ using BotEngine.Interface;
 using Sanderling.Interface.MemoryStruct;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Sanderling.Interface
 {
@@ -33,7 +35,8 @@ namespace Sanderling.Interface
 
 		public static string SerializeToString<T>(T snapshot)
 		{
-			return snapshot.WurzelSerialisiire(SerialisPolicyCache).SerializeToString();
+			return 
+				JsonSerializer.Serialize(snapshot.WurzelSerialisiire(SerialisPolicyCache), new JsonSerializerOptions { WriteIndented = true, Converters = { new JsonStringEnumConverter() } });
 		}
 
 		public static byte[] SerializeToUTF8<T>(T snapshot)
@@ -43,7 +46,7 @@ namespace Sanderling.Interface
 
 		public static T DeserializeFromString<T>(string json)
 		{
-			return (T)(json.DeserializeFromString<SictZuNezSictDiferenzScritAbbild>().ListeWurzelDeserialisiire(SerialisPolicyCache)?.FirstOrDefault());
+			return (T)(JsonSerializer.Deserialize<SictZuNezSictDiferenzScritAbbild>(json).ListeWurzelDeserialisiire(SerialisPolicyCache)?.FirstOrDefault());
 		}
 
 		public static T DeserializeFromUTF8<T>(byte[] utf8)

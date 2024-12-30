@@ -86,8 +86,9 @@ namespace Sanderling.ABot.Exe
 
 			botLock.WhenLockIsAvailableEnter(300, () =>
 			{
-				var motor = new WindowMotor(process.MainWindowHandle);
-				
+				throw new NotImplementedException();
+				/*var motor = new WindowMotor(process.MainWindowHandle);
+
 				foreach (var motion in sequenceMotion)
 				{
 					var motionResult =
@@ -98,7 +99,7 @@ namespace Sanderling.ABot.Exe
 						Id = motion.Id,
 						Success = motionResult?.Success ?? false,
 					});
-				}
+				}*/
 			},"MotionExecution");
 			BotStepLastMotionResult = new PropertyGenTimespanInt64<Bot.MotionResult[]>(listMotionResult.ToArray(), startTime, GetTimeStopwatch());
 

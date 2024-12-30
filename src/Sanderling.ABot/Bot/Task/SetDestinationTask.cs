@@ -3,6 +3,7 @@ using System.Linq;
 using BotEngine.Motor;
 using Sanderling.Motor;
 using Sanderling.Parse;
+using IMemoryMeasurement = Sanderling.Parse.IMemoryMeasurement;
 
 namespace Sanderling.ABot.Bot.Task
 {

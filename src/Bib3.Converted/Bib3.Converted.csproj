@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--Project was exported from assembly: C:\Src\A-Bot\lib\Bib3.dll-->
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{29FBE57C-5B65-4F10-835B-26B0DF20F562}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Bib3</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <ApplicationVersion>1606.2109.0.0</ApplicationVersion>
+    <FileAlignment>512</FileAlignment>
+    <RootNamespace>Bib3</RootNamespace>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ParsedAssemblyQualifiedName\ParsedAssemblyQualifiedName.cs" />
+    <Compile Include="IFuncVoid.cs" />
+    <Compile Include="SictAufgaabe.cs" />
+    <Compile Include="CallRateScranke.cs" />
+    <Compile Include="Costura.cs" />
+    <Compile Include="DemoException.cs" />
+    <Compile Include="EnumerableExtension.cs" />
+    <Compile Include="Extension.cs" />
+    <Compile Include="SictIdentInt64Fabrik.cs" />
+    <Compile Include="IntervalExtension.cs" />
+    <Compile Include="Kombinatoorik.cs" />
+    <Compile Include="SictScatenscpaicerDict`2.cs" />
+    <Compile Include="SictScnitTcpKlientVerkeerAsync.cs" />
+    <Compile Include="SictSctroomZiil`1.cs" />
+    <Compile Include="SictSctroomZiilStream.cs" />
+    <Compile Include="SictSctroomZiilStreamOoneRead.cs" />
+    <Compile Include="SictSctroomZiilStreamMitRead.cs" />
+    <Compile Include="SictSctroomZiilPufer`1.cs" />
+    <Compile Include="SictVersazInDaatesctrukturAtribut.cs" />
+    <Compile Include="SictScnitTcpKlient.cs" />
+    <Compile Include="ObjectChange.cs" />
+    <Compile Include="StaticTextBoxChange.cs" />
+    <Compile Include="ObjectChangeToken.cs" />
+    <Compile Include="SictStreamZuLeeseKombinatioon.cs" />
+    <Compile Include="StringEqualityComparerCaseInsensitive.cs" />
+    <Compile Include="SictScnitTcpKlientKümere.cs" />
+    <Compile Include="TestDatumAusDatai.cs" />
+    <Compile Include="Glob.cs" />
+    <Compile Include="SictMesungZaitraumAusStopwatch.cs" />
+    <Compile Include="SictPropagiireListeRepräsentatioonProfile.cs" />
+    <Compile Include="Konventioon.cs" />
+    <Compile Include="Krypto.cs" />
+    <Compile Include="ZipExtension.cs" />
+    <Compile Include="WertZuZaitpunktStruct`1.cs" />
+    <Compile Include="IIntervalInt64.cs" />
+    <Compile Include="IPropertyGenIntervalInt64`1.cs" />
+    <Compile Include="ITimespanInt64.cs" />
+    <Compile Include="IntervalInt64.cs" />
+    <Compile Include="PropertyGenIntervalInt64`1.cs" />
+    <Compile Include="PropertyGenTimespanInt64`1.cs" />
+    <Compile Include="StructPropertyGenIntervalInt64`1.cs" />
+    <Compile Include="WebSocket\SictWebSocketFrameKonstruktor.cs" />
+    <Compile Include="WebSocket\SictWebSocketFrameOpcodeTyp.cs" />
+    <Compile Include="WebSocket\SictWebSocketFrameLeeser.cs" />
+    <Compile Include="WebSocket\SictWebSocketMessage.cs" />
+    <Compile Include="WebSocket\SictWebSocketLeeser.cs" />
+    <Compile Include="TimeSpanExtension\TimeSpanExtension.cs" />
+    <Compile Include="Serialis\SerialisatioonWertSctandard.cs" />
+    <Compile Include="Serialis\SerialisatioonWertOptionaal.cs" />
+    <Compile Include="Serialis\Xml.cs" />
+    <Compile Include="RateLimit\IRateLimitStateInt.cs" />
+    <Compile Include="RateLimit\RateLimitStateIntSingle.cs" />
+    <Compile Include="RateLimit\RateLimitExtension.cs" />
+    <Compile Include="ProcessEnvironment\Extension.cs" />
+    <Compile Include="ProcessEnvironment\ProcessInfo.cs" />
+    <Compile Include="ProcessEnvironment\Version.cs" />
+    <Compile Include="ProcessEnvironment\OperatingSystem.cs" />
+    <Compile Include="ProcessEnvironment\ProcessEnvironment.cs" />
+    <Compile Include="Synchronization\LockExtension.cs" />
+    <Compile Include="Emitent\IEmitent.cs" />
+    <Compile Include="Emitent\EmitentExtension.cs" />
+    <Compile Include="Geometrik\RectInt.cs" />
+    <Compile Include="Geometrik\Geometrik.cs" />
+    <Compile Include="Geometrik\RectExtension.cs" />
+    <Compile Include="Geometrik\VektorExtension.cs" />
+    <Compile Include="Geometrik\ITransform2D.cs" />
+    <Compile Include="Geometrik\Transform2DAfinIntMikroStruct.cs" />
+    <Compile Include="Geometrik\Vektor2DDouble.cs" />
+    <Compile Include="Geometrik\Vektor2DInt.cs" />
+    <Compile Include="Cache\CacheSingleInt64`1.cs" />
+    <Compile Include="AppDomain\AssemblyInflateLaade.cs" />
+    <Compile Include="AppDomain\AppDomainProxy.cs" />
+    <Compile Include="AppDomain\AppDomainProxyZiilKonstrukt`1.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

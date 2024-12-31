@@ -194,28 +194,27 @@ namespace Sanderling
 			this IUIElement occludedElement,
 			object uiTree)
 			=>
-				throw new NotImplementedException();/*
 			occludedElement.GetUpmostUIElementOfSubtreeInFront(uiTree)
 
 			//	Assume that children of OccludedElement do not participate in Occlusion
 			?.Where(candidateOccluding => (occludedElement?.ChildLastInTreeIndex ?? 0) < candidateOccluding?.InTreeIndex)
 
 			?.Select(occludingElement => new KeyValuePair<IUIElement, RectInt[]>(
-				occludingElement, occludedElement.Region.SubstractionRemainder(occludingElement.Region).ToArray()))
+				occludingElement, occludedElement.Region.Value.SubstractionRemainder(occludingElement.Region.Value).ToArray()))
 			//	only take elements where the remaining region is smaller than the region of the OccludedElement.
 			?.Where(occludingElementAndRemainingRegion =>
-				(occludingElementAndRemainingRegion.Value?.Select(subregion => subregion.Area())?.Sum() ?? 0) < occludedElement.Region.Area());
-		*/
+				(occludingElementAndRemainingRegion.Value?.Select(subregion => subregion.Area())?.Sum() ?? 0) < occludedElement.Region.Value.Area());
+		
 		static public IEnumerable<RectInt> GetOccludedUIElementRemainingRegion(
 			this IUIElement occludedElement,
 			object uiTree,
 			Func<IUIElement, bool> callbackExclude = null) =>
-			throw new NotImplementedException();/*
-		occludedElement.Region.SubstractionRemainder(
+			
+		occludedElement.Region.Value.SubstractionRemainder(
 		GetOccludingUIElementAndRemainingRegion(occludedElement, uiTree)
 		?.Where(occludingElementAndRemainingRegion => !(callbackExclude?.Invoke(occludingElementAndRemainingRegion.Key) ?? false))
-		?.Select(occludingElementAndRemainingRegion => occludingElementAndRemainingRegion.Key.Region));
-		*/
+		?.Select(occludingElementAndRemainingRegion => occludingElementAndRemainingRegion.Key.Region.Value));
+		
 	static public bool SessionDurationRemainingSufficientToStayExposed(this IMemoryMeasurement measurement) =>
 		ExeConfig.StayExposedSessionDurationRemainingMin <= measurement?.SessionDurationRemaining;
 }

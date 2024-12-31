@@ -1,26 +1,18 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Diagnostics;
-using ABot;
 using Bib3;
 using BotEngine.Interface;
 using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using ABot;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Reflection;
+using Bib3.RateLimit;
 using Sanderling.ABot;
 using BotEngine.Client;
 using Sanderling;
-using Sanderling.ABot.Bot;
-using SimpleInterfaceServerDispatcher = Sanderling.SimpleInterfaceServerDispatcher;
-using System.Text;
 using Eve64;
+using Sanderling.ABot.Bot;
 using IMemoryReader = Eve64.IMemoryReader;
 using UITreeNode = PythonStructures.UITreeNode;
 
@@ -32,7 +24,7 @@ var app = new App();
 //app.InterfaceExchange();
 var eve64bit = true;
 
-int? processId = 38480;
+int? processId = 40780;
 IImmutableList<ulong>? possibleRootAddresses = null;
 while (true)
 {
@@ -86,7 +78,7 @@ while (true)
 		app.MemoryMeasurementLast =
 			new FromProcessMeasurement<IMemoryMeasurement>(
 				Parser.ParseUserInterfaceFromUITree(Parser.ParseUITreeWithDisplayRegionFromUITree(largestUiTree)), 0,
-				0);
+				0, processId.Value);
 	}
 	else
 	{
@@ -94,7 +86,9 @@ while (true)
 	}
 
 	sw.Stop();
-	Console.WriteLine($"Successfully read memory ({sw.Elapsed}): " + app.MemoryMeasurementLast?.Value?.InfoPanelContainer?.LocationInfo.CurrentSolarSystemName);
+	Console.WriteLine($"Successfully read memory ({sw.Elapsed}): " + app.MemoryMeasurementLast?.Value?.InfoPanelContainer?.LocationInfo?.CurrentSolarSystemName);
+
+	app.BotProgress(true);
 	await Task.Delay(500);
 }
 
@@ -105,7 +99,7 @@ namespace Sanderling
 	{
 		readonly object botLock = new object();
 
-		readonly Sanderling.ABot.Bot.Bot bot = new Sanderling.ABot.Bot.Bot();
+		readonly Bot bot = new Bot();
 
 		const int FromMotionToMeasurementDelayMilli = 300;
 
@@ -113,7 +107,7 @@ namespace Sanderling
 
 		const string BotConfigFileName = "bot.config";
 
-		PropertyGenTimespanInt64<Sanderling.ABot.Bot.MotionResult[]> BotStepLastMotionResult;
+		PropertyGenTimespanInt64<MotionResult[]> BotStepLastMotionResult;
 
 		PropertyGenTimespanInt64<KeyValuePair<Exception, StringAtPath>> BotConfigLoaded;
 
@@ -130,24 +124,24 @@ namespace Sanderling
 			return memoryMeasurementLast?.Begin + MemoryMeasurementDistanceMaxMilli;
 		}
 
-		void BotProgress(bool motionEnable)
+		internal void BotProgress(bool motionEnable)
 		{
 			botLock.IfLockIsAvailableEnter(() =>
 			{
 				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} called BotProgress");
-				var memoryMeasurementLast = this.MemoryMeasurementLast;
+				var memoryMeasurementLast = MemoryMeasurementLast;
 
 				var time = memoryMeasurementLast?.End;
 
 				if (!time.HasValue)
 					return;
 
-				if (time <= bot?.StepLastInput?.TimeMilli)
-					return;
+				//TODO if (time <= bot?.StepLastInput?.TimeMilli)
+					//return;
 
 				BotConfigLoad();
 
-				var stepResult = bot.Step(new Sanderling.ABot.Bot.BotStepInput
+				var stepResult = bot.Step(new BotStepInput
 				{
 					TimeMilli = time.Value,
 					FromProcessMemoryMeasurement = memoryMeasurementLast,
@@ -163,36 +157,34 @@ namespace Sanderling
 
 		void BotMotion(
 			FromProcessMeasurement<IMemoryMeasurement> memoryMeasurement,
-			IEnumerable<Sanderling.ABot.Bot.MotionRecommendation> sequenceMotion)
+			IEnumerable<MotionRecommendation> sequenceMotion)
 		{
 			var processId = memoryMeasurement?.ProcessId;
 
 			if (!processId.HasValue || null == sequenceMotion || sequenceMotion.IsNullOrEmpty())
 				return;
-			var process = System.Diagnostics.Process.GetProcessById(processId.Value);
+			var process = Process.GetProcessById(processId.Value);
 
-			var listMotionResult = new List<Sanderling.ABot.Bot.MotionResult>();
+			var listMotionResult = new List<MotionResult>();
 			var startTime = GetTimeStopwatch();
 
 			botLock.WhenLockIsAvailableEnter(300, () =>
-			{
-				throw new NotImplementedException();
-				/*var motor = new WindowMotor(process.MainWindowHandle);
+			{var motor = new WindowMotor(process.MainWindowHandle);
 
 				foreach (var motion in sequenceMotion)
 				{
 					var motionResult =
 						motor.ActSequenceMotion(motion.MotionParam.AsSequenceMotion(memoryMeasurement?.Value));
 
-					listMotionResult.Add(new Bot.MotionResult
+					/*listMotionResult.Add(new Bot.MotionResult
 					{
 						Id = motion.Id,
 						Success = motionResult?.Success ?? false,
-					});
-				}*/
+					});*/
+				}
 			}, "MotionExecution");
 			BotStepLastMotionResult =
-				new PropertyGenTimespanInt64<Sanderling.ABot.Bot.MotionResult[]>(listMotionResult.ToArray(), startTime,
+				new PropertyGenTimespanInt64<MotionResult[]>(listMotionResult.ToArray(), startTime,
 					GetTimeStopwatch());
 
 			Thread.Sleep(sequenceMotion.Max(sm => sm.DelayAfterMs ?? FromMotionToMeasurementDelayMilli));
@@ -231,8 +223,8 @@ namespace Sanderling
 			LicenseClientConfig = new LicenseClientConfig(),
 		};
 
-		public readonly Bib3.RateLimit.IRateLimitStateInt MemoryMeasurementRequestRateLimit =
-			new Bib3.RateLimit.RateLimitStateIntSingle();
+		public readonly IRateLimitStateInt MemoryMeasurementRequestRateLimit =
+			new RateLimitStateIntSingle();
 
 		public void InterfaceExchange()
 		{
@@ -257,7 +249,7 @@ namespace Sanderling
 		}
 		//static string AssemblyDirectoryPath => Bib3.FCL.Glob.ZuProcessSelbsctMainModuleDirectoryPfaadBerecne().EnsureEndsWith(@"\");
 
-		static public Int64 GetTimeStopwatch() => Bib3.Glob.StopwatchZaitMiliSictInt();
+		static public Int64 GetTimeStopwatch() => Glob.StopwatchZaitMiliSictInt();
 
 		//todo
 		public App()
@@ -271,7 +263,7 @@ namespace Sanderling
 			TimerConstruct();
 		}
 
-		private System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+		private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
 		{
 			var matchFullName =
 				AppDomain.CurrentDomain.GetAssemblies()
@@ -304,7 +296,7 @@ namespace Sanderling
 
 			var motionEnable = /*MainControl?.IsBotMotionEnabled ?? */false;
 
-			Task.Run(() => BotProgress(motionEnable));
+			//Task.Run(() => BotProgress(motionEnable));
 		}
 
 		//private void Application_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -329,14 +321,14 @@ namespace Sanderling
 		//	e.Handled = true;
 		//}
 
-		private void MainWindow_SimulateMeasurement(Interface.MemoryStruct.IMemoryMeasurement measurement)
-		{
-			var time = GetTimeStopwatch();
+		//private void MainWindow_SimulateMeasurement(Interface.MemoryStruct.IMemoryMeasurement measurement)
+		//{
+		//	var time = GetTimeStopwatch();
 
-			MemoryMeasurementLast =
-				new BotEngine.Interface.FromProcessMeasurement<Interface.MemoryStruct.IMemoryMeasurement>(measurement,
-					time, time);
-		}
+		//	MemoryMeasurementLast =
+		//		new BotEngine.Interface.FromProcessMeasurement<Interface.MemoryStruct.IMemoryMeasurement>(measurement,
+		//			time, time);
+		//}
 	}
 
 	public static class LockExtension

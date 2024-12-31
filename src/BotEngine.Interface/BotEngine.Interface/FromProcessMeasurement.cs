@@ -12,7 +12,7 @@ namespace BotEngine.Interface
 		{
 		}
 
-		public FromProcessMeasurement(T measurement, long beginTime, long endTime, int processId = 0, long? firstIntegrationTime = default(long?))
+		public FromProcessMeasurement(T measurement, long beginTime, long endTime, int processId, long? firstIntegrationTime = default(long?))
 			: base(measurement, beginTime, endTime)
 		{
 			ProcessId = processId;

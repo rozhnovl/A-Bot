@@ -10,13 +10,13 @@ namespace Sanderling.ABot.Bot.Strategies
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
 		{
 			//yield return new BotTask { Component = EnumerateConfigDiagnostics() };
-
+			yield return new UndockTask(bot.MemoryMeasurementAtTime?.Value);
 			yield return new EnableInfoPanelCurrentSystem { MemoryMeasurement = bot.MemoryMeasurementAtTime?.Value };
 
 			var saveShipTask = new SaveShipTask { Bot = bot };
 
 			yield return saveShipTask;
-
+			/*
 			var shipFit = new ShipFit(bot.MemoryMeasurementAccu?.ShipUiModule,
 				new[]
 				{
@@ -71,7 +71,7 @@ namespace Sanderling.ABot.Bot.Strategies
 						currentAnomalyLooted = true;
 				}
 				yield return new AnomalyEnter { bot = bot };
-			}
+			}*/
 		}
 	}
 }

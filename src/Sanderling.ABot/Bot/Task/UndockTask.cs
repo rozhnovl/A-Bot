@@ -26,8 +26,8 @@ namespace Sanderling.ABot.Bot.Task
 				if (!(MemoryMeasurement?.IsDocked ?? false))
 					yield break;
 
-				yield return MemoryMeasurement?.WindowStation?.FirstOrDefault()?.ButtonText
-					.SingleOrDefault(b => !b.Text.Contains("Abort") && b.Text== "<center>Undock</center>")
+				yield return MemoryMeasurement?.WindowStation?.FirstOrDefault()
+					?.UndockButton
 					?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left)
 					.AsRecommendation();
 			}

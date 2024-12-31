@@ -458,6 +458,7 @@ namespace Eve64
 			{
 				new WindowStation()
 				{
+					Region = windowNode.AsUiElement().Region,
 					//UiNode = windowNode,
 					UndockButton = ButtonFromDisplayText("undock").AsUiElement(),
 					//AbortUndockButton = ButtonFromDisplayText("undocking")
@@ -582,16 +583,17 @@ namespace Eve64
 		private static object ParseKeyActivationWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseCompressionWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 
-		public static IUIElement AsUiElement(this UITreeNodeWithDisplayRegion uiTree)
+		public static IUIElement? AsUiElement(this UITreeNodeWithDisplayRegion? uiTree)
 		{
+			if (uiTree == null) return null;
 			return new UIElement
 			{
 				Region = new RectInt
 				{
-					Min0 = uiTree.SelfDisplayRegion.X,
-					Min1 = uiTree.SelfDisplayRegion.Y,
-					Max0 = uiTree.SelfDisplayRegion.X + uiTree.SelfDisplayRegion.Width,
-					Max1 = uiTree.SelfDisplayRegion.Y + uiTree.SelfDisplayRegion.Height
+					Min0 = uiTree.TotalDisplayRegion.X,
+					Min1 = uiTree.TotalDisplayRegion.Y,
+					Max0 = uiTree.TotalDisplayRegion.X + uiTree.TotalDisplayRegion.Width,
+					Max1 = uiTree.TotalDisplayRegion.Y + uiTree.TotalDisplayRegion.Height
 				}
 			};
 		}

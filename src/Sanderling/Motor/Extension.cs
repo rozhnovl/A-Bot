@@ -50,8 +50,8 @@ namespace Sanderling.Motor
 
 				waypointUIElement = (waypointUIElement as Accumulation.IRepresentingMemoryObject)?.RepresentedMemoryObject as UIElement ?? waypointUIElement;
 
-				var waypointUIElementCurrent =
-					waypointUIElement.GetInstanceWithIdFromCLRGraph(memoryMeasurement, Interface.FromInterfaceResponse.SerialisPolicyCache);
+				//todo
+				var waypointUIElementCurrent = waypointUIElement;//waypointUIElement.GetInstanceWithIdFromCLRGraph(memoryMeasurement, Interface.FromInterfaceResponse.SerialisPolicyCache);
 
 				if (null == waypointUIElementCurrent)
 					throw new ApplicationException("mouse waypoint not anymore contained in UITree");

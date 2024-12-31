@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Runtime.InteropServices;
-using BotEngine;
 using PythonStructures;
 
 namespace Eve64

@@ -23,8 +23,8 @@ namespace Sanderling.ABot.Parse
 
 		static public bool ManeuverStartPossible(this IMemoryMeasurement memoryMeasurement) =>
 			!(memoryMeasurement?.IsDocked ?? false) &&
-			!new[] { ShipManeuverTypeEnum.Warp, ShipManeuverTypeEnum.Jump, ShipManeuverTypeEnum.Docked }.Contains(
-				memoryMeasurement?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverTypeEnum.None);
+			!new[] { MemoryStruct.ShipManeuverType.Warp, MemoryStruct.ShipManeuverType.Jump, MemoryStruct.ShipManeuverType.Docked }.Contains(
+				memoryMeasurement?.ShipUi?.Indication?.ManeuverType ?? MemoryStruct.ShipManeuverType.None);
 
 		static public Int64 Width(this RectInt rect) => rect.Side0Length();
 		static public Int64 Height(this RectInt rect) => rect.Side1Length();

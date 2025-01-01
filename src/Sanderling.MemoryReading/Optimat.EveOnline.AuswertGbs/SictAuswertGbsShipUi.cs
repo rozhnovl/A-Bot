@@ -157,7 +157,7 @@ public class SictAuswertGbsShipUi
 		Ergeebnis = new ShipUi((IUIElement)null)
 		{
 			Center = Sanderling.Interface.MemoryStruct.Extension.WithRegionSizePivotAtCenter((ContainerPowerCoreAst ?? uINodeInfoInTree).AsUIElementIfVisible(), new Vektor2DInt(40L, 40L)),
-			Indication = (IContainer)(object)indication,
+			//Indication = (IContainer)(object)indication,
 			HitpointsAndEnergy = (IShipHitpointsAndEnergy)(object)val,
 			SpeedLabel = uINodeInfoInTree6?.AsUIElementTextIfTextNotEmpty(),
 			EWarElement = EwarUIContainerMengeEWarElementKandidaatAuswertErgeebnis,

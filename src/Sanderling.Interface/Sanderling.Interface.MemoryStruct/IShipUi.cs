@@ -9,7 +9,7 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 		}
 
-		IContainer Indication
+		IShipUIIndication Indication
 		{
 			get;
 		}

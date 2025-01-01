@@ -176,7 +176,7 @@ namespace Sanderling.Interface.MemoryStruct
 			set;
 		}
 
-		public IWindowDroneView[] WindowDroneView
+		public IWindowDroneView WindowDroneView
 		{
 			get;
 			set;

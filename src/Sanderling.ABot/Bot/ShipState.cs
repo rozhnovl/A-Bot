@@ -18,9 +18,10 @@ namespace Sanderling.ABot.Bot
 		{
 			this.bot = bot;
 			this.memory = bot.MemoryMeasurementAtTime.Value;
-			Maneuver = (memory?.ShipUi?.Indication?.LabelText?.Any(lt => lt.Text == "Keeping at Range") ?? false)
+			//TODO
+			/*Maneuver = (memory?.ShipUi?.Indication?.LabelText?.Any(lt => lt.Text == "Keeping at Range") ?? false)
 				? ShipManeuverTypeEnum.KeepAtRange
-				: memory.ShipUi.Indication.ManeuverType?? ShipManeuverTypeEnum.None;
+				: memory.ShipUi.Indication.ManeuverType?? ShipManeuverTypeEnum.None;*/
 			ActiveTargets = new ActiveTargetsContoller(bot, memory);
 			Fit = fit;
 			Drones = new DronesContoller(memory);

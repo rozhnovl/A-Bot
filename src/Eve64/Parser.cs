@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bib3.Geometrik;
 using Newtonsoft.Json.Linq;
 using PythonStructures;
 using Sanderling.Interface.MemoryStruct;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxTokenParser;
 
 namespace Eve64
 {
 	[DebuggerDisplay("DisplayNode: {UiNode.PythonObjectTypeName}({UiNode.NameProperty})")]
 	public class UITreeNodeWithDisplayRegion
 	{
+		public UITreeNode UINode=>UiNode;
 		public UITreeNode UiNode { get; set; }
 		public List<ChildOfNodeWithDisplayRegion>? Children { get; set; } // Nullable to represent Maybe type
 		public DisplayRegion SelfDisplayRegion { get; set; }
@@ -35,6 +38,11 @@ namespace Eve64
 		public long Y { get; set; }
 		public long Width { get; set; }
 		public long Height { get; set; }
+
+		public long Area()
+		{
+			return Width * Height;
+		}
 	}
 
 	public static class Parser
@@ -60,9 +68,9 @@ namespace Eve64
 				ShipUi = ParseShipUIFromUITreeRoot(uiTree),
 				Target = ParseTargetsFromUITreeRoot(uiTree),
 				InfoPanelContainer = ParseInfoPanelContainerFromUIRoot(uiTree),
-				//OverviewWindows = ParseOverviewWindowsFromUITreeRoot(uiTree),
-				//SelectedItemWindow = ParseSelectedItemWindowFromUITreeRoot(uiTree),
-				//DronesWindow = ParseDronesWindowFromUITreeRoot(uiTree),
+				WindowOverview = ParseOverviewWindowsFromUITreeRoot(uiTree).ToArray(),
+				WindowSelectedItemView =new[]{ ParseSelectedItemWindowFromUITreeRoot(uiTree)},
+				WindowDroneView = ParseDronesWindowFromUITreeRoot(uiTree),
 				//FittingWindow = ParseFittingWindowFromUITreeRoot(uiTree),
 				//ProbeScannerWindow = ParseProbeScannerWindowFromUITreeRoot(uiTree),
 				//DirectionalScannerWindow = ParseDirectionalScannerWindowFromUITreeRoot(uiTree),
@@ -270,8 +278,262 @@ namespace Eve64
 
 		// Methods for parsing specific parts of the user interface
 		private static IMenu[] ParseContextMenusFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
-		private static IShipUi ParseShipUIFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
-		private static IShipUiTarget[] ParseTargetsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
+		private static IShipUi? ParseShipUIFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			var shipUINode = uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "ShipUI");
+
+			if (shipUINode == null)
+				return null;
+
+			var capacitorUINode = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "CapacitorContainer");
+
+			if (capacitorUINode == null)
+				return null;
+
+			var capacitor = ParseShipUICapacitorFromUINode(capacitorUINode);
+
+			var indicationNode = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node =>
+				{
+					var name = node.UINode.GetNameFromDictEntries()?.ToLower();
+					return name != null && name.Contains("indicationcontainer");
+				});
+
+			var indication = indicationNode != null ? ParseShipUIIndication(indicationNode) : null;
+
+			var moduleButtons = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName == "ShipSlot")
+				.SelectMany(slotNode =>
+					slotNode.ListDescendantsWithDisplayRegion()
+						.Where(n => n.UINode.PythonObjectTypeName == "ModuleButton")
+						.Select(moduleButtonNode =>
+							ParseShipUIModuleButton(slotNode, moduleButtonNode)
+						)
+				)
+				.ToList();
+			Func<string, int?> GetLastValuePercentFromGaugeName = gaugeName =>
+			{
+				var gaugeNode = shipUINode
+					.ListDescendantsWithDisplayRegion()
+					.FirstOrDefault(node =>
+					{
+						var name = node.UINode.GetNameFromDictEntries();
+						return name != null && name == gaugeName;
+					});
+
+				if (gaugeNode == null)
+					return null;
+
+				var lastValueToken = gaugeNode.UINode.DictEntriesOfInterest.TryGetValue("_lastValue", out var value) ? value : null;
+
+				if (lastValueToken == null)
+					return null;
+
+				if (float.TryParse(lastValueToken.ToString(), out var decodedValue))
+				{
+					return (int)Math.Round(decodedValue * 100);
+				}
+
+				return null;
+			};
+
+
+				var offensiveBuffButtons = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.Select(node => new OffensiveBuffButton { UINode = node.AsUiElement(), Name = node.UINode.GetNameFromDictEntries() })
+				.Where(x => x.Name != null)
+				.ToList();
+
+			var squadronsUI = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "SquadronsUI");
+
+			var heatGauges = shipUINode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "HeatGauges");
+			Func<string, UITreeNodeWithDisplayRegion?> FindDescendantNode = pythonObjectTypeName =>
+				shipUINode
+					.ListDescendantsWithDisplayRegion()
+					.SingleOrDefault(node => node.UINode.PythonObjectTypeName == pythonObjectTypeName);
+			return GetLastValuePercentFromGaugeName("armorGauge") == null
+				? null
+				: new ShipUi
+				{
+					Region = shipUINode.AsUiElement().Region,
+					Capacitor = capacitor,
+					HitpointsPercent = new Hitpoints()
+					{
+						Armor = GetLastValuePercentFromGaugeName("armorGauge").Value,
+						Shield = GetLastValuePercentFromGaugeName("shieldGauge").Value,
+						Structure = GetLastValuePercentFromGaugeName("structureGauge").Value,
+					},
+					Indication = indication,
+					ModuleButtons = moduleButtons,
+					ModuleButtonsRows = GroupShipUIModulesIntoRows(capacitor, moduleButtons),
+					OffensiveBuffButtons = offensiveBuffButtons,
+					SquadronsUI = null,//TODO squadronsUI,
+					StopButton = FindDescendantNode("StopButton")?.AsUiElement(),
+					MaxSpeedButton = FindDescendantNode("MaxSpeedButton")?.AsUiElement(),
+					HeatGauges = heatGauges != null ? ParseShipUIHeatGaugesFromUINode(heatGauges) : null
+				};
+		}
+		public static ShipUIIndication ParseShipUIIndication(UITreeNodeWithDisplayRegion indicationUINode)
+		{
+			var displayTexts = indicationUINode.GetAllContainedDisplayTexts();
+
+			var maneuverPatterns = new List<(string Pattern, ShipManeuverType Type)>
+			{
+				("Warp", ShipManeuverType.Warp),
+				("Jump", ShipManeuverType.Jump),
+				("Orbit", ShipManeuverType.Orbit),
+				("Approach", ShipManeuverType.Approach),
+				// Korean samples
+				("워프 드라이브 가동", ShipManeuverType.Warp),
+				("점프 중", ShipManeuverType.Jump)
+			};
+
+			var maneuverType = maneuverPatterns
+				.FirstOrDefault(pattern => displayTexts.Any(text => text.Contains(pattern.Pattern)))
+				.Type;
+
+			return new ShipUIIndication
+			{
+				UINode = indicationUINode.AsUiElement(),
+				ManeuverType = maneuverType
+			};
+		}
+
+		private static ShipUICapacitor ParseShipUICapacitorFromUINode(UITreeNodeWithDisplayRegion capacitorUINode)
+		{
+			var pmarks = capacitorUINode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.GetNameFromDictEntries() == "pmark")
+				.Select(pmarkUINode => new ShipUICapacitorPmark
+				{
+					UINode = pmarkUINode.AsUiElement(),
+					ColorPercent = pmarkUINode.UiNode.GetColorPercentFromDictEntries()
+				})
+				.ToList();
+
+			var levelFromPmarksPercent = CalculatePmarksPercent(pmarks);
+
+			return new ShipUICapacitor
+			{
+				UINode = capacitorUINode.AsUiElement(),
+				Pmarks = pmarks,
+				LevelFromPmarksPercent = levelFromPmarksPercent
+			};
+		}
+
+		private static int? CalculatePmarksPercent(List<ShipUICapacitorPmark> pmarks)
+		{
+			var pmarksFills = pmarks
+				.Select(pmark => pmark.ColorPercent?.APercent < 20)
+				.ToList();
+
+			if (!pmarksFills.Any())
+				return null;
+
+			var filled = pmarksFills.Count(x => x == true);
+			return (filled * 100) / pmarksFills.Count;
+		}
+
+		private static ShipUIHeatGauges ParseShipUIHeatGaugesFromUINode(UITreeNodeWithDisplayRegion gaugesUINode)
+		{
+			var gauges = gaugesUINode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.GetNameFromDictEntries() == "heatGauge")
+				.Select(gaugeNode =>
+				{
+					var rotationPercent = (int)(gaugeNode.UINode.GetRotationFloatFromDictEntries()*100);
+					return new ShipUIHeatGauge
+					{
+						UINode = gaugeNode.AsUiElement(),
+						RotationPercent = rotationPercent,
+						HeatPercent = rotationPercent != null ? CalculateHeatPercent(rotationPercent) : null
+					};
+				})
+				.ToList();
+
+			return new ShipUIHeatGauges
+			{
+				UINode = gaugesUINode.AsUiElement(),
+				Gauges = gauges
+			};
+		}
+
+		private static int? CalculateHeatPercent(float rotationPercent)
+		{
+			var heatGaugesRotationZeroValues = new[] { -213, -108, -3 };
+			foreach (var zero in heatGaugesRotationZeroValues)
+			{
+				if (rotationPercent <= zero && zero - 100 <= rotationPercent)
+				{
+					return -(int)(rotationPercent - zero);
+				}
+			}
+
+			return null;
+		}
+
+		private static ShipUIModuleButton ParseShipUIModuleButton(UITreeNodeWithDisplayRegion slotNode, UITreeNodeWithDisplayRegion moduleButtonNode)
+		{
+			var rampRotationMilli = CalculateRampRotationMilli(slotNode);
+
+			return new ShipUIModuleButton
+			{
+				UINode = moduleButtonNode.AsUiElement(),
+				ModuleInfo = ParseModuleDetails(moduleButtonNode),
+				SlotUINode = slotNode.AsUiElement(),
+				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool? ?? false,//TODO check
+				IsHiliteVisible = slotNode.Children.Any(c=>c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
+				IsBusy = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "busy"),
+				RampRotationMilli = rampRotationMilli
+			};
+		}
+
+		private static ModuleInfo? ParseModuleDetails(UITreeNodeWithDisplayRegion moduleButtonNode)
+		{
+			Console.WriteLine($"Trying to get module info for Id: {moduleButtonNode.UiNode.NameProperty}");
+			return null;
+		}
+
+		private static int? CalculateRampRotationMilli(UITreeNodeWithDisplayRegion slotNode)
+		{
+			// Calculation logic for ramp rotation (simplified)
+			return null;
+		}
+
+		private static ModuleButtonsRows GroupShipUIModulesIntoRows(ShipUICapacitor capacitor, List<ShipUIModuleButton> modules)
+		{
+			var verticalCenter = capacitor.UINode.GetVerticalCenter();
+
+			var grouped= modules.GroupBy(m =>
+			{
+				var center = m.UINode.GetVerticalCenter();
+				if (center < verticalCenter - 20) return "top";
+				if (center > verticalCenter + 20) return "bottom";
+				return "middle";
+			})
+				.ToDictionary(g => g.Key, g => g.ToList());
+			return new ModuleButtonsRows()
+			{
+				Bottom = grouped.GetValueOrDefault("bottom", new List<ShipUIModuleButton>()),
+				Middle = grouped.GetValueOrDefault("middle", new List<ShipUIModuleButton>()),
+				Top = grouped.GetValueOrDefault("top", new List<ShipUIModuleButton>()),
+			};
+		}
+
+		public static long GetVerticalCenter(this IUIElement uiTree)
+		{
+			return (uiTree.Region.Value.Min1 + uiTree.Region.Value.Max1) / 2;
+		}
 		public static InfoPanelContainer? ParseInfoPanelContainerFromUIRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			var containerNode = uiTreeRoot
@@ -418,9 +680,388 @@ namespace Eve64
 
 			return null;
 		}
-		private static object ParseOverviewWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
-		private static object ParseSelectedItemWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
-		private static object ParseDronesWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
+		public static IShipUiTarget[] ParseTargetsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			return uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName == "TargetInBar")
+				.Select(ParseTarget)
+				.ToArray();
+		}
+
+		public static IShipUiTarget ParseTarget(UITreeNodeWithDisplayRegion targetNode)
+		{
+			var textsTopToBottom = targetNode
+				.GetAllContainedDisplayTextsWithRegion()
+				.OrderBy(tuple => tuple.NodeWithRegion.TotalDisplayRegion.Y)
+				.Select(tuple => tuple.DisplayText)
+				.ToList();
+
+			var barAndImageCont = targetNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "barAndImageCont");
+
+			var isActiveTarget = targetNode.UINode
+				.ListDescendantsInUITreeNode()
+				.Any(node => node.PythonObjectTypeName == "ActiveTargetOnBracket");
+
+			var assignedContainerNode = targetNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node =>
+				{
+					var name = node.UINode.GetNameFromDictEntries()?.ToLower();
+					return name != null && name.Contains("assigned");
+				})
+				.OrderBy(node => node.TotalDisplayRegion.Width)
+				.FirstOrDefault();
+
+			var assignedIcons = assignedContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => new[] { "Sprite", "Icon" }.Contains(node.UINode.PythonObjectTypeName))
+				.ToList() ?? new List<UITreeNodeWithDisplayRegion>();
+
+			return new ShipUiTarget(targetNode.AsUiElement())
+			{
+				BarAndImageCont = barAndImageCont,
+				TextsTopToBottom = textsTopToBottom,
+				IsActiveTarget = isActiveTarget,
+				AssignedContainerNode = assignedContainerNode,
+				AssignedIcons = assignedIcons
+			};
+		}
+
+		public static List<WindowOverView> ParseOverviewWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			return uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.Where(node =>
+				{
+					var typeName = node.UINode.PythonObjectTypeName;
+					return new[] { "OverView", "OverviewWindow", "OverviewWindowOld" }.Contains(typeName);
+				})
+				.Select(ParseOverviewWindow)
+				.ToList();
+		}
+
+		public static WindowOverView ParseOverviewWindow(UITreeNodeWithDisplayRegion overviewWindowNode)
+		{
+			var scrollNode = overviewWindowNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName?.ToLower().Contains("scroll") == true);
+
+			var scrollControlsNode = scrollNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName.Contains("ScrollControls"));
+
+			var headersContainerNode = scrollNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName?.ToLower().Contains("headers") == true);
+
+			var entriesHeaders = headersContainerNode?
+				.GetAllContainedDisplayTextsWithRegion() ?? new List<(string Text, UITreeNodeWithDisplayRegion Region)>();
+
+			var entries = overviewWindowNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName == "OverviewScrollEntry")
+				.Select(node => ParseOverviewWindowEntry(entriesHeaders, node))
+				.ToList();
+
+			return new WindowOverView
+			{
+				UINode = overviewWindowNode,
+				EntriesHeaders = entriesHeaders,
+				Entries = entries,
+				ScrollControls = scrollControlsNode != null ? ParseScrollControls(scrollControlsNode) : null
+			};
+		}
+
+		public static IOverviewEntry ParseOverviewWindowEntry(List<(string Text, UITreeNodeWithDisplayRegion Region)> entriesHeaders, UITreeNodeWithDisplayRegion overviewEntryNode)
+		{
+			var textsLeftToRight = overviewEntryNode
+				.GetAllContainedDisplayTextsWithRegion()
+				.OrderBy(tuple => tuple.NodeWithRegion.TotalDisplayRegion.X)
+				.Select(tuple => tuple.DisplayText)
+				.ToList();
+
+			var listViewEntry = ParseListViewEntry(entriesHeaders, overviewEntryNode);
+
+			var objectDistance = listViewEntry.CellsTexts.TryGetValue("Distance", out var distance) ? distance : null;
+
+			var objectDistanceInMeters = objectDistance != null
+				? ParseOverviewEntryDistanceInMetersFromText(objectDistance)
+				: Result.Error<int>("Did not find the 'Distance' cell text.");
+
+			var spaceObjectIconNode = overviewEntryNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "SpaceObjectIcon");
+
+			var iconSpriteColorPercent = spaceObjectIconNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "iconSprite")?
+				.UINode.GetColorPercentFromDictEntries();
+
+			var namesUnderSpaceObjectIcon = spaceObjectIconNode?
+				.UINode.ListDescendantsInUITreeNode()
+				.Select(node => node.GetNameFromDictEntries())
+				.Where(name => name != null)
+				.ToHashSet() ?? new HashSet<string>();
+
+			var bgColorFillsPercent = overviewEntryNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName == "Fill" && node.UINode.GetNameFromDictEntries() == "bgColor")
+				.Select(node => node.UINode.GetColorPercentFromDictEntries())
+				.Where(color => color != null)
+				.ToList();
+
+			var rightAlignedIconsHints = overviewEntryNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.GetNameFromDictEntries() == "rightAlignedIconContainer")
+				.SelectMany(node => node.ListDescendantsWithDisplayRegion())
+				.Select(node => node.UINode.GetHintTextFromDictEntries())
+				.Where(hint => hint != null)
+				.ToList();
+
+			return new OverviewEntry()
+			{
+				UINode = overviewEntryNode,
+				TextsLeftToRight = textsLeftToRight,
+				CellsTexts = listViewEntry.CellsTexts,
+				ObjectDistance = objectDistance,
+				ObjectDistanceInMeters = objectDistanceInMeters,
+				ObjectName = listViewEntry.CellsTexts.TryGetValue("Name", out var name) ? name : null,
+				ObjectType = listViewEntry.CellsTexts.TryGetValue("Type", out var type) ? type : null,
+				ObjectAlliance = listViewEntry.CellsTexts.TryGetValue("Alliance", out var alliance) ? alliance : null,
+				IconSpriteColorPercent = iconSpriteColorPercent,
+				NamesUnderSpaceObjectIcon = namesUnderSpaceObjectIcon,
+				BgColorFillsPercent = bgColorFillsPercent,
+				RightAlignedIconsHints = rightAlignedIconsHints
+			};
+		}
+
+		public static int? ParseOverviewEntryDistanceInMetersFromText(string distanceText)
+		{
+			var parts = distanceText.Trim().Split(' ').Reverse().ToArray();
+			if (parts.Length < 2) return null;
+
+			var unitText = parts[0];
+			var numberText = string.Join(" ", parts.Skip(1).Reverse());
+
+			var unitInMeters = unitText switch
+			{
+				"m" => 1,
+				"km" => 1000,
+				_ => (int?)null
+			};
+
+			if (unitInMeters == null) return null;
+
+			if (float.TryParse(numberText, out var parsedNumber))
+			{
+				return (int)(parsedNumber * unitInMeters);
+			}
+
+			return null;
+		}
+		public static IWindowSelectedItemView? ParseSelectedItemWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			var windowNode = uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "ActiveItem");
+
+			return windowNode != null ? ParseSelectedItemWindow(windowNode) : null;
+		}
+
+		public static IWindowSelectedItemView ParseSelectedItemWindow(UITreeNodeWithDisplayRegion windowNode)
+		{
+			Func<string, UITreeNodeWithDisplayRegion?> actionButtonFromTexturePathEnding = texturePathEnding =>
+				windowNode
+					.ListDescendantsWithDisplayRegion()
+					.FirstOrDefault(node =>
+						node.UINode.GetTexturePathFromDictEntries()?.ToLower().EndsWith(texturePathEnding.ToLower()) == true);
+
+			var orbitButton = actionButtonFromTexturePathEnding("44_32_21.png");
+
+			return new WindowSelectedItemView()
+			{
+				UINode = windowNode,
+				OrbitButton = orbitButton
+			};
+		}
+
+		public static DronesWindow? ParseDronesWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			var windowNode = uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(node =>
+				{
+					var typeName = node.UINode.PythonObjectTypeName;
+					return new[] { "DroneView", "DronesWindow" }.Contains(typeName);
+				});
+
+			if (windowNode == null)
+				return null;
+
+			var droneGroupHeaders = windowNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName.Contains("DroneGroupHeader"))
+				.Select(ParseDronesWindowDroneGroupHeader)
+				.Where(header => header != null)
+				.ToList();
+
+			var droneEntries = windowNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node =>
+				{
+					var typeName = node.UINode.PythonObjectTypeName;
+					return typeName.StartsWith("Drone") && typeName.EndsWith("Entry");
+				})
+				.Select(ParseDronesWindowDroneEntry)
+				.ToList();
+
+			var droneGroups = CombineDroneGroups(droneEntries, droneGroupHeaders);
+
+			Func<string, DronesWindowEntryGroupStructure?> droneGroupFromHeaderTextPart = headerTextPart =>
+				droneGroups
+					.Where(group =>
+						group.Header.MainText?.ToLower().Contains(headerTextPart.ToLower()) == true)
+					.OrderBy(group => group.Header.MainText?.Length ?? int.MaxValue)
+					.FirstOrDefault();
+
+			return new DronesWindow
+			{
+				UINode = windowNode,
+				DroneGroups = droneGroups,
+				DroneGroupInBay = droneGroupFromHeaderTextPart("in bay"),
+				DroneGroupInSpace = droneGroupFromHeaderTextPart("in space")
+			};
+		}
+
+		private static List<DronesWindowEntryGroupStructure> CombineDroneGroups(
+			List<DronesWindowEntryDroneStructure> droneEntries,
+			List<DronesWindowDroneGroupHeader> droneGroupHeaders)
+		{
+			var droneGroups = droneEntries.Select(entry => new DronesWindowEntryGroupStructure
+			{
+				Header = null,
+				Children = new List<DronesWindowEntry> { new DronesWindowEntryDrone { Entry = entry } }
+			}).ToList();
+
+			droneGroups.AddRange(droneGroupHeaders.Select(header => new DronesWindowEntryGroupStructure
+			{
+				Header = header,
+				Children = new List<DronesWindowEntry>()
+			}));
+
+			return DroneGroupTreesFromFlatList(droneGroups);
+		}
+
+		private static List<DronesWindowEntryGroupStructure> DroneGroupTreesFromFlatList(
+			List<DronesWindowEntryGroupStructure> entries)
+		{
+			var orderedEntries = entries.OrderBy(entry =>
+				entry.Header?.UINode.TotalDisplayRegion.Y ?? entry.Children.First().UINode.TotalDisplayRegion.Y).ToList();
+
+			// Recursive tree-building logic can be added here if needed.
+			return orderedEntries;
+		}
+
+		private static DronesWindowDroneGroupHeader? ParseDronesWindowDroneGroupHeader(UITreeNodeWithDisplayRegion groupHeaderNode)
+		{
+			var mainText = groupHeaderNode
+				.GetAllContainedDisplayTextsWithRegion()
+				.OrderByDescending(tuple => tuple.NodeWithRegion.TotalDisplayRegion.Area())
+				.Select(tuple => tuple.DisplayText)
+				.FirstOrDefault();
+
+			if (mainText == null)
+				return null;
+
+			var quantityFromTitle = ParseQuantityFromDroneGroupTitleText(mainText);
+
+			return new DronesWindowDroneGroupHeader
+			{
+				UINode = groupHeaderNode,
+				MainText = mainText,
+				QuantityFromTitle = quantityFromTitle
+			};
+		}
+
+		private static DronesWindowDroneGroupHeaderQuantity? ParseQuantityFromDroneGroupTitleText(string titleText)
+		{
+			var parts = titleText.Split('(').Skip(1).ToArray();
+			if (parts.Length == 0)
+				return null;
+
+			var textInParens = parts[0].Split(')').FirstOrDefault();
+			if (textInParens == null)
+				return null;
+
+			var numbers = textInParens
+				.Split('/')
+				.Select(numberText => int.TryParse(numberText.Trim(), out var value) ? value : (int?)null)
+				.ToList();
+
+			if (numbers.Count == 1)
+				return new DronesWindowDroneGroupHeaderQuantity { Current = numbers[0], Maximum = null };
+			if (numbers.Count == 2)
+				return new DronesWindowDroneGroupHeaderQuantity { Current = numbers[0], Maximum = numbers[1] };
+
+			return null;
+		}
+
+		private static DronesWindowEntryDroneStructure ParseDronesWindowDroneEntry(UITreeNodeWithDisplayRegion droneEntryNode)
+		{
+			var mainText = droneEntryNode
+				.GetAllContainedDisplayTextsWithRegion()
+				.OrderByDescending(tuple => tuple.NodeWithRegion.TotalDisplayRegion.Area())
+				.Select(tuple => tuple.DisplayText)
+				.FirstOrDefault();
+
+			return new DronesWindowEntryDroneStructure
+			{
+				UINode = droneEntryNode,
+				MainText = mainText
+			};
+		}
+
+		public class DronesWindow : IWindowDroneView
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+			public List<DronesWindowEntryGroupStructure> DroneGroups { get; set; }
+			public DronesWindowEntryGroupStructure? DroneGroupInBay { get; set; }
+			public DronesWindowEntryGroupStructure? DroneGroupInSpace { get; set; }
+		}
+
+		public class DronesWindowEntryGroupStructure
+		{
+			public DronesWindowDroneGroupHeader? Header { get; set; }
+			public List<DronesWindowEntry> Children { get; set; }
+		}
+
+		public class DronesWindowEntry { }
+		public class DronesWindowEntryDrone : DronesWindowEntry
+		{
+			public DronesWindowEntryDroneStructure Entry { get; set; }
+		}
+
+		public class DronesWindowDroneGroupHeader
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+			public string? MainText { get; set; }
+			public DronesWindowDroneGroupHeaderQuantity? QuantityFromTitle { get; set; }
+		}
+
+		public class DronesWindowDroneGroupHeaderQuantity
+		{
+			public int? Current { get; set; }
+			public int? Maximum { get; set; }
+		}
+
+		public class DronesWindowEntryDroneStructure
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+			public string? MainText { get; set; }
+		}
 		private static object ParseFittingWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseProbeScannerWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseDirectionalScannerWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
@@ -625,23 +1266,26 @@ namespace Eve64
 			return null;
 		}
 
-		public static ColorComponents? GetColorPercentFromDictEntries(UITreeNode uiNode)
+		public static ColorComponents? GetColorPercentFromDictEntries(this UITreeNode uiNode)
 		{
 			if (uiNode.DictEntriesOfInterest.TryGetValue("_color", out var value))
 			{
-				return JsonDecodeColorPercent((JToken)value);
+				var serializedValue = JsonSerializer.Serialize(value);
+				return JsonDecodeColorPercent(JToken.Parse(serializedValue));
 			}
 			return null;
 		}
 
-		public static float? GetRotationFloatFromDictEntries(UITreeNode uiNode)
+		public static double? GetRotationFloatFromDictEntries(this UITreeNode uiNode)
 		{
 			return uiNode.DictEntriesOfInterest.TryGetValue("_rotation", out var value) && value is float f
 				? f
-				: null;
+				: value is double d
+					? d
+					: null;
 		}
 
-		public static float? GetOpacityFloatFromDictEntries(UITreeNode uiNode)
+		public static float? GetOpacityFloatFromDictEntries(this UITreeNode uiNode)
 		{
 			return uiNode.DictEntriesOfInterest.TryGetValue("_opacity", out var value) && value is float f
 				? f
@@ -664,13 +1308,6 @@ namespace Eve64
 			{
 				return null;
 			}
-		}
-		public class ColorComponents
-		{
-			public int APercent { get; set; }
-			public int RPercent { get; set; }
-			public int GPercent { get; set; }
-			public int BPercent { get; set; }
 		}
 		private static int JsonDecodeIntFromIntOrString(JToken json)
 		{
@@ -730,7 +1367,7 @@ namespace Eve64
 		public IWindowOverview[] WindowOverview { get; init; }
 		public WindowChatChannel[] WindowChatChannel { get; init; }
 		public IWindowSelectedItemView[] WindowSelectedItemView { get; init; }
-		public IWindowDroneView[] WindowDroneView { get; init; }
+		public IWindowDroneView? WindowDroneView { get; init; }
 		public WindowPeopleAndPlaces[] WindowPeopleAndPlaces { get; init; }
 		public IWindowStation[] WindowStation { get; init; }
 		public WindowShipFitting[] WindowShipFitting { get; init; }

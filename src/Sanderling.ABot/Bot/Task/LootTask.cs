@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using BotEngine.Common;
 using BotEngine.Motor;
+using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
@@ -43,9 +44,7 @@ namespace Sanderling.ABot.Bot.Task
 				{
 					//bot?.SetCommanderWreck(true);
 
-					var isApproaching = memoryMeasurement?.ShipUi?.Indication?.LabelText?.Any(text =>
-						                    text?.Text?.RegexMatchSuccess("approaching", RegexOptions.IgnoreCase) ??
-						                    false) ?? false;
+					var isApproaching = memoryMeasurement?.ShipUi?.Indication?.ManeuverType == ShipManeuverType.Approach;
 					var LootButton = memoryMeasurement?.WindowInventory?[0]?.ButtonText
 						?.FirstOrDefault(text => text.Text.RegexMatchSuccessIgnoreCase("Loot All"));
 

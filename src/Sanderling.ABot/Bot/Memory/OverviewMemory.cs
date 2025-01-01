@@ -4,6 +4,7 @@ using Sanderling.Parse;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot.Memory
 {
@@ -14,8 +15,8 @@ namespace Sanderling.ABot.Bot.Memory
 		public IEnumerable<EWarTypeEnum> SetEWarTypeFromOverviewEntry(Sanderling.Parse.IOverviewEntry entry) =>
 			setEWarTypeFromOverviewEntryId?.TryGetValueOrDefault(entry?.Id ?? -1);
 
-		private static readonly IEnumerable<ShipManeuverTypeEnum> setManeuverReset =
-			new[] { ShipManeuverTypeEnum.Warp, ShipManeuverTypeEnum.Docked, ShipManeuverTypeEnum.Jump };
+		private static readonly IEnumerable<ShipManeuverType> setManeuverReset =
+			new[] { ShipManeuverType.Warp, ShipManeuverType.Docked, ShipManeuverType.Jump };
 
 		public void Aggregate(FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement> memoryMeasurementAtTime)
 		{
@@ -39,7 +40,7 @@ namespace Sanderling.ABot.Bot.Memory
 					setEWarTypeFromOverviewEntryId[overviewEntry.Id] = setEWarType;
 			}
 
-			if (setManeuverReset.Contains(memoryMeasurement?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverTypeEnum.None))
+			if (setManeuverReset.Contains(memoryMeasurement?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverType.None))
 			{
 				var setOverviewEntryVisibleId = overviewWindow?.ListView?.Entry?.Select(entry => entry.Id)?.ToArray();
 

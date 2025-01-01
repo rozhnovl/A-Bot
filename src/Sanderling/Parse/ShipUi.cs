@@ -76,7 +76,7 @@ namespace Sanderling.Parse
 
 	public interface IShipUi : MemoryStruct.IShipUi
 	{
-		new IShipUiIndication Indication { get; }
+		new IShipUIIndication? Indication { get; }
 	}
 
 	public interface IShipUiIndication : IContainer
@@ -105,7 +105,7 @@ namespace Sanderling.Parse
 	{
 		public MemoryStruct.IShipUi Raw { private set; get; }
 
-		public IShipUiIndication Indication { private set; get; }
+		public IShipUIIndication? Indication { private set; get; }
 
 		Int64? SpeedMilliParsed { set; get; }
 
@@ -117,7 +117,7 @@ namespace Sanderling.Parse
 		{
 			Raw = raw;
 
-			Indication = Raw?.Indication?.ParseAsShipUiIndication();
+			Indication = Raw?.Indication;
 
 			SpeedMilliParsed = Raw?.SpeedLabel?.Text?.RegexMatchIfSuccess("(" + Number.DefaultNumberFormatRegexPatternAllowLeadingAndTrailingChars + @")\s*m/s")?.Groups[1]?.Value?.NumberParseDecimalMilli();
 		}
@@ -125,8 +125,6 @@ namespace Sanderling.Parse
 
 	public partial class ShipUi
 	{
-		IContainer MemoryStruct.IShipUi.Indication => Indication;
-
 		public IEnumerable<IUIElementText> ButtonText => Raw?.ButtonText;
 
 		public IEnumerable<IUIElementInputText> InputText => Raw?.InputText;

@@ -12,20 +12,35 @@ using Sanderling.ABot;
 using BotEngine.Client;
 using Sanderling;
 using Eve64;
+using Microsoft.Extensions.DependencyInjection;
 using Sanderling.ABot.Bot;
 using IMemoryReader = Eve64.IMemoryReader;
 using UITreeNode = PythonStructures.UITreeNode;
 
 //using Sanderling.ABot.Bot;
+using Microsoft.Extensions.Hosting;
+using StackExchange.Redis; // Requires NuGet package
+
+var hostBuilder = Host.CreateApplicationBuilder(args);
+hostBuilder.AddRedisClient(connectionName: "cache");
+var host = hostBuilder.Build();
+
+var redisMultiplexer = host.Services.GetRequiredService<IConnectionMultiplexer>();
+var redis = redisMultiplexer.GetDatabase();
 
 Console.WriteLine("Hello, World!");
-BotEngine.Interface.InterfaceAppDomainSetup.Setup();
+InterfaceAppDomainSetup.Setup();
 var app = new App();
 //app.InterfaceExchange();
 var eve64bit = true;
 
 int? processId = 40780;
 IImmutableList<ulong>? possibleRootAddresses = null;
+var cachedProcessRoots = redis.StringGet($"ProcessRoot:{processId}");
+if (cachedProcessRoots.HasValue)
+{
+	possibleRootAddresses = cachedProcessRoots.ToString().Split(',').Select(ulong.Parse).ToImmutableList();
+}
 while (true)
 {
 	var sw = new Stopwatch(); sw.Start();
@@ -33,8 +48,9 @@ while (true)
 	{
 		(IMemoryReader, IImmutableList<ulong>) GetMemoryReaderAndRootAddresses()
 		{
-			possibleRootAddresses ??= EveOnline64.EnumeratePossibleAddressesForUIRootObjectsFromProcessId(processId.Value);
-
+			possibleRootAddresses ??=
+				EveOnline64.EnumeratePossibleAddressesForUIRootObjectsFromProcessId(processId.Value);
+			redis.StringSet($"ProcessRoot:{processId}", String.Join(',', possibleRootAddresses));
 			return (new EveOnline64.MemoryReaderFromLiveProcess(processId.Value), possibleRootAddresses);
 		}
 
@@ -88,7 +104,7 @@ while (true)
 	sw.Stop();
 	Console.WriteLine($"Successfully read memory ({sw.Elapsed}): " + app.MemoryMeasurementLast?.Value?.InfoPanelContainer?.LocationInfo?.CurrentSolarSystemName);
 
-	app.BotProgress(true);
+	app.BotProgress(false);
 	await Task.Delay(500);
 }
 

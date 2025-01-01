@@ -160,7 +160,7 @@ namespace Sanderling.Parse
 
 		public MemoryStruct.WindowChatChannel[] WindowChatChannel => Raw?.WindowChatChannel;
 
-		public MemoryStruct.IWindowDroneView[] WindowDroneView => Raw?.WindowDroneView;
+		public MemoryStruct.IWindowDroneView? WindowDroneView => Raw?.WindowDroneView;
 
 		public MemoryStruct.WindowFittingMgmt[] WindowFittingMgmt => Raw?.WindowFittingMgmt;
 

@@ -23,8 +23,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			var memory = bot.MemoryMeasurementAtTime.Value;
 			var ManeuverType = memory?.ShipUi?.Indication?.ManeuverType;
 
-			if (ShipManeuverTypeEnum.Warp == ManeuverType ||
-				ShipManeuverTypeEnum.Jump == ManeuverType)
+			if (ShipManeuverType.Warp == ManeuverType ||
+				ShipManeuverType.Jump == ManeuverType)
 				return null; //	do nothing while warping or jumping.
 
 			if (bookmarkMissionsOnWay)

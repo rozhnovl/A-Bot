@@ -17,7 +17,7 @@ namespace Sanderling.ABot.Bot
 
 		public DronesContoller(IMemoryMeasurement memoryMeasurement)
 		{
-			var droneListView = memoryMeasurement?.WindowDroneView?.FirstOrDefault()?.ListView;
+			var droneListView = memoryMeasurement?.WindowDroneView?.ListView;
 
 			var droneGroupWithNameMatchingPattern = new Func<string, DroneViewEntryGroup>(namePattern =>
 				droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group =>

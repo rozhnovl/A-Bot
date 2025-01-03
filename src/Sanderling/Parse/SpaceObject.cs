@@ -41,10 +41,10 @@ namespace Sanderling.Parse
 		{
 			var OverviewEntry =
 				memoryMeasurement?.WindowOverview
-				?.Select(windowOverview => windowOverview?.ListView?.Entry)
+				?.Select(windowOverview => windowOverview?.Entries)
 				?.ConcatNullable()
 				?.OfType<IOverviewEntry>()
-				?.FirstOrDefault(entry => entry?.IsSelected ?? false);
+				?.FirstOrDefault(/*entry => entry?.IsSelected ?? false*/);
 
 			if (null == OverviewEntry)
 			{
@@ -60,8 +60,7 @@ namespace Sanderling.Parse
 		}
 
 		static public string OreTypeString(this IOverviewEntry overviewEntry) =>
-			(overviewEntry?.ColumnNameValue().RegexMatchSuccessIgnoreCase("Asteroid.*") ?? false) ?
-			overviewEntry?.ColumnTypeValue() : null;
+			throw new NotImplementedException();//(overviewEntry?.CellsTexts.Keys.RegexMatchSuccessIgnoreCase("Asteroid.*") ?? false) ?overviewEntry?.ColumnTypeValue() : null;
 
 		static public OreTypeEnum? OreTypeEnum(this IOverviewEntry overviewEntry) =>
 			Bib3.Extension.EnumGetValues<OreTypeEnum>()

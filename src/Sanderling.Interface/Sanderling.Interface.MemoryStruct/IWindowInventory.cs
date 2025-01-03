@@ -2,7 +2,7 @@ using BotEngine;
 
 namespace Sanderling.Interface.MemoryStruct
 {
-	public interface IWindowInventory : IWindow, IContainer, IUIElement, IObjectIdInMemory, IObjectIdInt64
+	public interface IWindowInventory
 	{
 		ITreeViewEntry[] LeftTreeListEntry
 		{

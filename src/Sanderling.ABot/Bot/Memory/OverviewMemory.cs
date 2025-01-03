@@ -24,17 +24,17 @@ namespace Sanderling.ABot.Bot.Memory
 
 			var overviewWindow = memoryMeasurement?.WindowOverview?.FirstOrDefault();
 
-			foreach (var overviewEntry in (overviewWindow?.ListView?.Entry?.WhereNotDefault()).EmptyIfNull())
+			foreach (var overviewEntry in (overviewWindow?.Entries?.WhereNotDefault()).EmptyIfNull())
 			{
 				var setEWarType = setEWarTypeFromOverviewEntryId.TryGetValueOrDefault(overviewEntry.Id);
 
-				foreach (var ewarType in overviewEntry.EWarType.EmptyIfNull())
+				/*TODO foreach (var ewarType in overviewEntry.EWarType.EmptyIfNull())
 				{
 					if (null == setEWarType)
 						setEWarType = new HashSet<EWarTypeEnum>();
 
 					setEWarType.Add(ewarType);
-				}
+				}*/
 
 				if (null != setEWarType)
 					setEWarTypeFromOverviewEntryId[overviewEntry.Id] = setEWarType;
@@ -42,7 +42,7 @@ namespace Sanderling.ABot.Bot.Memory
 
 			if (setManeuverReset.Contains(memoryMeasurement?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverType.None))
 			{
-				var setOverviewEntryVisibleId = overviewWindow?.ListView?.Entry?.Select(entry => entry.Id)?.ToArray();
+				var setOverviewEntryVisibleId = overviewWindow?.Entries?.Select(entry => entry.Id)?.ToArray();
 
 				foreach (var entryToRemoveId in setEWarTypeFromOverviewEntryId.Keys.Where(entryId => !(setOverviewEntryVisibleId?.Contains(entryId) ?? false)).ToArray())
 					setEWarTypeFromOverviewEntryId.Remove(entryToRemoveId);

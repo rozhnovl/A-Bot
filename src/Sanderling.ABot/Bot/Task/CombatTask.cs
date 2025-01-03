@@ -31,7 +31,8 @@ namespace Sanderling.ABot.Bot.Task
 
 				if (!memoryMeasurement.ManeuverStartPossible())
 					yield break;
-
+				throw new NotImplementedException();
+				/*
 				var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
 					?.OrderByDescending(tab => tab?.LabelColorOpacityMilli ?? 1500)?.FirstOrDefault();
 				var OverviewTabCombat = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
@@ -44,7 +45,7 @@ namespace Sanderling.ABot.Bot.Task
 
 
 				var listOverviewEntryToAttack =
-					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.ListView?.Entry?.Where(entry => entry?.MainIcon?.Color?.IsRed() ?? false)
+					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.Entries?.Where(entry => entry?.MainIcon?.Color?.IsRed() ?? false)
 						?.OrderBy(entry => bot.AttackPriorityIndex(entry))
 						?.ThenBy(entry => entry?.DistanceMax ?? int.MaxValue)
 						?.ToArray();
@@ -113,6 +114,7 @@ namespace Sanderling.ABot.Bot.Task
 					}
 					else
 						Completed = true;
+			}*/
 			}
 		}
 

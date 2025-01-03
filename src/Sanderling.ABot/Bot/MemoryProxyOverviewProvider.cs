@@ -8,7 +8,7 @@ namespace Sanderling.ABot.Bot
 	{
 		public MemoryProxyOverviewProvider(Bot bot)
 		{
-			Entries = bot.MemoryMeasurementAtTime.Value.WindowOverview.Single().ListView.Entry
+			Entries = bot.MemoryMeasurementAtTime.Value.WindowOverview.Single().Entries
 				.Select(e => new MemoryProxyOverviewEntry(e, bot)).ToList<IOverviewEntry>();
 		}
 

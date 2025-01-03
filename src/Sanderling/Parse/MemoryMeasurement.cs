@@ -15,7 +15,7 @@ namespace Sanderling.Parse
 
 		new IModuleButtonTooltip ModuleButtonTooltip { get; }
 
-		new IWindowOverview[] WindowOverview { get; }
+		new MemoryStruct.IWindowOverview[] WindowOverview { get; }
 
 		new IWindowInventory[] WindowInventory { get; }
 
@@ -42,7 +42,7 @@ namespace Sanderling.Parse
 
 		public IModuleButtonTooltip ModuleButtonTooltip { set; get; }
 
-		public IWindowOverview[] WindowOverview { set; get; }
+		public MemoryStruct.IWindowOverview[] WindowOverview { set; get; }
 
 		public IWindowInventory[] WindowInventory { set; get; }
 
@@ -75,7 +75,7 @@ namespace Sanderling.Parse
 
 				ModuleButtonTooltip = raw?.ModuleButtonTooltip?.ParseAsModuleButtonTooltip();
 
-				WindowOverview = raw?.WindowOverview?.Select(OverviewExtension.Parse)?.ToArray();
+				WindowOverview = raw?.WindowOverview;
 
 				WindowInventory = raw?.WindowInventory?.Select(InventoryExtension.Parse)?.ToArray();
 

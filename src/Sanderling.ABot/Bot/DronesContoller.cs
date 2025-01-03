@@ -17,28 +17,19 @@ namespace Sanderling.ABot.Bot
 
 		public DronesContoller(IMemoryMeasurement memoryMeasurement)
 		{
-			var droneListView = memoryMeasurement?.WindowDroneView?.ListView;
+			var droneListView = memoryMeasurement?.WindowDroneView?.DroneGroups;
 
-			var droneGroupWithNameMatchingPattern = new Func<string, DroneViewEntryGroup>(namePattern =>
-				droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group =>
-					group?.LabelTextLargest()?.Text?.RegexMatchSuccessIgnoreCase(namePattern) ?? false));
 
-			var droneGroupInBay = droneGroupWithNameMatchingPattern("bay");
-			var droneGroupInLocalSpace = droneGroupWithNameMatchingPattern("local space");
-
-			droneInBayCount = droneGroupInBay?.Caption?.Text?.CountFromDroneGroupCaption() ?? 0;
-			droneInLocalSpaceCount = droneGroupInLocalSpace?.Caption?.Text?.CountFromDroneGroupCaption() ?? 0;
-
-			//	assuming that local space is bottommost group.
-			var setDroneInLocalSpace =
-				droneListView?.Entry?.OfType<DroneViewEntryItem>()
-					?.Where(drone => droneGroupInLocalSpace?.RegionCenter()?.B < drone?.RegionCenter()?.B)
-					?.ToArray();
+			droneInBayCount = memoryMeasurement?.WindowDroneView.DroneGroupInBay?.Header?.MainText
+				?.CountFromDroneGroupCaption() ?? 0;
+			droneInLocalSpaceCount = memoryMeasurement?.WindowDroneView.DroneGroupInSpace?.Header?.MainText
+				?.CountFromDroneGroupCaption() ?? 0;
 
 			droneInLocalSpaceSetStatus =
-				setDroneInLocalSpace
-					?.Select(drone => drone?.LabelText?.Select(label => label?.Text?.StatusStringFromDroneEntryText()))
-					?.ConcatNullable()?.WhereNotDefault()?.Distinct()?.ToArray();
+				memoryMeasurement?.WindowDroneView.DroneGroupInSpace?.Children
+					//TODO double check
+					?.Select(drone => drone?.Entry?.MainText?.StatusStringFromDroneEntryText())
+					?.WhereNotDefault()?.Distinct()?.ToArray();
 		}
 
 		public bool ShouldLaunch => 0 < droneInBayCount && droneInLocalSpaceCount < 2;

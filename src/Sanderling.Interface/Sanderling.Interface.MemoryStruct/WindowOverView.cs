@@ -11,11 +11,11 @@ namespace Sanderling.Interface.MemoryStruct
 			set;
 		}
 
-		public IListViewAndControl<IOverviewEntry> ListView
-		{
-			get;
-			set;
-		}
+		//public IListViewAndControl<IOverviewEntry> ListView
+		//{
+		//	get;
+		//	set;
+		//}
 
 		public string ViewportOverallLabelString
 		{
@@ -40,6 +40,11 @@ namespace Sanderling.Interface.MemoryStruct
 		public object Clone()
 		{
 			return Copy();
+		}
+
+		public IList<IOverviewEntry> Entries
+		{ get;
+			set;
 		}
 	}
 }

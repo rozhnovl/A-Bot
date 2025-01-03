@@ -21,6 +21,7 @@ namespace Sanderling.ABot.Bot.Task
 				var memoryMeasurementAccu = bot?.MemoryMeasurementAccu;
 				var memoryMeasurement = memoryMeasurementAtTime?.Value;
 
+				throw new NotImplementedException();/*
 				var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
 					?.OrderByDescending(tab => tab?.LabelColorOpacityMilli ?? 1500)?.FirstOrDefault();
 				var OverviewTabLoot = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
@@ -61,7 +62,7 @@ namespace Sanderling.ABot.Bot.Task
 				{
 					HasWreckToLoot = false;
 					//bot?.SetCommanderWreck(false);
-				}
+				}*/
 			}
 		}
 

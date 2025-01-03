@@ -9,14 +9,14 @@ using Bib3.Geometrik;
 using Newtonsoft.Json.Linq;
 using PythonStructures;
 using Sanderling.Interface.MemoryStruct;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxTokenParser;
+using static Eve64.Parser;
 
 namespace Eve64
 {
 	[DebuggerDisplay("DisplayNode: {UiNode.PythonObjectTypeName}({UiNode.NameProperty})")]
 	public class UITreeNodeWithDisplayRegion
 	{
-		public UITreeNode UINode=>UiNode;
+		public UITreeNode UINode => UiNode;
 		public UITreeNode UiNode { get; set; }
 		public List<ChildOfNodeWithDisplayRegion>? Children { get; set; } // Nullable to represent Maybe type
 		public DisplayRegion SelfDisplayRegion { get; set; }
@@ -49,7 +49,8 @@ namespace Eve64
 	{
 		public static UITreeNodeWithDisplayRegion ParseUITreeWithDisplayRegionFromUITree(UITreeNode uiTree)
 		{
-			var selfDisplayRegion = GetDisplayRegionFromDictEntries(uiTree) ?? new DisplayRegion { X = 0, Y = 0, Width = 0, Height = 0 };
+			var selfDisplayRegion = GetDisplayRegionFromDictEntries(uiTree) ??
+			                        new DisplayRegion { X = 0, Y = 0, Width = 0, Height = 0 };
 
 			return AsUITreeNodeWithDisplayRegion(new DisplayRegionParameters
 			{
@@ -69,13 +70,13 @@ namespace Eve64
 				Target = ParseTargetsFromUITreeRoot(uiTree),
 				InfoPanelContainer = ParseInfoPanelContainerFromUIRoot(uiTree),
 				WindowOverview = ParseOverviewWindowsFromUITreeRoot(uiTree).ToArray(),
-				WindowSelectedItemView =new[]{ ParseSelectedItemWindowFromUITreeRoot(uiTree)},
+				WindowSelectedItemView = new[] { ParseSelectedItemWindowFromUITreeRoot(uiTree) },
 				WindowDroneView = ParseDronesWindowFromUITreeRoot(uiTree),
 				//FittingWindow = ParseFittingWindowFromUITreeRoot(uiTree),
 				//ProbeScannerWindow = ParseProbeScannerWindowFromUITreeRoot(uiTree),
 				//DirectionalScannerWindow = ParseDirectionalScannerWindowFromUITreeRoot(uiTree),
 				WindowStation = ParseStationWindowFromUITreeRoot(uiTree),
-				//InventoryWindows = ParseInventoryWindowsFromUITreeRoot(uiTree),
+				WindowInventory = ParseInventoryWindowsFromUITreeRoot(uiTree)?.ToArray(),
 				ModuleButtonTooltip = ParseModuleButtonTooltipFromUITreeRoot(uiTree),
 				//HeatStatusTooltip = ParseHeatStatusTooltipFromUITreeRoot(uiTree),
 				//ChatWindowStacks = ParseChatWindowStacksFromUITreeRoot(uiTree),
@@ -97,7 +98,8 @@ namespace Eve64
 			};
 		}
 
-		public static UITreeNodeWithDisplayRegion AsUITreeNodeWithDisplayRegion(DisplayRegionParameters parameters, UITreeNode uiNode)
+		public static UITreeNodeWithDisplayRegion AsUITreeNodeWithDisplayRegion(DisplayRegionParameters parameters,
+			UITreeNode uiNode)
 		{
 			List<ChildOfNodeWithDisplayRegion> children = null;
 			if (uiNode.children != null)
@@ -147,10 +149,12 @@ namespace Eve64
 			//}).ToList();
 
 			var totalDisplayRegionVisible = SubtractRegionsFromRegion(new RegionSubtractionParameters
-			{
-				Minuend = parameters.TotalDisplayRegion,
-				Subtrahend = parameters.OccludedRegions
-			}).OrderByDescending(r => GetAreaFromDisplayRegion(r) ?? -1).FirstOrDefault() ?? new DisplayRegion { X = -1, Y = -1, Width = 0, Height = 0 };
+			                                {
+				                                Minuend = parameters.TotalDisplayRegion,
+				                                Subtrahend = parameters.OccludedRegions
+			                                }).OrderByDescending(r => GetAreaFromDisplayRegion(r) ?? -1)
+			                                .FirstOrDefault() ??
+			                                new DisplayRegion { X = -1, Y = -1, Width = 0, Height = 0 };
 
 			return new UITreeNodeWithDisplayRegion
 			{
@@ -192,6 +196,7 @@ namespace Eve64
 					rawNode)
 			};
 		}
+
 		public static DisplayRegion? GetDisplayRegionFromDictEntries(UITreeNode uiNode)
 		{
 			long? FixedNumberFromJsonValue(dynamic value)
@@ -202,18 +207,22 @@ namespace Eve64
 					{
 						return i;
 					}
+
 					if (value is long l)
 					{
 						return l;
 					}
+
 					if (value is string s && int.TryParse(s, out var result))
 					{
 						return result;
 					}
+
 					if (value.int_low32 != null)
 					{
 						return FixedNumberFromJsonValue(value.int_low32);
 					}
+
 					if (value.Type == JTokenType.Integer)
 					{
 						return value.Value<int>();
@@ -223,6 +232,7 @@ namespace Eve64
 				{
 					// Ignored
 				}
+
 				return null;
 			}
 
@@ -252,7 +262,9 @@ namespace Eve64
 
 			return null;
 		}
-		private static UITreeNodeWithDisplayRegion AsUITreeNodeWithInheritedOffset(DisplayRegionParameters parameters, UITreeNode uiNode)
+
+		private static UITreeNodeWithDisplayRegion AsUITreeNodeWithInheritedOffset(DisplayRegionParameters parameters,
+			UITreeNode uiNode)
 		{
 			// Placeholder for actual logic
 			return null;
@@ -278,6 +290,7 @@ namespace Eve64
 
 		// Methods for parsing specific parts of the user interface
 		private static IMenu[] ParseContextMenusFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
+
 		private static IShipUi? ParseShipUIFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			var shipUINode = uiTreeRoot
@@ -330,7 +343,9 @@ namespace Eve64
 				if (gaugeNode == null)
 					return null;
 
-				var lastValueToken = gaugeNode.UINode.DictEntriesOfInterest.TryGetValue("_lastValue", out var value) ? value : null;
+				var lastValueToken = gaugeNode.UINode.DictEntriesOfInterest.TryGetValue("_lastValue", out var value)
+					? value
+					: null;
 
 				if (lastValueToken == null)
 					return null;
@@ -344,9 +359,10 @@ namespace Eve64
 			};
 
 
-				var offensiveBuffButtons = shipUINode
+			var offensiveBuffButtons = shipUINode
 				.ListDescendantsWithDisplayRegion()
-				.Select(node => new OffensiveBuffButton { UINode = node.AsUiElement(), Name = node.UINode.GetNameFromDictEntries() })
+				.Select(node => new OffensiveBuffButton
+					{ UINode = node.AsUiElement(), Name = node.UINode.GetNameFromDictEntries() })
 				.Where(x => x.Name != null)
 				.ToList();
 
@@ -377,12 +393,13 @@ namespace Eve64
 					ModuleButtons = moduleButtons,
 					ModuleButtonsRows = GroupShipUIModulesIntoRows(capacitor, moduleButtons),
 					OffensiveBuffButtons = offensiveBuffButtons,
-					SquadronsUI = null,//TODO squadronsUI,
+					SquadronsUI = null, //TODO squadronsUI,
 					StopButton = FindDescendantNode("StopButton")?.AsUiElement(),
 					MaxSpeedButton = FindDescendantNode("MaxSpeedButton")?.AsUiElement(),
 					HeatGauges = heatGauges != null ? ParseShipUIHeatGaugesFromUINode(heatGauges) : null
 				};
 		}
+
 		public static ShipUIIndication ParseShipUIIndication(UITreeNodeWithDisplayRegion indicationUINode)
 		{
 			var displayTexts = indicationUINode.GetAllContainedDisplayTexts();
@@ -451,7 +468,7 @@ namespace Eve64
 				.Where(node => node.UINode.GetNameFromDictEntries() == "heatGauge")
 				.Select(gaugeNode =>
 				{
-					var rotationPercent = (int)(gaugeNode.UINode.GetRotationFloatFromDictEntries()*100);
+					var rotationPercent = (int)(gaugeNode.UINode.GetRotationFloatFromDictEntries() * 100);
 					return new ShipUIHeatGauge
 					{
 						UINode = gaugeNode.AsUiElement(),
@@ -482,7 +499,8 @@ namespace Eve64
 			return null;
 		}
 
-		private static ShipUIModuleButton ParseShipUIModuleButton(UITreeNodeWithDisplayRegion slotNode, UITreeNodeWithDisplayRegion moduleButtonNode)
+		private static ShipUIModuleButton ParseShipUIModuleButton(UITreeNodeWithDisplayRegion slotNode,
+			UITreeNodeWithDisplayRegion moduleButtonNode)
 		{
 			var rampRotationMilli = CalculateRampRotationMilli(slotNode);
 
@@ -491,8 +509,9 @@ namespace Eve64
 				UINode = moduleButtonNode.AsUiElement(),
 				ModuleInfo = ParseModuleDetails(moduleButtonNode),
 				SlotUINode = slotNode.AsUiElement(),
-				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool? ?? false,//TODO check
-				IsHiliteVisible = slotNode.Children.Any(c=>c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
+				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool? ??
+				           false, //TODO check
+				IsHiliteVisible = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
 				IsBusy = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "busy"),
 				RampRotationMilli = rampRotationMilli
 			};
@@ -510,17 +529,18 @@ namespace Eve64
 			return null;
 		}
 
-		private static ModuleButtonsRows GroupShipUIModulesIntoRows(ShipUICapacitor capacitor, List<ShipUIModuleButton> modules)
+		private static ModuleButtonsRows GroupShipUIModulesIntoRows(ShipUICapacitor capacitor,
+			List<ShipUIModuleButton> modules)
 		{
 			var verticalCenter = capacitor.UINode.GetVerticalCenter();
 
-			var grouped= modules.GroupBy(m =>
-			{
-				var center = m.UINode.GetVerticalCenter();
-				if (center < verticalCenter - 20) return "top";
-				if (center > verticalCenter + 20) return "bottom";
-				return "middle";
-			})
+			var grouped = modules.GroupBy(m =>
+				{
+					var center = m.UINode.GetVerticalCenter();
+					if (center < verticalCenter - 20) return "top";
+					if (center > verticalCenter + 20) return "bottom";
+					return "middle";
+				})
 				.ToDictionary(g => g.Key, g => g.ToList());
 			return new ModuleButtonsRows()
 			{
@@ -534,6 +554,7 @@ namespace Eve64
 		{
 			return (uiTree.Region.Value.Min1 + uiTree.Region.Value.Max1) / 2;
 		}
+
 		public static InfoPanelContainer? ParseInfoPanelContainerFromUIRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			var containerNode = uiTreeRoot
@@ -554,7 +575,8 @@ namespace Eve64
 			};
 		}
 
-		public static InfoPanelIcons? ParseInfoPanelIconsFromInfoPanelContainer(UITreeNodeWithDisplayRegion infoPanelContainerNode)
+		public static InfoPanelIcons? ParseInfoPanelIconsFromInfoPanelContainer(
+			UITreeNodeWithDisplayRegion infoPanelContainerNode)
 		{
 			var iconContainerNode = infoPanelContainerNode
 				.ListDescendantsWithDisplayRegion()
@@ -580,7 +602,8 @@ namespace Eve64
 			};
 		}
 
-		public static InfoPanelLocationInfo? ParseInfoPanelLocationInfoFromInfoPanelContainer(UITreeNodeWithDisplayRegion infoPanelContainerNode)
+		public static InfoPanelLocationInfo? ParseInfoPanelLocationInfoFromInfoPanelContainer(
+			UITreeNodeWithDisplayRegion infoPanelContainerNode)
 		{
 			var infoPanelNode = infoPanelContainerNode
 				.ListDescendantsWithDisplayRegion()
@@ -595,13 +618,15 @@ namespace Eve64
 				.FirstOrDefault(text => text != null);
 
 			var currentSolarSystemName = infoPanelNode
-				.GetAllContainedDisplayTexts()
-				.Select(ParseCurrentSolarSystemFromUINodeText)
-				.FirstOrDefault() ??
-				infoPanelNode.ListDescendantsWithDisplayRegion()
-					.Where(node => node.UiNode.GetNameFromDictEntries()?.ToLower().Contains("labelsystemname") == true)
-					.SelectMany(node => node.GetAllContainedDisplayTexts())
-					.FirstOrDefault();
+				                             .GetAllContainedDisplayTexts()
+				                             .Select(ParseCurrentSolarSystemFromUINodeText)
+				                             .FirstOrDefault() ??
+			                             infoPanelNode.ListDescendantsWithDisplayRegion()
+				                             .Where(node =>
+					                             node.UiNode.GetNameFromDictEntries()?.ToLower()
+						                             .Contains("labelsystemname") == true)
+				                             .SelectMany(node => node.GetAllContainedDisplayTexts())
+				                             .FirstOrDefault();
 
 			var maybeListSurroundingsButton = infoPanelNode
 				.ListDescendantsWithDisplayRegion()
@@ -629,11 +654,14 @@ namespace Eve64
 		}
 
 		// Placeholders for undefined methods
-		public static InfoPanelRoute? ParseInfoPanelRouteFromInfoPanelContainer(UITreeNodeWithDisplayRegion containerNode) => null;
+		public static InfoPanelRoute? ParseInfoPanelRouteFromInfoPanelContainer(
+			UITreeNodeWithDisplayRegion containerNode) => null;
+
 		//public static InfoPanelAgentMissions? ParseInfoPanelAgentMissionsFromInfoPanelContainer(UITreeNodeWithDisplayRegion containerNode) => null;
 		public static int? ParseSecurityStatusPercentFromUINodeText(string text)
 		{
-			string?[] patterns = {
+			string?[] patterns =
+			{
 				GetSubstringBetweenXmlTagsAfterMarker(text, "hint='Security status'"),
 				GetSubstringBetweenXmlTagsAfterMarker(text, "hint=\"Security status\"><color=")
 			};
@@ -651,7 +679,8 @@ namespace Eve64
 
 		public static string? ParseCurrentSolarSystemFromUINodeText(string text)
 		{
-			string?[] patterns = {
+			string?[] patterns =
+			{
 				GetSubstringBetweenXmlTagsAfterMarker(text, "alt='Current Solar System'"),
 				GetSubstringBetweenXmlTagsAfterMarker(text, "alt=\"Current Solar System\"")
 			};
@@ -680,6 +709,7 @@ namespace Eve64
 
 			return null;
 		}
+
 		public static IShipUiTarget[] ParseTargetsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			return uiTreeRoot
@@ -702,7 +732,7 @@ namespace Eve64
 				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "barAndImageCont");
 
 			var isActiveTarget = targetNode.UINode
-				.ListDescendantsInUITreeNode()
+				.ListDescendants()
 				.Any(node => node.PythonObjectTypeName == "ActiveTargetOnBracket");
 
 			var assignedContainerNode = targetNode
@@ -722,11 +752,12 @@ namespace Eve64
 
 			return new ShipUiTarget(targetNode.AsUiElement())
 			{
-				BarAndImageCont = barAndImageCont,
+				IsSelected = isActiveTarget,
+				//TODO
+				/*BarAndImageCont = barAndImageCont,
 				TextsTopToBottom = textsTopToBottom,
-				IsActiveTarget = isActiveTarget,
 				AssignedContainerNode = assignedContainerNode,
-				AssignedIcons = assignedIcons
+				AssignedIcons = assignedIcons*/
 			};
 		}
 
@@ -758,7 +789,8 @@ namespace Eve64
 				.FirstOrDefault(node => node.UINode.PythonObjectTypeName?.ToLower().Contains("headers") == true);
 
 			var entriesHeaders = headersContainerNode?
-				.GetAllContainedDisplayTextsWithRegion() ?? new List<(string Text, UITreeNodeWithDisplayRegion Region)>();
+				                     .GetAllContainedDisplayTextsWithRegion() ??
+			                     new List<(string Text, UITreeNodeWithDisplayRegion Region)>();
 
 			var entries = overviewWindowNode
 				.ListDescendantsWithDisplayRegion()
@@ -766,16 +798,99 @@ namespace Eve64
 				.Select(node => ParseOverviewWindowEntry(entriesHeaders, node))
 				.ToList();
 
-			return new WindowOverView
+			return new WindowOverView()
 			{
-				UINode = overviewWindowNode,
-				EntriesHeaders = entriesHeaders,
+				//UINode = overviewWindowNode,
+				//EntriesHeaders = entriesHeaders,
 				Entries = entries,
-				ScrollControls = scrollControlsNode != null ? ParseScrollControls(scrollControlsNode) : null
+				//ScrollControls = scrollControlsNode != null ? ParseScrollControls(scrollControlsNode) : null
 			};
 		}
 
-		public static IOverviewEntry ParseOverviewWindowEntry(List<(string Text, UITreeNodeWithDisplayRegion Region)> entriesHeaders, UITreeNodeWithDisplayRegion overviewEntryNode)
+		public static ListViewEntryResult ParseListViewEntry(
+			List<(string HeaderText, UITreeNodeWithDisplayRegion HeaderRegion)> entriesHeaders,
+			UITreeNodeWithDisplayRegion listViewEntryNode)
+		{
+			if (!entriesHeaders.Any())
+			{
+				return new ListViewEntryResult
+				{
+					CellsTexts = new Dictionary<string, string>()
+				};
+			}
+
+			var leftmostHeader = entriesHeaders.First();
+
+			bool HeaderRegionMatchesCellRegion(DisplayRegion headerRegion, DisplayRegion cellRegion)
+			{
+				return headerRegion.X < cellRegion.X + 3 &&
+				       headerRegion.X + headerRegion.Width > cellRegion.X + cellRegion.Width - 3;
+			}
+
+			var cellsTexts = listViewEntryNode
+				.GetAllContainedDisplayTextsWithRegion()
+				.SelectMany(cell =>
+				{
+					var (cellText, cellRegion) = cell;
+					var distanceFromLeftmostHeader = cellRegion.TotalDisplayRegion.X -
+					                                 leftmostHeader.HeaderRegion.TotalDisplayRegion.X;
+
+					var maybeHeaderByCellRegion = entriesHeaders
+						.FirstOrDefault(header => HeaderRegionMatchesCellRegion(header.HeaderRegion.TotalDisplayRegion,
+							cellRegion.TotalDisplayRegion));
+
+					if (maybeHeaderByCellRegion != default)
+					{
+						return new[] { (maybeHeaderByCellRegion.HeaderText, cellText) };
+					}
+
+					if (Math.Abs(distanceFromLeftmostHeader) < 4)
+					{
+						return Array.Empty<(string, string)>();
+					}
+
+					return cellText
+						.Split("<t>")
+						.Select((subText, index) => (Index: index, TrimmedText: subText.Trim()))
+						.Where(pair => entriesHeaders.Skip(pair.Index).Any())
+						.Select(pair => (entriesHeaders[pair.Index].HeaderText, pair.TrimmedText));
+				})
+				.ToDictionary(pair => pair.Item1, pair => pair.Item2);
+
+			return new ListViewEntryResult
+			{
+				CellsTexts = cellsTexts
+			};
+		}
+
+		public class ListViewEntryResult
+		{
+			public Dictionary<string, string> CellsTexts { get; set; } = new();
+		}
+
+		public static List<UITreeNodeWithDisplayRegion> GetContainedTreeViewEntryRootNodes(
+			UITreeNodeWithDisplayRegion parentNode)
+		{
+			var leftTreeEntriesAllNodes = parentNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName.StartsWith("TreeViewEntry"))
+				.ToList();
+
+			bool IsContainedInTreeEntry(UITreeNodeWithDisplayRegion candidate)
+			{
+				return leftTreeEntriesAllNodes
+					.SelectMany(entry => entry.ListDescendantsWithDisplayRegion())
+					.Contains(candidate);
+			}
+
+			return leftTreeEntriesAllNodes
+				.Where(node => !IsContainedInTreeEntry(node))
+				.ToList();
+		}
+
+		public static IOverviewEntry ParseOverviewWindowEntry(
+			List<(string Text, UITreeNodeWithDisplayRegion Region)> entriesHeaders,
+			UITreeNodeWithDisplayRegion overviewEntryNode)
 		{
 			var textsLeftToRight = overviewEntryNode
 				.GetAllContainedDisplayTextsWithRegion()
@@ -789,7 +904,7 @@ namespace Eve64
 
 			var objectDistanceInMeters = objectDistance != null
 				? ParseOverviewEntryDistanceInMetersFromText(objectDistance)
-				: Result.Error<int>("Did not find the 'Distance' cell text.");
+				: null; //TODO Result.Error<int>("Did not find the 'Distance' cell text.");
 
 			var spaceObjectIconNode = overviewEntryNode
 				.ListDescendantsWithDisplayRegion()
@@ -801,14 +916,15 @@ namespace Eve64
 				.UINode.GetColorPercentFromDictEntries();
 
 			var namesUnderSpaceObjectIcon = spaceObjectIconNode?
-				.UINode.ListDescendantsInUITreeNode()
+				.UINode.ListDescendants()
 				.Select(node => node.GetNameFromDictEntries())
 				.Where(name => name != null)
 				.ToHashSet() ?? new HashSet<string>();
 
 			var bgColorFillsPercent = overviewEntryNode
 				.ListDescendantsWithDisplayRegion()
-				.Where(node => node.UINode.PythonObjectTypeName == "Fill" && node.UINode.GetNameFromDictEntries() == "bgColor")
+				.Where(node =>
+					node.UINode.PythonObjectTypeName == "Fill" && node.UINode.GetNameFromDictEntries() == "bgColor")
 				.Select(node => node.UINode.GetColorPercentFromDictEntries())
 				.Where(color => color != null)
 				.ToList();
@@ -821,7 +937,7 @@ namespace Eve64
 				.Where(hint => hint != null)
 				.ToList();
 
-			return new OverviewEntry()
+			return new OverviewWindowEntry()
 			{
 				UINode = overviewEntryNode,
 				TextsLeftToRight = textsLeftToRight,
@@ -862,7 +978,9 @@ namespace Eve64
 
 			return null;
 		}
-		public static IWindowSelectedItemView? ParseSelectedItemWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+
+		public static IWindowSelectedItemView? ParseSelectedItemWindowFromUITreeRoot(
+			UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			var windowNode = uiTreeRoot
 				.ListDescendantsWithDisplayRegion()
@@ -877,14 +995,16 @@ namespace Eve64
 				windowNode
 					.ListDescendantsWithDisplayRegion()
 					.FirstOrDefault(node =>
-						node.UINode.GetTexturePathFromDictEntries()?.ToLower().EndsWith(texturePathEnding.ToLower()) == true);
+						node.UINode.GetTexturePathFromDictEntries()?.ToLower().EndsWith(texturePathEnding.ToLower()) ==
+						true);
 
 			var orbitButton = actionButtonFromTexturePathEnding("44_32_21.png");
 
 			return new WindowSelectedItemView()
 			{
-				UINode = windowNode,
-				OrbitButton = orbitButton
+				//TODO
+				//UINode = windowNode,
+				//OrbitButton = orbitButton
 			};
 		}
 
@@ -923,14 +1043,14 @@ namespace Eve64
 			Func<string, DronesWindowEntryGroupStructure?> droneGroupFromHeaderTextPart = headerTextPart =>
 				droneGroups
 					.Where(group =>
-						group.Header.MainText?.ToLower().Contains(headerTextPart.ToLower()) == true)
+						group.Header?.MainText?.ToLower().Contains(headerTextPart.ToLower()) == true)
 					.OrderBy(group => group.Header.MainText?.Length ?? int.MaxValue)
 					.FirstOrDefault();
 
 			return new DronesWindow
 			{
 				UINode = windowNode,
-				DroneGroups = droneGroups,
+				DroneGroups = droneGroups.Cast<IDronesWindowEntryGroupStructure>().ToList(),
 				DroneGroupInBay = droneGroupFromHeaderTextPart("in bay"),
 				DroneGroupInSpace = droneGroupFromHeaderTextPart("in space")
 			};
@@ -943,13 +1063,13 @@ namespace Eve64
 			var droneGroups = droneEntries.Select(entry => new DronesWindowEntryGroupStructure
 			{
 				Header = null,
-				Children = new List<DronesWindowEntry> { new DronesWindowEntryDrone { Entry = entry } }
+				Children = new List<IDronesWindowEntryDrone> { new DronesWindowEntryDrone { Entry = entry } }
 			}).ToList();
 
 			droneGroups.AddRange(droneGroupHeaders.Select(header => new DronesWindowEntryGroupStructure
 			{
 				Header = header,
-				Children = new List<DronesWindowEntry>()
+				Children = new List<IDronesWindowEntryDrone>()
 			}));
 
 			return DroneGroupTreesFromFlatList(droneGroups);
@@ -959,13 +1079,16 @@ namespace Eve64
 			List<DronesWindowEntryGroupStructure> entries)
 		{
 			var orderedEntries = entries.OrderBy(entry =>
-				entry.Header?.UINode.TotalDisplayRegion.Y ?? entry.Children.First().UINode.TotalDisplayRegion.Y).ToList();
+				((DronesWindowDroneGroupHeader?)entry.Header)?.UINode.TotalDisplayRegion.Y ??
+				((DronesWindowEntryDroneStructure)((DronesWindowEntryDrone)entry.Children.First()).Entry).UINode
+				.TotalDisplayRegion.Y).ToList();
 
 			// Recursive tree-building logic can be added here if needed.
 			return orderedEntries;
 		}
 
-		private static DronesWindowDroneGroupHeader? ParseDronesWindowDroneGroupHeader(UITreeNodeWithDisplayRegion groupHeaderNode)
+		private static DronesWindowDroneGroupHeader? ParseDronesWindowDroneGroupHeader(
+			UITreeNodeWithDisplayRegion groupHeaderNode)
 		{
 			var mainText = groupHeaderNode
 				.GetAllContainedDisplayTextsWithRegion()
@@ -1009,7 +1132,8 @@ namespace Eve64
 			return null;
 		}
 
-		private static DronesWindowEntryDroneStructure ParseDronesWindowDroneEntry(UITreeNodeWithDisplayRegion droneEntryNode)
+		private static DronesWindowEntryDroneStructure ParseDronesWindowDroneEntry(
+			UITreeNodeWithDisplayRegion droneEntryNode)
 		{
 			var mainText = droneEntryNode
 				.GetAllContainedDisplayTextsWithRegion()
@@ -1027,24 +1151,28 @@ namespace Eve64
 		public class DronesWindow : IWindowDroneView
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
-			public List<DronesWindowEntryGroupStructure> DroneGroups { get; set; }
-			public DronesWindowEntryGroupStructure? DroneGroupInBay { get; set; }
-			public DronesWindowEntryGroupStructure? DroneGroupInSpace { get; set; }
+			public IList<IDronesWindowEntryGroupStructure> DroneGroups { get; set; }
+			public IDronesWindowEntryGroupStructure? DroneGroupInBay { get; set; }
+			public IDronesWindowEntryGroupStructure? DroneGroupInSpace { get; set; }
 		}
 
-		public class DronesWindowEntryGroupStructure
+		public class DronesWindowEntryGroupStructure : IDronesWindowEntryGroupStructure
 		{
-			public DronesWindowDroneGroupHeader? Header { get; set; }
-			public List<DronesWindowEntry> Children { get; set; }
+			public IDronesWindowDroneGroupHeader? Header { get; set; }
+			public IList<IDronesWindowEntryDrone> Children { get; set; }
 		}
 
-		public class DronesWindowEntry { }
-		public class DronesWindowEntryDrone : DronesWindowEntry
+		public class DronesWindowEntry
 		{
-			public DronesWindowEntryDroneStructure Entry { get; set; }
+
 		}
 
-		public class DronesWindowDroneGroupHeader
+		public class DronesWindowEntryDrone : DronesWindowEntry, IDronesWindowEntryDrone
+		{
+			public IDronesWindowEntryDroneStructure Entry { get; set; }
+		}
+
+		public class DronesWindowDroneGroupHeader : IDronesWindowDroneGroupHeader
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
 			public string? MainText { get; set; }
@@ -1057,11 +1185,12 @@ namespace Eve64
 			public int? Maximum { get; set; }
 		}
 
-		public class DronesWindowEntryDroneStructure
+		public class DronesWindowEntryDroneStructure : IDronesWindowEntryDroneStructure
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
 			public string? MainText { get; set; }
 		}
+
 		private static object ParseFittingWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseProbeScannerWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseDirectionalScannerWindowFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
@@ -1107,7 +1236,8 @@ namespace Eve64
 			};
 		}
 
-		private static UITreeNodeWithDisplayRegion FindButtonInDescendantsByDisplayTextsPredicate(this UITreeNodeWithDisplayRegion parent, Func<IEnumerable<string>, bool> predicate)
+		private static UITreeNodeWithDisplayRegion FindButtonInDescendantsByDisplayTextsPredicate(
+			this UITreeNodeWithDisplayRegion parent, Func<IEnumerable<string>, bool> predicate)
 		{
 			return ListDescendantsWithDisplayRegion(parent)
 				.Where(n => n.UiNode.PythonObjectTypeName.Contains("Button"))
@@ -1115,12 +1245,13 @@ namespace Eve64
 				.OrderBy(n => GetAreaFromDisplayRegion(n.TotalDisplayRegion))
 				.FirstOrDefault();
 		}
-		public static string? GetDisplayText(UITreeNode uiNode)
+
+		public static string? GetDisplayText(UITreeNodeWithDisplayRegion uiNode)
 		{
 			var propertiesToCheck = new[] { "_setText", "_text" };
 
 			return propertiesToCheck
-				.Select(propertyName => uiNode.DictEntriesOfInterest.TryGetValue(propertyName, out var value)
+				.Select(propertyName => uiNode.UiNode.DictEntriesOfInterest.TryGetValue(propertyName, out var value)
 					? GetDisplayTextFromDictEntry(value)
 					: null)
 				.Where(text => text != null)
@@ -1136,7 +1267,7 @@ namespace Eve64
 				{
 					return s;
 				}
-				else if (dictEntryValue is UITreeNode asNode)
+				else if (dictEntryValue is UITreeNodeWithDisplayRegion asNode)
 				{
 					return asNode != null ? GetDisplayText(asNode) : null;
 				}
@@ -1151,8 +1282,8 @@ namespace Eve64
 
 		public static List<string> GetAllContainedDisplayTexts(this UITreeNodeWithDisplayRegion uiNode)
 		{
-			var nodes = new List<UITreeNode> { uiNode.UiNode }
-				.Concat(ListDescendantsWithDisplayRegion(uiNode).Select(u=>u.UiNode))
+			var nodes = new List<UITreeNodeWithDisplayRegion> { uiNode }
+				.Concat(ListDescendantsWithDisplayRegion(uiNode))
 				.ToList();
 
 			return nodes
@@ -1161,22 +1292,28 @@ namespace Eve64
 				.ToList();
 		}
 
-		public static List<(string DisplayText, UITreeNodeWithDisplayRegion NodeWithRegion)> GetAllContainedDisplayTextsWithRegion(this UITreeNodeWithDisplayRegion uiNode)
+		public static List<(string DisplayText, UITreeNodeWithDisplayRegion NodeWithRegion)>
+			GetAllContainedDisplayTextsWithRegion(this UITreeNodeWithDisplayRegion uiNode)
 		{
 			var nodesWithRegion = new List<UITreeNodeWithDisplayRegion> { uiNode }
 				.Concat(uiNode.ListDescendantsWithDisplayRegion())
 				.ToList();
 
 			return nodesWithRegion
-				.Select(descendant => {
-					var displayText = GetDisplayText(descendant.UiNode);
-					return !string.IsNullOrEmpty(displayText) ? (displayText, descendant) : default((string, UITreeNodeWithDisplayRegion)?);
+				.Select(descendant =>
+				{
+					var displayText = GetDisplayText(descendant);
+					return !string.IsNullOrEmpty(displayText)
+						? (displayText, descendant)
+						: default((string, UITreeNodeWithDisplayRegion)?);
 				})
 				.Where(tuple => tuple != null)
 				.Select(tuple => tuple!.Value)
 				.ToList();
 		}
-		public static List<UITreeNodeWithDisplayRegion> ListDescendantsWithDisplayRegion(this UITreeNodeWithDisplayRegion parent)
+
+		public static List<UITreeNodeWithDisplayRegion> ListDescendantsWithDisplayRegion(
+			this UITreeNodeWithDisplayRegion parent)
 		{
 			// Get the children of the current node
 			var children = ListChildrenWithDisplayRegion(parent);
@@ -1186,7 +1323,22 @@ namespace Eve64
 				children.SelectMany(child => ListDescendantsWithDisplayRegion(child))
 			).ToList();
 		}
-		public static List<UITreeNodeWithDisplayRegion> ListChildrenWithDisplayRegion(UITreeNodeWithDisplayRegion parent)
+
+		public static List<UITreeNode> ListDescendants(this UITreeNode parent)
+		{
+			// Get the children of the current node
+
+			// Get the children property, defaulting to an empty list if it's null
+			var children = parent.children ?? new UITreeNode[0];
+
+			// Recursively get the descendants of each child
+			return children.Concat(
+				children.SelectMany(ListDescendants)
+			).ToList();
+		}
+
+		public static List<UITreeNodeWithDisplayRegion> ListChildrenWithDisplayRegion(
+			UITreeNodeWithDisplayRegion parent)
 		{
 			// Get the children property, defaulting to an empty list if it's null
 			var children = parent.Children ?? new List<ChildOfNodeWithDisplayRegion>();
@@ -1198,13 +1350,229 @@ namespace Eve64
 				.Select(child => child!)
 				.ToList();
 		}
+
 		public static UITreeNodeWithDisplayRegion? JustCaseWithDisplayRegion(ChildOfNodeWithDisplayRegion child)
 		{
-			if (child.NodeWithRegion !=null)
+			if (child.NodeWithRegion != null)
 				return child.NodeWithRegion;
 			return null;
 		}
-		private static object ParseInventoryWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
+
+		// Supporting Classes
+		public class InventoryWindow
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+
+			//public List<InventoryWindowLeftTreeEntry> LeftTreeEntries { get; set; } = new();
+			public string? SubCaptionLabelText { get; set; }
+
+			//public InventoryWindowCapacityGauge? SelectedContainerCapacityGauge { get; set; }
+			public Inventory? SelectedContainerInventory { get; set; }
+			public UITreeNodeWithDisplayRegion? ButtonToSwitchToListView { get; set; }
+			public UITreeNodeWithDisplayRegion? ButtonToStackAll { get; set; }
+		}
+
+		public class Inventory
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+			public List<InventoryItemsListViewEntry>? ItemsView { get; set; }
+			//public ScrollControls? ScrollControls { get; set; }
+		}
+
+		public class InventoryItemsListViewEntry
+		{
+			public UITreeNodeWithDisplayRegion UINode { get; set; }
+			public Dictionary<string, string> CellsTexts { get; set; } = new();
+		}
+
+		public static List<InventoryWindow> ParseInventoryWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			return uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.Where(uiNode =>
+					new[] { "InventoryPrimary", "ActiveShipCargo" }.Contains(uiNode.UINode.PythonObjectTypeName))
+				.Select(ParseInventoryWindow)
+				.ToList();
+		}
+
+		public static InventoryWindow ParseInventoryWindow(UITreeNodeWithDisplayRegion windowUiNode)
+		{
+			var selectedContainerCapacityGaugeNode = windowUiNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode => uiNode.UINode.PythonObjectTypeName.Contains("CapacityGauge"));
+
+			/*TODO var selectedContainerCapacityGauge = selectedContainerCapacityGaugeNode?.ListDescendantsWithDisplayRegion()
+				.Select(GetDisplayText)
+				.Where(text => text != null)
+				.OrderByDescending(text => text.Length)
+				.FirstOrDefault()
+				.ParseInventoryCapacityGaugeText();*/
+
+			var leftTreeEntriesRootNodes = GetContainedTreeViewEntryRootNodes(windowUiNode);
+
+/*TODO var leftTreeEntries = leftTreeEntriesRootNodes
+	.Select(ParseInventoryWindowTreeViewEntry)
+	.ToList();*/
+
+			var rightContainerNode = windowUiNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					uiNode.UINode.PythonObjectTypeName == "Container" &&
+					uiNode.UINode.GetNameFromDictEntries()?.Contains("right") == true);
+
+			var subCaptionLabelText = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.Where(uiNode => uiNode.UINode.GetNameFromDictEntries()?.StartsWith("subCaptionLabel") == true)
+				.SelectMany(uiNode => uiNode.GetAllContainedDisplayTexts())
+				.FirstOrDefault();
+
+			var maybeSelectedContainerInventoryNode = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					new[]
+						{
+							"ShipCargo", "ShipDroneBay", "ShipGeneralMiningHold", "StationItems", "ShipFleetHangar",
+							"StructureItemHangar"
+						}
+						.Contains(uiNode.UINode.PythonObjectTypeName));
+
+			var selectedContainerInventory = maybeSelectedContainerInventoryNode != null
+				? ParseInventory(maybeSelectedContainerInventoryNode)
+				: null;
+
+			var buttonToSwitchToListView = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					uiNode.UINode.PythonObjectTypeName.Contains("ButtonIcon") &&
+					uiNode.UINode.GetTexturePathFromDictEntries()?.EndsWith("38_16_190.png") == true);
+
+			var buttonToStackAll = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					uiNode.UINode.PythonObjectTypeName.Contains("ButtonIcon") &&
+					uiNode.UINode.GetHintTextFromDictEntries()?.Contains("Stack All") == true);
+
+			return new InventoryWindow
+			{
+				UINode = windowUiNode,
+				//LeftTreeEntries = leftTreeEntries,
+				SubCaptionLabelText = subCaptionLabelText,
+				//SelectedContainerCapacityGauge = selectedContainerCapacityGauge,
+				SelectedContainerInventory = selectedContainerInventory,
+				ButtonToSwitchToListView = buttonToSwitchToListView,
+				ButtonToStackAll = buttonToStackAll
+			};
+		}
+
+		/// <summary>
+		/// Returns the subsequence of items not contained in any of the other ones.
+		/// </summary>
+		/// <param name="original">The original list of UI tree nodes.</param>
+		/// <returns>The filtered list of UI tree nodes.</returns>
+		public static List<UITreeNodeWithDisplayRegion> SubsequenceNotContainedInAnyOtherWithDisplayRegion(
+			this IEnumerable<UITreeNodeWithDisplayRegion> original)
+		{
+			return original
+				.Where(item =>
+					!original.Any(other =>
+						!ReferenceEquals(item, other) && NodeDescendantsContainWithDisplayRegion(item, other)))
+				.ToList();
+		}
+
+		/// <summary>
+		/// Checks if the descendants of a node contain another node.
+		/// </summary>
+		/// <param name="parent">The potential parent node.</param>
+		/// <param name="candidate">The candidate node to check for containment.</param>
+		/// <returns>True if the candidate is a descendant of the parent, otherwise false.</returns>
+		private static bool NodeDescendantsContainWithDisplayRegion(
+			UITreeNodeWithDisplayRegion parent,
+			UITreeNodeWithDisplayRegion candidate)
+		{
+			return parent.ListDescendantsWithDisplayRegion().Contains(candidate);
+		}
+
+		public static Inventory ParseInventory(UITreeNodeWithDisplayRegion inventoryNode)
+		{
+			var listViewItemNodes = inventoryNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(uiNode => uiNode.UINode.PythonObjectTypeName == "Item")
+				.SubsequenceNotContainedInAnyOtherWithDisplayRegion();
+
+			var scrollNode = inventoryNode
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode => uiNode.UINode.PythonObjectTypeName.ToLower().Contains("scroll"));
+
+			var scrollControlsNode = scrollNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode => uiNode.UINode.PythonObjectTypeName.Contains("ScrollControls"));
+
+			var headersContainerNode = scrollNode?
+				.GetMostPopulousDescendantWithDisplayRegionMatchingPredicate(uiNode =>
+					uiNode.UINode.PythonObjectTypeName.ToLower().Contains("headers") ||
+					uiNode.UINode.GetNameFromDictEntries()?.ToLower().Contains("headers") == true);
+
+			var entriesHeaders = headersContainerNode?
+				.GetAllContainedDisplayTextsWithRegion()
+				.DistinctBy(tuple => tuple.DisplayText)
+				.ToList();
+
+			var notListViewItemNodes = inventoryNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(uiNode => uiNode.UINode.PythonObjectTypeName.Contains("InvItem"))
+				.SubsequenceNotContainedInAnyOtherWithDisplayRegion();
+
+			var itemsView = listViewItemNodes.Any()
+				? 
+					listViewItemNodes
+						.Select(node => ParseInventoryItemsListViewEntry(entriesHeaders, node))
+						.ToList()
+				: notListViewItemNodes.Any()
+					? notListViewItemNodes
+						.Select(node => ParseInventoryItemsListViewEntry(entriesHeaders, node))
+						.ToList()
+					: null;
+
+			return new Inventory
+			{
+				UINode = inventoryNode,
+				ItemsView = itemsView,
+				//ScrollControls = scrollControlsNode != null ? ParseScrollControls(scrollControlsNode) : null
+			};
+		}
+		/// <summary>
+		/// Finds the most populous descendant of a UI tree node that matches a given predicate.
+		/// </summary>
+		/// <param name="parent">The parent node to search within.</param>
+		/// <param name="predicate">The predicate to match descendants against.</param>
+		/// <returns>The most populous descendant node or null if none match.</returns>
+		public static UITreeNodeWithDisplayRegion? GetMostPopulousDescendantWithDisplayRegionMatchingPredicate(
+			this UITreeNodeWithDisplayRegion parent,
+			Func<UITreeNodeWithDisplayRegion, bool> predicate)
+		{
+			// Get all descendants that match the predicate
+			var matchingDescendants = parent
+				.ListDescendantsWithDisplayRegion()
+				.Where(predicate)
+				.ToList();
+
+			// Return the descendant with the most children
+			return matchingDescendants
+				.OrderByDescending(node => node.ListDescendantsWithDisplayRegion().Count())
+				.FirstOrDefault();
+		}
+		public static InventoryItemsListViewEntry ParseInventoryItemsListViewEntry(
+			List<(string HeaderText, UITreeNodeWithDisplayRegion HeaderRegion)> entriesHeaders,
+			UITreeNodeWithDisplayRegion inventoryEntryNode)
+		{
+			var listViewEntry = ParseListViewEntry(entriesHeaders, inventoryEntryNode);
+			return new InventoryItemsListViewEntry
+			{
+				UINode = inventoryEntryNode,
+				CellsTexts = listViewEntry.CellsTexts
+			};
+		}
+
 		private static IContainer ParseModuleButtonTooltipFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseHeatStatusTooltipFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
 		private static object ParseChatWindowStacksFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
@@ -1238,6 +1606,7 @@ namespace Eve64
 				}
 			};
 		}
+
 		public static string? GetNameFromDictEntries(this UITreeNode uiNode) =>
 			GetStringPropertyFromDictEntries("_name", uiNode);
 
@@ -1247,7 +1616,7 @@ namespace Eve64
 		public static string? GetTexturePathFromDictEntries(this UITreeNode uiNode)
 		{
 			return GetStringPropertyFromDictEntries("texturePath", uiNode) ??
-				   GetStringPropertyFromDictEntries("_texturePath", uiNode);
+			       GetStringPropertyFromDictEntries("_texturePath", uiNode);
 		}
 
 		public static string? GetStringPropertyFromDictEntries(string dictEntryKey, UITreeNode uiNode)
@@ -1263,6 +1632,7 @@ namespace Eve64
 					return null;
 				}
 			}
+
 			return null;
 		}
 
@@ -1273,6 +1643,7 @@ namespace Eve64
 				var serializedValue = JsonSerializer.Serialize(value);
 				return JsonDecodeColorPercent(JToken.Parse(serializedValue));
 			}
+
 			return null;
 		}
 
@@ -1309,16 +1680,19 @@ namespace Eve64
 				return null;
 			}
 		}
+
 		private static int JsonDecodeIntFromIntOrString(JToken json)
 		{
 			if (json.Type == JTokenType.Integer)
 			{
 				return json.ToObject<int>();
 			}
+
 			if (json.Type == JTokenType.String && int.TryParse(json.ToString(), out var result))
 			{
 				return result;
 			}
+
 			throw new InvalidOperationException($"Failed to parse integer from {json}");
 		}
 	}
@@ -1373,7 +1747,7 @@ namespace Eve64
 		public WindowShipFitting[] WindowShipFitting { get; init; }
 		public WindowFittingMgmt[] WindowFittingMgmt { get; init; }
 		public IWindowSurveyScanView[] WindowSurveyScanView { get; init; }
-		public IWindowInventory[] WindowInventory { get; init; }
+		public InventoryWindow[] WindowInventory { get; init; }
 		public IWindowAgentDialogue[] WindowAgentDialogue { get; init; }
 		public WindowAgentBrowser[] WindowAgentBrowser { get; init; }
 		public WindowTelecom[] WindowTelecom { get; init; }
@@ -1382,19 +1756,21 @@ namespace Eve64
 		public WindowItemSell[] WindowItemSell { get; init; }
 		public IEnumerable<IWindowProbeScanner> WindowProbeScanner { get; init; }
 	}
-	// Supporting classes
-	public class InfoPanelContainer:IInfoPanelContainer
+
+// Supporting classes
+	public class InfoPanelContainer : IInfoPanelContainer
 	{
 		public UITreeNodeWithDisplayRegion UINode { get; set; }
 		public InfoPanelIcons? Icons { get; set; }
 		public InfoPanelLocationInfo InfoPanelLocationInfo { get; set; }
-		//public IInfoPanelSystem InfoPanelCurrentSystem { get; init; }
+//public IInfoPanelSystem InfoPanelCurrentSystem { get; init; }
 
 		public IInfoPanelMissions InfoPanelMissions { get; init; }
 
 		public IInfoPanelLocationInfo LocationInfo => InfoPanelLocationInfo;
+
 		public IInfoPanelRoute InfoPanelRoute { get; set; }
-		//public InfoPanelAgentMissions? InfoPanelAgentMissions { get; set; }
+//public InfoPanelAgentMissions? InfoPanelAgentMissions { get; set; }
 	}
 
 	public class InfoPanelIcons
@@ -1407,12 +1783,41 @@ namespace Eve64
 		public UITreeNodeWithDisplayRegion? DailyChallenge { get; set; }
 	}
 
-	public class InfoPanelLocationInfo:IInfoPanelLocationInfo
+	public class InfoPanelLocationInfo : IInfoPanelLocationInfo
 	{
 		public UITreeNodeWithDisplayRegion UINode { get; set; }
 		public UITreeNodeWithDisplayRegion? ListSurroundingsButton { get; set; }
 		public string? CurrentSolarSystemName { get; set; }
 		public string? SecurityStatusPercent { get; set; }
 		public string? ExpandedContent { get; set; }
+	}
+
+	public class OverviewWindow : IWindowOverview
+	{
+		public UITreeNodeWithDisplayRegion UINode { get; set; }
+		public List<(string Text, UITreeNodeWithDisplayRegion Region)> EntriesHeaders { get; set; } = new();
+
+		public IList<IOverviewEntry> Entries { get; set; } = new List<IOverviewEntry>();
+//public ScrollControls? ScrollControls { get; set; }
+	}
+
+	public class OverviewWindowEntry : IOverviewEntry
+	{
+		public IUIElement UiElement => UINode.AsUiElement();
+		public long Id => (long)UINode.UiNode.pythonObjectAddress;
+		public UITreeNodeWithDisplayRegion UINode { get; set; }
+		public List<string> TextsLeftToRight { get; set; } = new();
+		public Dictionary<string, string> CellsTexts { get; set; } = new();
+		public string? ObjectDistance { get; set; }
+		public int? ObjectDistanceInMeters { get; set; }
+		public string? ObjectName { get; set; }
+		public string? ObjectType { get; set; }
+		public string? ObjectAlliance { get; set; }
+		public ColorComponents? IconSpriteColorPercent { get; set; }
+		public HashSet<string> NamesUnderSpaceObjectIcon { get; set; } = new();
+		public List<ColorComponents> BgColorFillsPercent { get; set; } = new();
+		public List<string> RightAlignedIconsHints { get; set; } = new();
+		public OverviewWindowEntryCommonIndications CommonIndications { get; set; }
+		public int? OpacityPercent { get; set; }
 	}
 }

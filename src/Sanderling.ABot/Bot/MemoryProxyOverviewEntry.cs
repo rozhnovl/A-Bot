@@ -6,11 +6,11 @@ namespace Sanderling.ABot.Bot
 	public class MemoryProxyOverviewEntry : SimpleOverviewEntry
 	{
 		private readonly Bot bot;
-		private readonly Sanderling.Parse.IOverviewEntry memoryOverviewEntry;
+		private readonly Interface.MemoryStruct.IOverviewEntry memoryOverviewEntry;
 
-		public MemoryProxyOverviewEntry(Sanderling.Parse.IOverviewEntry overviewEntry, Bot bot)
-			: base(overviewEntry.Type, overviewEntry.Name, overviewEntry.MainIconIsRed.Value,
-				(int) overviewEntry.DistanceMax, overviewEntry.MeTargeted.Value, overviewEntry.MeActiveTarget.Value, overviewEntry.Id)
+		public MemoryProxyOverviewEntry(Interface.MemoryStruct.IOverviewEntry overviewEntry, Bot bot)
+			: base(overviewEntry.ObjectType, overviewEntry.ObjectName, overviewEntry.IconSpriteColorPercent.RPercent>50,
+				(int) overviewEntry.ObjectDistanceInMeters, overviewEntry.CommonIndications.Targeting, overviewEntry.CommonIndications.TargetedByMe, overviewEntry.Id)
 		{
 			this.memoryOverviewEntry = overviewEntry;
 			this.bot = bot;
@@ -18,12 +18,12 @@ namespace Sanderling.ABot.Bot
 
 		public override ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2)
 		{
-			return memoryOverviewEntry.ClickMenuEntryByRegexPattern(bot, path1, path2);
+			return memoryOverviewEntry.UiElement.ClickMenuEntryByRegexPattern(bot, path1, path2);
 		}
 
 		public override ISerializableBotTask GetSelectTask()
 		{
-			return memoryOverviewEntry.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
+			return memoryOverviewEntry.UiElement.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
 		}
 	}
 }

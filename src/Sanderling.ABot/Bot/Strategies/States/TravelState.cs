@@ -155,10 +155,10 @@ namespace Sanderling.ABot.Bot.Strategies
 
 					}
 
-					var overviewGate = memory.WindowOverview[0].ListView.Entry
-						.FirstOrDefault(e => e.Name == "Acceleration Gate");
+					var overviewGate = memory.WindowOverview[0].Entries
+						.FirstOrDefault(e => e.ObjectName == "Acceleration Gate");
 					if (overviewGate != null)
-						return overviewGate.ClickMenuEntryByRegexPattern(bot, "Save Location.*");
+						return overviewGate.UiElement.ClickMenuEntryByRegexPattern(bot, "Save Location.*");
 				}
 
 

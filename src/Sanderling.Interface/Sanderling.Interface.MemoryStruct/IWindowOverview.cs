@@ -2,21 +2,22 @@ using BotEngine;
 
 namespace Sanderling.Interface.MemoryStruct
 {
-	public interface IWindowOverview : IWindow, IContainer, IUIElement, IObjectIdInMemory, IObjectIdInt64
+	public interface IWindowOverview //: IWindow, IContainer, IUIElement, IObjectIdInMemory, IObjectIdInt64
 	{
-		Tab[] PresetTab
-		{
-			get;
-		}
+		//Tab[] PresetTab
+		//{
+		//	get;
+		//}
 
-		IListViewAndControl<IOverviewEntry> ListView
-		{
-			get;
-		}
+		//IListViewAndControl<IOverviewEntry> ListView
+		//{
+		//	get;
+		//}
 
-		string ViewportOverallLabelString
-		{
-			get;
-		}
+		IList<IOverviewEntry> Entries { get; }
+		//string ViewportOverallLabelString
+		//{
+		//	get;
+		//}
 	}
 }

@@ -20,7 +20,6 @@
     <ProjectReference Include="..\BotEngine.Common\BotEngine.Common.csproj" />
     <ProjectReference Include="..\PythonStructures\PythonStructures.csproj" />
     <ProjectReference Include="..\Sanderling.Interface\Sanderling.Interface.csproj" />
-    <ProjectReference Include="..\Sanderling.MemoryReading\Sanderling.MemoryReading.csproj" />
   </ItemGroup>
 
 </Project>

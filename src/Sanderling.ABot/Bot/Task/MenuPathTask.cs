@@ -55,7 +55,7 @@ namespace Sanderling.ABot.Bot.Task
 			var overviewEntry = RootUIElement as Sanderling.Parse.IOverviewEntry;
 
 			IUIElement regionExpected = RootUIElement;
-
+			/*TODO
 			if (null != overviewEntry)
 			{
 				regionExpected = memoryMeasurement?.WindowOverview?.FirstOrDefault();
@@ -67,8 +67,8 @@ namespace Sanderling.ABot.Bot.Task
 					return false;
 			}
 
-			//if (regionExpected.Region.Intersection(menu.Region.WithSizeExpandedPivotAtCenter(10)).IsEmpty())
-			//	return false;
+			if (regionExpected.Region.Intersection(menu.Region.WithSizeExpandedPivotAtCenter(10)).IsEmpty())
+				return false;*/
 
 			return true;
 		}

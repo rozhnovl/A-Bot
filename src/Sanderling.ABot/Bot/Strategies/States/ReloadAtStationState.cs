@@ -55,8 +55,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			var task = new DynamicTask();
 
 			var inventoryWindow = bot.MemoryMeasurementAtTime.Value.WindowInventory?.SingleOrDefault();
-			if (inventoryWindow == null)
-				return bot.MemoryMeasurementAtTime.Value.Neocom.InventoryButton.ClickTask();
+			//if (inventoryWindow == null)
+			//	return bot.MemoryMeasurementAtTime.Value.Neocom?.InventoryButton?.ClickTask();
 			switch (Stage)
 			{
 				case ReloadStage.UnloadLoot:

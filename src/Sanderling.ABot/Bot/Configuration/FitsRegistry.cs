@@ -31,7 +31,10 @@ namespace Sanderling.ABot.Bot.Configuration
 							VirtualKeyCode.F2),
 						new ShipFit.ModuleInfo(ShipFit.ModuleType.MWD, VirtualKeyCode.CONTROL, VirtualKeyCode.F3),
 					}
-				});
+				})
+			{
+				MaxDronesInSpace = 2,
+			};
 
 		public static ShipFit Hawk(Bot bot) =>
 			new ShipFit(bot.MemoryMeasurementAtTime.Value?.ShipUi,

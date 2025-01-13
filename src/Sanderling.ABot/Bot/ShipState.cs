@@ -1,10 +1,8 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using JetBrains.Annotations;
+﻿using System.Diagnostics.CodeAnalysis;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Parse;
 using Sanderling.Interface.MemoryStruct;
+using Sanderling.Parse;
 using IMemoryMeasurement = Sanderling.Parse.IMemoryMeasurement;
 
 namespace Sanderling.ABot.Bot
@@ -25,7 +23,7 @@ namespace Sanderling.ABot.Bot
 				: memory.ShipUi.Indication.ManeuverType?? ShipManeuverTypeEnum.None;*/
 			ActiveTargets = new ActiveTargetsContoller(bot, memory);
 			Fit = fit;
-			Drones = new DronesContoller(memory);
+			Drones = new DronesContoller(memory, fit);
 		}
 
 		private ShipFit Fit { get; }
@@ -41,13 +39,13 @@ namespace Sanderling.ABot.Bot
 		public int AttackRange => 11000;//TODO
 		public bool IsInAbyss => !memory.InfoPanelContainer.LocationInfo.CurrentSolarSystemName?.Contains("Maurasi") ?? true;
 
-		public ISerializableBotTask GetTurnOnAlwaysActiveModulesTask()
+		public ISerializableBotTask? GetTurnOnAlwaysActiveModulesTask()
 		{
 			return Fit.GetAlwaysActiveModules().Select(m => m.EnsureActive(bot, true,false))
 				.FirstOrDefault(t => t != null);
 		}
 
-		public ISerializableBotTask GetSetModuleActiveTask(ShipFit.ModuleType type, bool shouldBeActive)
+		public ISerializableBotTask? GetSetModuleActiveTask(ShipFit.ModuleType type, bool shouldBeActive)
 		{
 			switch (type)
 			{
@@ -69,6 +67,27 @@ namespace Sanderling.ABot.Bot
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 
+			return null;
+		}
+
+		public ISerializableBotTask? GetAttackTasks()
+		{
+			var focusedTarget = ActiveTargets.ActiveTarget;
+
+			ISerializableBotTask? weaponTask = GetSetModuleActiveTask(ShipFit.ModuleType.Weapon,
+				focusedTarget.Distance < AttackRange);
+			if (weaponTask != null)
+				return weaponTask;
+			else
+			{
+				//TODO should be checking if already orbiting speicifc selected target
+				if (Fit.GetAllByType(ShipFit.ModuleType.Weapon).Any(w => focusedTarget.Distance > w.OptimalRange) &&
+				    Maneuver != ShipManeuverType.Orbit)
+					return focusedTarget.GetOrbitTask();
+			}
+
+			foreach (var t in Drones.GetDronesAttackTasks(focusedTarget))
+				return t;
 			return null;
 		}
 
@@ -111,7 +130,7 @@ namespace Sanderling.ABot.Bot
 			return null;
 		}
 
-		public ISerializableBotTask GetReloadTask()
+		public ISerializableBotTask? GetReloadTask()
 		{
 			var weaponGroup = Fit.GetWeapon();
 
@@ -129,7 +148,7 @@ namespace Sanderling.ABot.Bot
 		public ISerializableBotTask GetPopupButtonTask(string buttonText)
 		{
 			return memory?.WindowOther?.SelectMany(w => w.ButtonText)
-				?.FirstOrDefault(bt => bt != null && (bt.Text == buttonText)).ClickTask();
+				?.FirstOrDefault(bt => bt != null && (bt.Text == buttonText))?.ClickTask();
 		}
 	}
 }

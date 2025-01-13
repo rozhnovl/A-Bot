@@ -32,6 +32,7 @@ namespace Sanderling.ABot.Bot
 	{
 		public int MaxTargetingRange { get; init; }
 		public int MaxTargets { get; init; }
+		public int MaxDronesInSpace { get; init; }
 		private ModuleInfo[] High { get; }
 		private ModuleInfo[] Mid { get; }
 		private ModuleInfo[] Low { get; }
@@ -121,7 +122,7 @@ namespace Sanderling.ABot.Bot
 			public ShipUIModuleButton UiModule { get; set; }
 			public int OptimalRange = 4000;
 
-			public ISerializableBotTask EnsureActive(Bot bot, bool shouldBeActive, bool shouldBeOverloaded)
+			public ISerializableBotTask? EnsureActive(Bot bot, bool shouldBeActive, bool shouldBeOverloaded)
 			{
 				if (shouldBeActive)
 				{

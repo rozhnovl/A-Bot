@@ -1,13 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using WindowsInput.Native;
 using Bib3;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Sanderling.ABot.Bot.Configuration;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.Interface.MemoryStruct;
-using Sanderling.Parse;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
@@ -24,12 +22,6 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		private bool enteredAbyss;
 
-		static AbyssalFightState()
-		{
-			//sw = new StreamWriter(
-			//	$"R:\\AbyssalRun_{DateTime.Now.ToString("dd_hh_mm_ss")}_{Process.GetCurrentProcess().Id}.log");
-
-		}
 
 		public AbyssalFightState(ILogger logger)
 		{
@@ -98,7 +90,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			var conduit = overviewProvider.Entries
 				?.Where(entry =>
 					(entry.Name ?? entry.Type).Contains("Conduit") && !(entry.Name ?? entry.Type).Contains("Proving"))
-				?.SingleOrDefault();//!!!!
+				?.SingleOrDefault(); //!!!!
 			if (conduit == null && LeavingAbyssTimestamp.HasValue &&
 			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
 				return task.With(
@@ -173,7 +165,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				//TODO should not be switching from target obit
 				if (shipState.Maneuver != ShipManeuverType.Approach &&
 				    shipState.Maneuver != ShipManeuverType.KeepAtRange
-					 && shipState.Maneuver != ShipManeuverType.Orbit)
+				    && shipState.Maneuver != ShipManeuverType.Orbit)
 					//TODO HERE
 					return task.With(conduit.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
 
@@ -203,40 +195,22 @@ namespace Sanderling.ABot.Bot.Strategies
 					$"Wrong targeted entries: {string.Join(",", wrongTargetedEntries.Select(wte => wte.Name + "@" + wte.Distance + "[" + offensiveOverviewEntries.Any(oe => oe.Name == wte.Name) + "]"))}");
 				return task.With(wrongTargetedEntries.FirstOrDefault().GetUnlockTask());
 			}
-            
+
 			if (shipState.ActiveTargets.Count > 0)
 			{
 				task.With($"Targets selected: {shipState.ActiveTargets.Count}");
-				var focusedTarget = shipState.ActiveTargets.List.Last();
-
-				ISerializableBotTask weaponTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.Weapon,
-					focusedTarget.Distance < shipState.AttackRange);
-				if (weaponTask != null)
-					return task.With(weaponTask);
-				else
-				{
-					if (shipState.Maneuver != ShipManeuverType.Orbit)
-						return task.With(focusedTarget.GetOrbitTask());
-				}
-				var shouldDronesAttack =
-					!focusedTarget.DroneAssigned && focusedTarget.Distance <= 55000;
-
-				if (shouldDronesAttack)
-				{
-					//task.With($"No target attacked. Launching drones.");
-					//if (shipState.Drones.ShouldLaunch)
-					//	return task.With(HotkeyRegistry.LaunchDrones);
-
-					//return task.With(HotkeyRegistry.EngageDrones);
-				}
+				var attackTask = shipState.GetAttackTasks();
+				if (attackTask != null)
+					return task.With(attackTask);
 			}
 
 			task.With(
 				$"Spare enemies to attack: {listOverviewEntryToAttack.Length}: {string.Concat(listOverviewEntryToAttack.Select(oe => Environment.NewLine + '\t' + (oe.MeTargeted == true ? "[Targeted]" : string.Empty) + oe.Name))}");
 
-			if (shipState.ActiveTargets == null || shipState.ActiveTargets.Count < 5)
+			if (shipState.ActiveTargets.Count < 5)
 			{
-				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e => e.MeTargeted != true && e.MeActiveTarget!=true))
+				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e =>
+					         e.MeTargeted != true && e.MeActiveTarget != true))
 				{
 					if (lastTargetingAttemptSteps.ContainsKey(overviewEntry.Id))
 						if (lastTargetingAttemptSteps[overviewEntry.Id] > stepIndex - 3)

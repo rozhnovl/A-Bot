@@ -5,7 +5,7 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public interface IContainer : IUIElement, IObjectIdInMemory, IObjectIdInt64
 	{
-		IEnumerable<IUIElementText> ButtonText
+		IEnumerable<IUIElementText?> ButtonText
 		{
 			get;
 		}

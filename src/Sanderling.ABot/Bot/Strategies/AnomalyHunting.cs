@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Sanderling.ABot.Bot.Configuration;
+﻿using Sanderling.ABot.Bot.Configuration;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
@@ -29,7 +27,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				yield break;
 
 
-			var combatTask = new CombatTask(bot, shipFit);
+			var combatTask = new CombatTask(bot, shipFit, new DronesContoller(bot.MemoryMeasurementAtTime.Value, shipFit));
 
 			yield return combatTask;
 

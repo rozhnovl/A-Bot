@@ -1,10 +1,7 @@
-﻿using System;
-using System.Linq;
-using Bib3;
+﻿using Bib3;
 using BotEngine.Common;
+using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Parse;
-using Sanderling.Interface.MemoryStruct;
-using Sanderling.Parse;
 using IMemoryMeasurement = Sanderling.Parse.IMemoryMeasurement;
 
 namespace Sanderling.ABot.Bot
@@ -12,13 +9,14 @@ namespace Sanderling.ABot.Bot
 	public class DronesContoller
 	{
 		private int droneInBayCount;
-		private int droneInLocalSpaceCount;
+		public int droneInLocalSpaceCount { get; private set; }
 		private string[] droneInLocalSpaceSetStatus;
+		private ShipFit shipFit;
 
-		public DronesContoller(IMemoryMeasurement memoryMeasurement)
+		public DronesContoller(IMemoryMeasurement memoryMeasurement, ShipFit shipFit)
 		{
+			this.shipFit = shipFit;
 			var droneListView = memoryMeasurement?.WindowDroneView?.DroneGroups;
-
 
 			droneInBayCount = memoryMeasurement?.WindowDroneView?.DroneGroupInBay?.Header?.MainText
 				?.CountFromDroneGroupCaption() ?? 0;
@@ -32,7 +30,7 @@ namespace Sanderling.ABot.Bot
 					?.WhereNotDefault()?.Distinct()?.ToArray();
 		}
 
-		public bool ShouldLaunch => 0 < droneInBayCount && droneInLocalSpaceCount < 2;
+		public bool ShouldLaunch => 0 < droneInBayCount && droneInLocalSpaceCount < shipFit.MaxDronesInSpace;
 
 		public bool HasNonReturningDronesInSpace => 0 < droneInLocalSpaceCount
 		                                            && !(droneInLocalSpaceSetStatus?.Any(
@@ -41,5 +39,32 @@ namespace Sanderling.ABot.Bot
 					                                                 "Returning")) ??
 		                                                 false);
 
+		public bool HasIdleDronesInSpace => 0 < droneInLocalSpaceCount
+		                                    && !(droneInLocalSpaceSetStatus?.Any(
+			                                         droneStatus =>
+				                                         droneStatus.RegexMatchSuccessIgnoreCase(
+					                                         "Idle")) ??
+		                                         false);
+
+		public IEnumerable<ISerializableBotTask> GetDronesAttackTasks(ITarget target)
+		{
+
+			var shouldDronesAttack =
+				!target.DroneAssigned && target.Distance <= 55000;
+			if (!shouldDronesAttack)
+				yield break;
+
+			if (ShouldLaunch)
+				yield return HotkeyRegistry.LaunchDrones;
+
+			if (HasIdleDronesInSpace)
+				yield return HotkeyRegistry.EngageDrones;
+		}
+
+		public IEnumerable<ISerializableBotTask> GetDronesReturnTasks()
+		{
+			if (HasNonReturningDronesInSpace)
+				yield return HotkeyRegistry.ReturnDrones;
+		}
 	}
 }

@@ -5,14 +5,15 @@ using WindowsInput.Native;
 using Bib3;
 using BotEngine.Motor;
 using Sanderling.Accumulation;
+using Sanderling.Interface.MemoryStruct;
 using Sanderling.Motor;
 
 namespace Sanderling.ABot.Bot.Task
 {
 	public class ModuleToggleTask : ISerializableBotTask
 	{
-		public readonly Sanderling.Accumulation.IShipUiModule module;
-		private VirtualKeyCode[] hotKey;
+		public readonly IEnumerable<ShipUIModuleButton> modules;
+		private VirtualKeyCode[][] hotKey;
 
 		public IEnumerable<IBotTask> Component { get; }
 
@@ -20,38 +21,63 @@ namespace Sanderling.ABot.Bot.Task
 		{
 			get
 			{
-				var toggleKey = hotKey?? module?.TooltipLast?.Value?.ToggleKey;
+				var toggleKey = hotKey;//TODO?? module?.TooltipLast?.Value?.ToggleKey;
 
 				if (0 < toggleKey?.Length)
-					yield return toggleKey?.KeyboardPressCombined().AsRecommendation();
+				{
+
+					foreach (var c in toggleKey)
+					{
+						yield return c?.KeyboardPressCombined().AsRecommendation();
+					}
+				}
 				else
-					yield return module?.MouseClick(MouseButtonIdEnum.Left).AsRecommendation();
+				{
+					foreach (var c in modules.Select(m => m.UINode).ClickWithModifier().ClientActions)
+					{
+						yield return c;
+					};
+				}
 			}
 		}
 
 		public string ToJson()
 		{
 			return
-				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : module.TooltipLast.Value.LabelText.FirstOrDefault()?.Text)}]";
+				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : string.Empty /*TODO module.TooltipLast.Value.LabelText.FirstOrDefault()?.Text)*/)}]";
 		}
 
-		public ModuleToggleTask([NotNull] Sanderling.Accumulation.IShipUiModule module)
+		public ModuleToggleTask([NotNull] ShipUIModuleButton module)
 		{
-			this.module = module;
+			this.modules = [module];
 		}
 
 		public ModuleToggleTask([NotNull] ShipFit.ModuleInfo module, VirtualKeyCode? modifier)
 		{
-			this.module = module.UiModule;
-			this.hotKey = module.HotKey.NullIfEmpty();
+			this.modules = [module.UiModule];
+			this.hotKey = [module.HotKey.NullIfEmpty()];
 			if (modifier != null)
-				hotKey = new[] {modifier.Value}.Concat(hotKey).ToArray();
+				hotKey = [new[] { modifier.Value }.Concat(module.HotKey.NullIfEmpty()).ToArray()];
+		}
+
+
+		public ModuleToggleTask([NotNull] ShipFit.ModuleInfo[] modules, VirtualKeyCode? modifier)
+		{
+			this.modules = modules.Select(m=>m.UiModule).ToArray();
+			if (modifier != null)
+			{
+				hotKey = modules.Select(m => new[] { modifier.Value }.Concat(m.HotKey).ToArray()).ToArray().NullIfEmpty();;
+			}
+			else
+			{
+				this.hotKey = modules.Select(m => m.HotKey).ToArray().NullIfEmpty();
+			}
 		}
 
 		public override string ToString()
 		{
 			return
-				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : module.ToString())}";
+				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : modules.ToString())}";
 		}
 	}
 }

@@ -53,7 +53,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		public IBotTask GetStateActions(Bot bot)
 		{
 			var task = new DynamicTask();
-
+			throw new NotImplementedException();/*
 			var inventoryWindow = bot.MemoryMeasurementAtTime.Value.WindowInventory?.SingleOrDefault();
 			//if (inventoryWindow == null)
 			//	return bot.MemoryMeasurementAtTime.Value.Neocom?.InventoryButton?.ClickTask();
@@ -65,13 +65,13 @@ namespace Sanderling.ABot.Bot.Strategies
 						return inventoryWindow.ActiveShipEntry.ClickTask();
 
 					var notSelectedItems =
-						inventoryWindow.SelectedRightInventory.ListView.Entry.Where(e => !(e.IsSelected ?? false));
+						inventoryWindow.SelectedContainerInventory.ItemsView.Where(e => !(e.IsSelected ?? false));
 
 					foreach (var item in notSelectedItems.Where(i =>
 						!keptInventoryItems.Any(ki => ListEntryExtension.CellValueFromColumnHeader(i, "Name") == ki.Item1)))
 						return item.ClickMenuEntryWithModifierKey(bot, VirtualKeyCode.CONTROL);
 
-					if (inventoryWindow.SelectedRightInventory.ListView.Entry.Any(e => (e.IsSelected ?? false)))
+					if (inventoryWindow.SelectedContainerInventory.ItemsView.Any(e => (e.IsSelected ?? false)))
 					{
 						var lootMoveDestination =
 							inventoryWindow.LeftTreeListEntry.SelectMany(e => e.Child ?? new ITreeViewEntry[0])
@@ -87,7 +87,7 @@ namespace Sanderling.ABot.Bot.Strategies
 						{
 							ClientActions = new[]
 							{
-								inventoryWindow.SelectedRightInventory.ListView.Entry
+								inventoryWindow.SelectedContainerInventory.ItemsView
 									.FirstOrDefault(e => e.IsSelected ?? false)
 									.MouseDragAndDropOn(lootMoveDestination.RegionInteraction, MouseButtonIdEnum.Left)
 									.AsRecommendation()
@@ -95,7 +95,7 @@ namespace Sanderling.ABot.Bot.Strategies
 						};
 					}
 
-					currentInventoryItems = inventoryWindow.SelectedRightInventory.ListView.Entry.Select(GetNameAndQuantity)
+					currentInventoryItems = inventoryWindow.SelectedContainerInventory.ItemsView.Select(GetNameAndQuantity)
 						.ToList();
 					Stage = ReloadStage.Refill;
 					break;
@@ -149,7 +149,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					throw new ArgumentOutOfRangeException();
 			}
 
-			return null;
+			return null;*/
 		}
 
 		public IBotTask GetStateExitActions(Bot bot)

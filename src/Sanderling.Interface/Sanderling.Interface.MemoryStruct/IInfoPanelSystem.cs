@@ -12,8 +12,9 @@ namespace Sanderling.Interface.MemoryStruct
 	}
 	public interface IInfoPanelLocationInfo
 	{
-		public string? CurrentSolarSystemName { get; set; }
-		public string? SecurityStatusPercent { get; set; }
+		public IUIElement? ListSurroundingsButtonElement { get; }
+		public string CurrentSolarSystemName { get; set; }
+		public int SecurityStatusPercent { get; set; }
 		public string? ExpandedContent { get; set; }
 	}
 	public interface IInfoPanelSystem : IInfoPanel, IUIElement, IObjectIdInMemory, IObjectIdInt64, IExpandable

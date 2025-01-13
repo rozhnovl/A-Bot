@@ -6,6 +6,22 @@ namespace Sanderling.ABot.Bot.Task
 	static public class MenuTaskExtension
 	{
 		static public MenuPathTask ClickMenuEntryByRegexPattern(
+			this IUiElementProvider rootUIElement,
+			Bot bot,
+			params string[] menuEntryRegexPattern)
+		{
+			if (null == rootUIElement)
+				return null;
+
+			return new MenuPathTask
+			{
+				Bot = bot,
+				RootUIElement = rootUIElement.Element,
+				ListMenuListPriorityEntryRegexPattern = menuEntryRegexPattern.Select(p => new[]{p}).ToArray(),
+			};
+		}
+
+		static public MenuPathTask ClickMenuEntryByRegexPattern(
 			this IUIElement rootUIElement,
 			Bot bot,
 			string menuEntryRegexPattern)
@@ -24,7 +40,7 @@ namespace Sanderling.ABot.Bot.Task
 		static public MenuPathTask ClickMenuEntryByRegexPattern(
 			this IUIElement rootUIElement,
 			Bot bot,
-			string firstMenu, string secondMenu)
+			params string[] menuEntryRegexPattern)
 		{
 			if (null == rootUIElement)
 				return null;
@@ -33,7 +49,7 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				Bot = bot,
 				RootUIElement = rootUIElement,
-				ListMenuListPriorityEntryRegexPattern = new[] { new[] { firstMenu }, new[] { secondMenu } },
+				ListMenuListPriorityEntryRegexPattern = menuEntryRegexPattern.Select(p => new[] { p }).ToArray(),
 			};
 		}
 
@@ -43,6 +59,15 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				Bot = bot,
 				RootUIElement = element,
+				ModifierKeys = modifiers,
+			};
+		}
+
+		public static MultiClickTask ClickWithModifier(this IEnumerable<IUIElement> elements, params VirtualKeyCode[] modifiers)
+		{
+			return new MultiClickTask()
+			{
+				uiElements = elements.ToArray(),
 				ModifierKeys = modifiers,
 			};
 		}

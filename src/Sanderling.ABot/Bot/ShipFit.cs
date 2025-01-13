@@ -4,6 +4,8 @@ using System.Linq;
 using WindowsInput.Native;
 using Microsoft.EntityFrameworkCore;
 using Sanderling.ABot.Bot.Task;
+using Sanderling.Parse;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot
 {
@@ -28,26 +30,28 @@ namespace Sanderling.ABot.Bot
 
 	public class ShipFit
 	{
+		public int MaxTargetingRange { get; init; }
+		public int MaxTargets { get; init; }
 		private ModuleInfo[] High { get; }
 		private ModuleInfo[] Mid { get; }
 		private ModuleInfo[] Low { get; }
 
-		public ShipFit(IEnumerable<Accumulation.IShipUiModule> memoryModules, ModuleInfo[][] fitInfo)
+		public ShipFit(Interface.MemoryStruct.IShipUi memoryModules, ModuleInfo[][] fitInfo)
 		{
-			var modulesByY = memoryModules.GroupBy(m => m.Region?.Min1).OrderBy(g => g.Key).ToArray();
+			var modulesByY = memoryModules.ModuleButtons.GroupBy(m => m.UINode.Region?.Min1).OrderBy(g => g.Key).ToArray();
 			if (modulesByY.Count() != 3)
 				throw new ArgumentException("Couldn't determine 3 module groups");
-			High = modulesByY[0].Select((m, i) =>
+			High = modulesByY[0].OrderBy(m=>m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
 				fitInfo[0][i].UiModule = m;
 				return fitInfo[0][i];
 			}).ToArray();
-			Mid = modulesByY[1].Select((m, i) =>
+			Mid = modulesByY[1].OrderBy(m => m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
 				fitInfo[1][i].UiModule = m;
 				return fitInfo[1][i];
 			}).ToArray();
-			Low = modulesByY[2].Select((m, i) =>
+			Low = modulesByY[2].OrderBy(m => m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
 				fitInfo[2][i].UiModule = m;
 				return fitInfo[2][i];
@@ -114,21 +118,23 @@ namespace Sanderling.ABot.Bot
 			public ModuleType Type { get; }
 			public VirtualKeyCode[] HotKey { get; }
 
-			public Accumulation.IShipUiModule UiModule { get; set; }
+			public ShipUIModuleButton UiModule { get; set; }
+			public int OptimalRange = 4000;
 
 			public ISerializableBotTask EnsureActive(Bot bot, bool shouldBeActive, bool shouldBeOverloaded)
 			{
 				if (shouldBeActive)
 				{
-					if (shouldBeOverloaded && !(UiModule.OverloadOn ?? false))
-						return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
-					if (!(UiModule.IsActive(bot) ?? true)) return new ModuleToggleTask(this, null);
+					//TODO
+					//if (shouldBeOverloaded && !(UiModule.OverloadOn ?? false))
+					//	return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
+					if (!(UiModule.IsActive ?? true)) return new ModuleToggleTask(this, null);
 				}
 
-				if (!shouldBeActive && (UiModule.IsActive(bot) ?? false))
+				if (!shouldBeActive && (UiModule.IsActive ?? false))
 					return new ModuleToggleTask(this, null);
-				if (!shouldBeOverloaded && (UiModule.OverloadOn ?? false))
-					return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
+				//if (!shouldBeOverloaded && (UiModule.OverloadOn ?? false))
+				//	return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
 
 				return null;
 			}

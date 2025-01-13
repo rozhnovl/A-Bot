@@ -18,6 +18,7 @@ namespace Sanderling.ABot.Bot
 		{
 			this.bot = bot;
 			this.memory = bot.MemoryMeasurementAtTime.Value;
+			Maneuver = memory?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverType.None;
 			//TODO
 			/*Maneuver = (memory?.ShipUi?.Indication?.LabelText?.Any(lt => lt.Text == "Keeping at Range") ?? false)
 				? ShipManeuverTypeEnum.KeepAtRange
@@ -32,12 +33,13 @@ namespace Sanderling.ABot.Bot
 		public bool ManeuverStartPossible => memory.ManeuverStartPossible();
 		[NotNull] public IShipHitpointsAndEnergy HitpointsAndEnergy => memory.ShipUi.HitpointsAndEnergy;
 
-		public ShipManeuverTypeEnum Maneuver { get; }
+		public ShipManeuverType Maneuver { get; }
 
 		public DronesContoller Drones { get; }
 
 		public ActiveTargetsContoller ActiveTargets { get; }
-		public bool IsInAbyss => !memory.InfoPanelCurrentSystem.HeaderText.Contains("Maurasi");
+		public int AttackRange => 11000;//TODO
+		public bool IsInAbyss => !memory.InfoPanelContainer.LocationInfo.CurrentSolarSystemName?.Contains("Maurasi") ?? true;
 
 		public ISerializableBotTask GetTurnOnAlwaysActiveModulesTask()
 		{
@@ -51,7 +53,7 @@ namespace Sanderling.ABot.Bot
 			{
 				case ShipFit.ModuleType.Weapon:
 					var weaponGroup = Fit.GetWeapon();
-					if (!weaponGroup.UiModule.IsReloading(bot))
+					if (!weaponGroup.UiModule.IsBusy)
 					{
 						return weaponGroup.EnsureActive(bot, shouldBeActive, false);
 					}
@@ -73,6 +75,7 @@ namespace Sanderling.ABot.Bot
 		public ISerializableBotTask GetNextTankingModulesTask(double estimatedIncomingDps)
 		{
 			DynamicTask task = new DynamicTask();
+			return null;
 			var shieldBoosters = Fit.GetShieldBoostersModules().ToList();
 			if (HitpointsAndEnergy.Shield < 600)
 			{
@@ -112,11 +115,12 @@ namespace Sanderling.ABot.Bot
 		{
 			var weaponGroup = Fit.GetWeapon();
 
-			if (!weaponGroup.UiModule.IsReloading(bot))
+			if (!weaponGroup.UiModule.IsBusy)
 			{
-				bool shouldReload = int.Parse(weaponGroup.UiModule.ModuleButtonQuantity) != 20;
-				if (shouldReload)
-					return weaponGroup.UiModule.ClickMenuEntryByRegexPattern(bot, "Reload all");
+				//TODO
+				//bool shouldReload = int.Parse(weaponGroup.UiModule.ModuleButtonQuantity) != 20;
+				//if (shouldReload)
+				//	return weaponGroup.UiModule.ClickMenuEntryByRegexPattern(bot, "Reload all");
 			}
 
 			return null;

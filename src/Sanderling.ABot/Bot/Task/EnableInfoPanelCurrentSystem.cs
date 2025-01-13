@@ -15,7 +15,7 @@ namespace Sanderling.ABot.Bot.Task
 		{
 			get
 			{
-				if (null != MemoryMeasurement?.InfoPanelCurrentSystem)
+				if (null != MemoryMeasurement?.InfoPanelContainer)
 					yield break;
 
 				yield return MemoryMeasurement?.InfoPanelButtonCurrentSystem?.MouseClick(MouseButtonIdEnum.Left).AsRecommendation();

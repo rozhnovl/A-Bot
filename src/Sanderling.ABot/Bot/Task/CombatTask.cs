@@ -1,39 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using WindowsInput.Native;
-using Bib3;
-using BotEngine.Common;
-using BotEngine.Motor;
+﻿using WindowsInput.Native;
 using Sanderling.ABot.Parse;
 using Sanderling.Interface.MemoryStruct;
-using Sanderling.Motor;
 using Sanderling.Parse;
 
 namespace Sanderling.ABot.Bot.Task
 {
 	public class CombatTask : IBotTask
 	{
-		private const int TargetCountMax = 4;
-
-		public Bot bot;
+		private readonly Bot bot;
+		private readonly ShipFit shipFit;
 
 		public bool Completed { private set; get; }
+
+		public CombatTask(Bot bot, ShipFit shipFit)
+		{
+			this.bot = bot;
+			this.shipFit = shipFit;
+		}
 
 		public IEnumerable<IBotTask> Component
 		{
 			get
 			{
 				var memoryMeasurementAtTime = bot?.MemoryMeasurementAtTime;
-				var memoryMeasurementAccu = bot?.MemoryMeasurementAccu;
 
 				var memoryMeasurement = memoryMeasurementAtTime?.Value;
 
 				if (!memoryMeasurement.ManeuverStartPossible())
 					yield break;
-				throw new NotImplementedException();
-				/*
-				var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
+
+				/*var OverviewTabActive = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
 					?.OrderByDescending(tab => tab?.LabelColorOpacityMilli ?? 1500)?.FirstOrDefault();
 				var OverviewTabCombat = memoryMeasurement?.WindowOverview?.FirstOrDefault()?.PresetTab
 					?.Where(tab => tab?.Label.Text.RegexMatchSuccess(Config.CombatTabName) ?? false)
@@ -42,79 +38,95 @@ namespace Sanderling.ABot.Bot.Task
 				// switch tabs for wrecks
 				if (OverviewTabCombat != OverviewTabActive)
 					yield return OverviewTabCombat.ClickTask();
-
+				*/
 
 				var listOverviewEntryToAttack =
-					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.Entries?.Where(entry => entry?.MainIcon?.Color?.IsRed() ?? false)
+					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.Entries
+						?.Where(entry => entry?.IconSpriteColorPercent?.IsRed() ?? false)
+						?.Where(e=>e.ObjectDistanceInMeters <= shipFit.MaxTargetingRange)
 						?.OrderBy(entry => bot.AttackPriorityIndex(entry))
-						?.ThenBy(entry => entry?.DistanceMax ?? int.MaxValue)
-						?.ToArray();
+						?.ThenBy(entry => entry?.ObjectDistanceInMeters ?? int.MaxValue)
+						?.ToArray()
+					??[];
 				//TODO if (listOverviewEntryToAttack.Any())
 				//Bot.currentAnomalyLooted = false;
 				var targetSelected =
 					memoryMeasurement?.Target?.FirstOrDefault(target => target?.IsSelected ?? false);
 
-				var shouldAttackTarget =
-					listOverviewEntryToAttack?.Any(entry => entry?.MeActiveTarget ?? false) ?? false;
+				var shouldAttackTarget = true;//TODO listOverviewEntryToAttack?.Any(entry => entry?.CommonIndications.TargetedByMe ?? false) ?? false;
 
-				var setModuleWeapon =
-					memoryMeasurementAccu?.ShipUiModule?.Where(module => module?.TooltipLast?.Value?.IsWeapon ?? false);
+				var setModuleWeapon = shipFit.GetAllByType(ShipFit.ModuleType.Weapon);
 
 				if (null != targetSelected)
 					if (shouldAttackTarget)
+					{
+						if (memoryMeasurement.ShipUi.Indication.ManeuverType!=ShipManeuverType.Orbit && setModuleWeapon.Any(w => targetSelected.Distance > w.OptimalRange))
+							yield return targetSelected.ClickWithModifier(bot, VirtualKeyCode.VK_W);
 						//yield return new HotkeyTask(VirtualKeyCode.F1);
 						yield return bot.EnsureIsActive(setModuleWeapon);
+					}
 					else
 						yield return targetSelected.ClickMenuEntryByRegexPattern(bot, "unlock");
 
-				var droneListView = memoryMeasurement?.WindowDroneView?.FirstOrDefault()?.ListView;
 
-				var droneGroupWithNameMatchingPattern = new Func<string, DroneViewEntryGroup>(namePattern =>
-					droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group => group?.LabelTextLargest()?.Text?.RegexMatchSuccessIgnoreCase(namePattern) ?? false));
+				//var droneListView = memoryMeasurement?.WindowDroneView?.FirstOrDefault()?.ListView;
 
-				var droneGroupInBay = droneGroupWithNameMatchingPattern("bay");
-				var droneGroupInLocalSpace = droneGroupWithNameMatchingPattern("local space");
+				//var droneGroupWithNameMatchingPattern = new Func<string, DroneViewEntryGroup>(namePattern =>
+				//	droneListView?.Entry?.OfType<DroneViewEntryGroup>()?.FirstOrDefault(group =>
+				//		group?.LabelTextLargest()?.Text?.RegexMatchSuccessIgnoreCase(namePattern) ?? false));
 
-				var droneInBayCount = droneGroupInBay?.Caption?.Text?.CountFromDroneGroupCaption();
-				var droneInLocalSpaceCount = droneGroupInLocalSpace?.Caption?.Text?.CountFromDroneGroupCaption();
+				//var droneGroupInBay = droneGroupWithNameMatchingPattern("bay");
+				//var droneGroupInLocalSpace = droneGroupWithNameMatchingPattern("local space");
 
-				//	assuming that local space is bottommost group.
-				var setDroneInLocalSpace =
-					droneListView?.Entry?.OfType<DroneViewEntryItem>()
-						?.Where(drone => droneGroupInLocalSpace?.RegionCenter()?.B < drone?.RegionCenter()?.B)
-						?.ToArray();
+				//var droneInBayCount = droneGroupInBay?.Caption?.Text?.CountFromDroneGroupCaption();
+				//var droneInLocalSpaceCount = droneGroupInLocalSpace?.Caption?.Text?.CountFromDroneGroupCaption();
 
-				var droneInLocalSpaceSetStatus =
-					setDroneInLocalSpace?.Select(drone => drone?.LabelText?.Select(label => label?.Text?.StatusStringFromDroneEntryText()))?.ConcatNullable()?.WhereNotDefault()?.Distinct()?.ToArray();
+				////	assuming that local space is bottommost group.
+				//var setDroneInLocalSpace =
+				//	droneListView?.Entry?.OfType<DroneViewEntryItem>()
+				//		?.Where(drone => droneGroupInLocalSpace?.RegionCenter()?.B < drone?.RegionCenter()?.B)
+				//		?.ToArray();
 
-				var droneInLocalSpaceIdle =
-					droneInLocalSpaceSetStatus?.Any(droneStatus => droneStatus.RegexMatchSuccessIgnoreCase("idle")) ?? false;
+				//var droneInLocalSpaceSetStatus =
+				//	setDroneInLocalSpace
+				//		?.Select(drone =>
+				//			drone?.LabelText?.Select(label => label?.Text?.StatusStringFromDroneEntryText()))
+				//		?.ConcatNullable()?.WhereNotDefault()?.Distinct()?.ToArray();
 
-				if (shouldAttackTarget)
+				//var droneInLocalSpaceIdle =
+				//	droneInLocalSpaceSetStatus?.Any(droneStatus => droneStatus.RegexMatchSuccessIgnoreCase("idle")) ??
+				//	false;
+
+				//if (shouldAttackTarget)
+				//{
+				//	if (0 < droneInBayCount && droneInLocalSpaceCount < 4)
+				//		yield return HotkeyRegistry.LaunchDrones;
+
+				//	if (droneInLocalSpaceIdle)
+				//		yield return HotkeyRegistry.EngageDrones;
+				//}
+				var overviewEntryLockTargets = listOverviewEntryToAttack?
+					.Where(entry => !(entry?.CommonIndications.Targeting == true || entry?.CommonIndications.TargetedByMe == true));
+
+				if (overviewEntryLockTargets.Any() && (memoryMeasurement?.Target?.Length ?? 0) < shipFit.MaxTargets)
 				{
-					if (0 < droneInBayCount && droneInLocalSpaceCount < 4)
-						yield return HotkeyRegistry.LaunchDrones;
-
-					if (droneInLocalSpaceIdle)
-						yield return HotkeyRegistry.EngageDrones;
+					yield return overviewEntryLockTargets.Take(shipFit.MaxTargets - (memoryMeasurement?.Target?.Length ?? 0))
+						.Select(e => e.UiElement).ClickWithModifier(VirtualKeyCode.CONTROL);
 				}
 
-				var overviewEntryLockTarget =
-					listOverviewEntryToAttack?.FirstOrDefault(entry => !((entry?.MeTargeted ?? false) || (entry?.MeTargeting ?? false)));
-
-				if (null != overviewEntryLockTarget && !(TargetCountMax <= memoryMeasurement?.Target?.Length))
-					yield return overviewEntryLockTarget.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
-
-
-				if (!(0 < listOverviewEntryToAttack?.Length))
-					if (0 < droneInLocalSpaceCount)
-					{
-						if (!(droneInLocalSpaceSetStatus?.Any(droneStatus => droneStatus.RegexMatchSuccessIgnoreCase("Returning")) ?? false))
-							yield return HotkeyRegistry.ReturnDrones;
-					}
-					else
-						Completed = true;
-			}*/
+				if (listOverviewEntryToAttack?.Length == 0)
+				{
+					Completed = true;
+				}
+				//if (!(0 < listOverviewEntryToAttack?.Length))
+				//	if (0 < droneInLocalSpaceCount)
+				//	{
+				//		if (!(droneInLocalSpaceSetStatus?.Any(droneStatus =>
+				//			    droneStatus.RegexMatchSuccessIgnoreCase("Returning")) ?? false))
+				//			yield return HotkeyRegistry.ReturnDrones;
+				//	}
+				//	else
+				//		Completed = true;
 			}
 		}
 

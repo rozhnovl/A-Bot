@@ -17,16 +17,14 @@ namespace Sanderling.Parse
 
 		new MemoryStruct.IWindowOverview[] WindowOverview { get; }
 
-		new IWindowInventory[] WindowInventory { get; }
+		new MemoryStruct.IWindowInventory[] WindowInventory { get; }
 
 		new IWindowAgentDialogue[] WindowAgentDialogue { get; }
 
 		new INeocom Neocom { get; }
 
 		new IEnumerable<IMenu> Menu { get; }
-
-		new IInfoPanelSystem InfoPanelCurrentSystem { get; }
-
+		
 		bool? IsDocked { get; }
 
 		bool? IsUnDocking { get; }
@@ -44,16 +42,14 @@ namespace Sanderling.Parse
 
 		public MemoryStruct.IWindowOverview[] WindowOverview { set; get; }
 
-		public IWindowInventory[] WindowInventory { set; get; }
+		public MemoryStruct.IWindowInventory[] WindowInventory { set; get; }
 
 		public IWindowAgentDialogue[] WindowAgentDialogue { set; get; }
 
 		public INeocom Neocom { set; get; }
 
 		public IEnumerable<IMenu> Menu { private set; get; }
-
-		public IInfoPanelSystem InfoPanelCurrentSystem { private set; get; }
-
+		
 		public bool? IsDocked { private set; get; }
 
 		public bool? IsUnDocking { private set; get; }
@@ -77,7 +73,7 @@ namespace Sanderling.Parse
 
 				WindowOverview = raw?.WindowOverview;
 
-				WindowInventory = raw?.WindowInventory?.Select(InventoryExtension.Parse)?.ToArray();
+				WindowInventory = raw?.WindowInventory;
 
 				WindowAgentDialogue = raw?.WindowAgentDialogue?.Select(DialogueMissionExtension.Parse)?.ToArray();
 

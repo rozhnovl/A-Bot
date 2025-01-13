@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Sanderling.ABot.Bot.Configuration;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
@@ -16,33 +17,9 @@ namespace Sanderling.ABot.Bot.Strategies
 			var saveShipTask = new SaveShipTask { Bot = bot };
 
 			yield return saveShipTask;
-			/*
-			var shipFit = new ShipFit(bot.MemoryMeasurementAccu?.ShipUiModule,
-				new[]
-				{
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon),
-						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-					},
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						//new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-					},
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc),
-						//new ShipFit.ModuleInfo(ShipFit.ModuleType.ShieldBooster)
-					}
-				});
+			var shipFit = FitsRegistry.Hawk(bot);
 
-			yield return bot.EnsureIsActive(shipFit.GetAlwaysActiveModules().Select(m => m.UiModule));
+			yield return bot.EnsureIsActive(shipFit.GetAlwaysActiveModules());
 
 			//var moduleUnknown = MemoryMeasurementAccu?.ShipUiModule?.FirstOrDefault(module => null == module?.TooltipLast?.Value);
 
@@ -52,7 +29,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				yield break;
 
 
-			var combatTask = new CombatTask { bot = bot };
+			var combatTask = new CombatTask(bot, shipFit);
 
 			yield return combatTask;
 
@@ -63,15 +40,15 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			if (combatTask.Completed)
 			{
-				if (!currentAnomalyLooted)
-				{
-					var lootTask = new LootTask(bot);
-					yield return lootTask;
-					if (!lootTask.HasWreckToLoot)
-						currentAnomalyLooted = true;
-				}
+				//if (!currentAnomalyLooted)
+				//{
+				//	var lootTask = new LootTask(bot);
+				//	yield return lootTask;
+				//	if (!lootTask.HasWreckToLoot)
+				//		currentAnomalyLooted = true;
+				//}
 				yield return new AnomalyEnter { bot = bot };
-			}*/
+			}
 		}
 	}
 }

@@ -15,7 +15,7 @@ namespace Sanderling.ABot.Bot
 		{
 			this.bot = bot;
 			memoryMeasurement = bot.MemoryMeasurementAtTime.Value;
-			this.selectedWindowInventory = selectedWindowInventory ?? memoryMeasurement?.WindowInventory?[0];
+			this.selectedWindowInventory = selectedWindowInventory ?? memoryMeasurement?.WindowInventory?.FirstOrDefault();
 		}
 
 		public ISerializableBotTask GetCloseWindowTask()
@@ -34,8 +34,8 @@ namespace Sanderling.ABot.Bot
 
 		public ISerializableBotTask GetActvateItemIfPresentTask(string mobileTractorUnit, string launch)
 		{
-			var tractorInCargo = selectedWindowInventory.LabelText
-				.FirstOrDefault(lt => lt.Text.Contains(mobileTractorUnit));
+			var tractorInCargo = selectedWindowInventory.SelectedContainerInventory.ItemsView
+				.FirstOrDefault(lt => lt.CellsTexts.ContainsValue(mobileTractorUnit));
 			if (tractorInCargo != null)
 				return tractorInCargo.ClickMenuEntryByRegexPattern(bot, launch);
 			return null;
@@ -44,21 +44,17 @@ namespace Sanderling.ABot.Bot
 		public IInventoryProvider GetLootableWindow()
 		{
 			var lootWindow = memoryMeasurement?.WindowInventory
-				?.FirstOrDefault(wi =>
-					wi?.ButtonText?
-						.Any(text => text.Text.RegexMatchSuccessIgnoreCase("Loot All")) ?? false);
+				?.FirstOrDefault(wi => wi?.LootAllButton !=null);
 			if (lootWindow != null)
 				return new MemoryProxyInventoryProvider(bot, lootWindow);
 			return null;
 		}
 
-		public bool IsEmpty => !(selectedWindowInventory?.SelectedRightInventory?.ListView?.Entry?.Any() ?? false);
+		public bool IsEmpty => !(selectedWindowInventory?.SelectedContainerInventory?.ItemsView?.Any() ?? false);
 
 		public ISerializableBotTask GetClickLootButtonTask()
 		{
-			var lootButton =
-				selectedWindowInventory?.ButtonText?.FirstOrDefault(text =>
-					text.Text.RegexMatchSuccessIgnoreCase("Loot All"));
+			var lootButton = selectedWindowInventory?.LootAllButton;
 			if (lootButton != null)
 				return lootButton.ClickTask();
 			return null;

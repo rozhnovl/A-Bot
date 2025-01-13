@@ -1,22 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using WindowsInput.Native;
 using Bib3;
-using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Sanderling.ABot.Bot.Configuration;
 using Sanderling.ABot.Bot.Task;
+using Sanderling.Interface.MemoryStruct;
+using Sanderling.Parse;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
 	internal class AbyssalFightState : IStragegyState
 	{
+		private readonly ILogger logger;
 		private const int MaxTargetDistance = 55000;
 
-		[NotNull] private static StreamWriter sw;
+		//[NotNull] private static StreamWriter sw;
 		[NotNull] private readonly Stopwatch StateStopwatch;
 		private readonly NpcInfoProvider npcInfoProvider = new NpcInfoProvider();
 
@@ -26,13 +26,14 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		static AbyssalFightState()
 		{
-			sw = new StreamWriter(
-				$"R:\\AbyssalRun_{DateTime.Now.ToString("dd_hh_mm_ss")}_{Process.GetCurrentProcess().Id}.log");
+			//sw = new StreamWriter(
+			//	$"R:\\AbyssalRun_{DateTime.Now.ToString("dd_hh_mm_ss")}_{Process.GetCurrentProcess().Id}.log");
 
 		}
 
-		public AbyssalFightState()
+		public AbyssalFightState(ILogger logger)
 		{
+			this.logger = logger;
 			StateStopwatch = new Stopwatch();
 			StateStopwatch.Start();
 		}
@@ -42,46 +43,24 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public IBotTask GetStateActions(Bot bot)
 		{
-			var shipFit = new ShipFit(bot.MemoryMeasurementAccu?.ShipUiModule,
-				new[]
-				{
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Weapon, VirtualKeyCode.F1),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.ShieldBooster, VirtualKeyCode.F2),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.ShieldBooster, VirtualKeyCode.F3),
-					},
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Etc)
-					},
-					new[]
-					{
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener, VirtualKeyCode.CONTROL,
-							VirtualKeyCode.F1),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.Hardener, VirtualKeyCode.CONTROL,
-							VirtualKeyCode.F2),
-						new ShipFit.ModuleInfo(ShipFit.ModuleType.MWD, VirtualKeyCode.CONTROL, VirtualKeyCode.F3),
-					}
-				});
-
+			var shipFit = FitsRegistry.Hawk(bot);
 			var shipState = new ShipState(shipFit, bot);
 
 			var overviewProvider = new MemoryProxyOverviewProvider(bot);
 			var inventoryProvider = new MemoryProxyInventoryProvider(bot);
-			sw.WriteLine(
+			logger.LogInformation(
 				$"InputStates[{StateStopwatch.Elapsed}]: {JsonConvert.SerializeObject(new StateInput(shipState, overviewProvider, inventoryProvider))}");
 			try
 			{
 				var task = GetActions(shipState, overviewProvider, inventoryProvider);
 
-				sw.WriteLine(
+				logger.LogInformation(
 					$"OutputTask[{StateStopwatch.Elapsed}]: {task?.ToJson()}");
 				return task;
 			}
 			catch (Exception e)
 			{
-				sw.WriteLine(
+				logger.LogInformation(
 					$"Exception: {e}");
 				throw;
 			}
@@ -119,7 +98,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			var conduit = overviewProvider.Entries
 				?.Where(entry =>
 					(entry.Name ?? entry.Type).Contains("Conduit") && !(entry.Name ?? entry.Type).Contains("Proving"))
-				?.SingleOrDefault();
+				?.SingleOrDefault();//!!!!
 			if (conduit == null && LeavingAbyssTimestamp.HasValue &&
 			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
 				return task.With(
@@ -174,25 +153,28 @@ namespace Sanderling.ABot.Bot.Strategies
 			//goto targetProcessing;
 			if (estimatedIncomingDps > 200)
 			{
-				if (shipState.Maneuver != ShipManeuverTypeEnum.Orbit)
+				if (shipState.Maneuver != ShipManeuverType.Orbit)
 				{
 					task.With($"Orbiting {conduit}");
 					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Orbit.*", "5,000 m"));
 				}
 
-				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD,
-					shipState.HitpointsAndEnergy.Capacitor > 200);
-				if (mwdTask != null && MwdLastTurnOnAttempt < stepIndex - 10)
-				{
-					MwdLastTurnOnAttempt = stepIndex;
-					return task.With(mwdTask);
-				}
+				//var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD,
+				//	shipState.HitpointsAndEnergy.Capacitor > 200);
+				//if (mwdTask != null && MwdLastTurnOnAttempt < stepIndex - 10)
+				//{
+				//	MwdLastTurnOnAttempt = stepIndex;
+				//	return task.With(mwdTask);
+				//}
 			}
 			else
 			{
 				task.With($"Incoming DPS is {estimatedIncomingDps}. No need to avoid");
-				if (shipState.Maneuver != ShipManeuverTypeEnum.Approach &&
-				    shipState.Maneuver != ShipManeuverTypeEnum.KeepAtRange)
+				//TODO should not be switching from target obit
+				if (shipState.Maneuver != ShipManeuverType.Approach &&
+				    shipState.Maneuver != ShipManeuverType.KeepAtRange
+					 && shipState.Maneuver != ShipManeuverType.Orbit)
+					//TODO HERE
 					return task.With(conduit.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
 
 				task.With($"Distance to target is {conduit.Distance}.");
@@ -228,19 +210,24 @@ namespace Sanderling.ABot.Bot.Strategies
 				var focusedTarget = shipState.ActiveTargets.List.Last();
 
 				ISerializableBotTask weaponTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.Weapon,
-					focusedTarget.Distance < 25000);
+					focusedTarget.Distance < shipState.AttackRange);
 				if (weaponTask != null)
 					return task.With(weaponTask);
+				else
+				{
+					if (shipState.Maneuver != ShipManeuverType.Orbit)
+						return task.With(focusedTarget.GetOrbitTask());
+				}
 				var shouldDronesAttack =
 					!focusedTarget.DroneAssigned && focusedTarget.Distance <= 55000;
 
 				if (shouldDronesAttack)
 				{
-					task.With($"No target attacked. Launching drones.");
-					if (shipState.Drones.ShouldLaunch)
-						return task.With(HotkeyRegistry.LaunchDrones);
+					//task.With($"No target attacked. Launching drones.");
+					//if (shipState.Drones.ShouldLaunch)
+					//	return task.With(HotkeyRegistry.LaunchDrones);
 
-					return task.With(HotkeyRegistry.EngageDrones);
+					//return task.With(HotkeyRegistry.EngageDrones);
 				}
 			}
 
@@ -249,7 +236,7 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			if (shipState.ActiveTargets == null || shipState.ActiveTargets.Count < 5)
 			{
-				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e => e.MeTargeted != true))
+				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e => e.MeTargeted != true && e.MeActiveTarget!=true))
 				{
 					if (lastTargetingAttemptSteps.ContainsKey(overviewEntry.Id))
 						if (lastTargetingAttemptSteps[overviewEntry.Id] > stepIndex - 3)
@@ -301,7 +288,7 @@ namespace Sanderling.ABot.Bot.Strategies
 
 				if (tractorEntry.Distance < 2500)
 					return task.With(tractorEntry.ClickMenuEntryByRegexPattern("Open Cargo"));
-				if (shipState.Maneuver != ShipManeuverTypeEnum.Approach)
+				if (shipState.Maneuver != ShipManeuverType.Approach)
 				{
 					return task.With("Approach");
 				}

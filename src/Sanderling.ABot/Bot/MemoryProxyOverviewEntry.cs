@@ -9,7 +9,7 @@ namespace Sanderling.ABot.Bot
 		private readonly Interface.MemoryStruct.IOverviewEntry memoryOverviewEntry;
 
 		public MemoryProxyOverviewEntry(Interface.MemoryStruct.IOverviewEntry overviewEntry, Bot bot)
-			: base(overviewEntry.ObjectType, overviewEntry.ObjectName, overviewEntry.IconSpriteColorPercent.RPercent>50,
+			: base(overviewEntry.ObjectType, overviewEntry.ObjectName, overviewEntry.IconSpriteColorPercent.RPercent > 50 && overviewEntry.IconSpriteColorPercent.GPercent < 100,
 				(int) overviewEntry.ObjectDistanceInMeters, overviewEntry.CommonIndications.Targeting, overviewEntry.CommonIndications.TargetedByMe, overviewEntry.Id)
 		{
 			this.memoryOverviewEntry = overviewEntry;

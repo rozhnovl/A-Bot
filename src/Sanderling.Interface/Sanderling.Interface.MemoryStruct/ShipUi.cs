@@ -41,12 +41,6 @@ namespace Sanderling.Interface.MemoryStruct
 			set;
 		}
 
-		public IShipUiModule[] Module
-		{
-			get;
-			set;
-		}
-
 		public IUIElementText[] Readout
 		{
 			get;
@@ -175,6 +169,7 @@ namespace Sanderling.Interface.MemoryStruct
 		Jump,
 		Orbit,
 		Approach,
+		KeepAtRange,
 		Docked,
 	}
 

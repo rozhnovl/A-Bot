@@ -18,7 +18,6 @@ namespace Sanderling.ABot.Bot.Task
 			get
 			{
 				var memoryMeasurementAtTime = bot?.MemoryMeasurementAtTime;
-				var memoryMeasurementAccu = bot?.MemoryMeasurementAccu;
 				var memoryMeasurement = memoryMeasurementAtTime?.Value;
 
 				throw new NotImplementedException();/*

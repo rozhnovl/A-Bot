@@ -4,44 +4,22 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public interface IWindowInventory
 	{
-		ITreeViewEntry[] LeftTreeListEntry
-		{
-			get;
-		}
+		string? SubCaptionLabelText { get; }
+		IInventory? SelectedContainerInventory { get; }
+		IUIElement? LootAllButton { get; }
+	}
 
-		IScroll LeftTreeViewportScroll
-		{
-			get;
-		}
+	public interface IInventory
+	{
+		public List<IInventoryItemsListViewEntry>? ItemsView { get; set; }
+	}
+	public interface IInventoryItemsListViewEntry: IUiElementProvider
+	{
+		public Dictionary<string, string> CellsTexts { get; set; }
+	}
 
-		IUIElementText SelectedRightInventoryPathLabel
-		{
-			get;
-		}
-
-		IInventory SelectedRightInventory
-		{
-			get;
-		}
-
-		IUIElementText SelectedRightInventoryCapacity
-		{
-			get;
-		}
-
-		ISprite[] SelectedRightControlViewButton
-		{
-			get;
-		}
-
-		IUIElementInputText SelectedRightFilterTextBox
-		{
-			get;
-		}
-
-		IUIElement SelectedRightFilterButtonClear
-		{
-			get;
-		}
+	public interface IUiElementProvider
+	{
+		IUIElement Element { get; }
 	}
 }

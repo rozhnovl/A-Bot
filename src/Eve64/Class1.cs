@@ -156,7 +156,7 @@ namespace Eve64
 			"_name", "_text", "_setText",
 			"children",
 			"texturePath", "_bgTexturePath",
-			"_texture", "_hint", "_display", "_lastValue", "_rotation", "_color", "_opacity", "_texturePath", "itemID", "id", "charge", "moduleinfo", "quantity"
+			"_texture", "_hint", "_display", "_lastValue", "_rotation", "_color", "_opacity", "_texturePath", "itemID", "id", "charge", "moduleinfo", "quantity", "isInActiveState"
 		);
 
 		struct LocalMemoryReadingTools
@@ -304,7 +304,7 @@ namespace Eve64
 
 			foreach (var entry in dictionaryEntries)
 			{
-				if (!DictEntriesOfInterestKeys.Contains(entry.Key))
+				if (false && !DictEntriesOfInterestKeys.Contains(entry.Key))
 				{
 					continue;
 				}
@@ -628,7 +628,7 @@ namespace Eve64
 
 				var keyString = readPythonStringValueMaxLength4000(dictionaryEntry.key);
 
-				if (!DictEntriesOfInterestKeys.Contains(keyString))
+				if (false && !DictEntriesOfInterestKeys.Contains(keyString))
 				{
 					otherDictEntriesKeys.Add(keyString);
 					continue;

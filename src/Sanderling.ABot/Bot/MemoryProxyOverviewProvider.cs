@@ -9,6 +9,7 @@ namespace Sanderling.ABot.Bot
 		public MemoryProxyOverviewProvider(Bot bot)
 		{
 			Entries = bot.MemoryMeasurementAtTime.Value.WindowOverview.Single().Entries
+				.Where(e=>e.ObjectDistanceInMeters!=null)
 				.Select(e => new MemoryProxyOverviewEntry(e, bot)).ToList<IOverviewEntry>();
 		}
 

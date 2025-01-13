@@ -39,7 +39,7 @@ namespace Sanderling.Interface.MemoryStruct
 			return RefBaumKopiiStatic.ObjektKopiiErsctele(toBeCopied, new Param(null, FromInterfaceResponse.SerialisPolicyCache));
 		}
 
-		public static IUIElement WithRegion(this IUIElement @base, RectInt region)
+		public static IUIElement WithRegion(this IUIElement @base, RectInt? region)
 		{
 			return (@base == null) ? null : new UIElement(@base)
 			{
@@ -51,11 +51,34 @@ namespace Sanderling.Interface.MemoryStruct
 		{
 			return @base?.WithRegion(@base.Region.Value.WithSizePivotAtCenter(regionSize));
 		}
-		
+
 		public static IUIElement WithRegionSizeBoundedMaxPivotAtCenter(this IUIElement @base, Vektor2DInt regionSizeMax)
 		{
-			throw new NotImplementedException();
-			//return @base?.WithRegion(@base.Region.WithSizeBoundedMaxPivotAtCenter(regionSizeMax));
+			return @base?.WithRegion(@base.Region.WithSizeBoundedMaxPivotAtCenter(regionSizeMax));
+		}
+
+		public static RectInt? WithSizeBoundedMaxPivotAtCenter(this RectInt? @base, Vektor2DInt regionSizeMax)
+		{
+			if (@base == null)
+				return @base;
+
+
+			// Get the center of the rectangle
+			var center0 = (@base.Value.Min0 + @base.Value.Max0) / 2;
+			var center1 = (@base.Value.Min1 + @base.Value.Max1) / 2;
+
+			// Calculate the half-sizes based on the max size
+			var halfSize0 = Math.Min((@base.Value.Max0 - @base.Value.Min0) / 2, regionSizeMax.A / 2);
+			var halfSize1 = Math.Min((@base.Value.Max1 - @base.Value.Min1) / 2, regionSizeMax.B / 2);
+
+			// Create the new bounded rectangle
+			return new RectInt
+			{
+				Min0 = center0 - halfSize0,
+				Max0 = center0 + halfSize0,
+				Min1 = center1 - halfSize1,
+				Max1 = center1 + halfSize1
+			};
 		}
 
 		public static Vektor2DInt? RegionCenter(this IUIElement uiElement)

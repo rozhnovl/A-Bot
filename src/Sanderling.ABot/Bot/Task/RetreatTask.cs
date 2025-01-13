@@ -21,7 +21,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				yield return new MenuPathTask
 				{
-					RootUIElement = memoryMeasurement?.InfoPanelCurrentSystem?.ListSurroundingsButton,
+					RootUIElement = memoryMeasurement?.InfoPanelContainer?.LocationInfo?.ListSurroundingsButtonElement,
 					Bot = Bot,
 					ListMenuListPriorityEntryRegexPattern = new[] { new[] { retreatBookmark }, new[] { @"dock", ParseStatic.MenuEntryWarpToAtLeafRegexPattern } },
 				};

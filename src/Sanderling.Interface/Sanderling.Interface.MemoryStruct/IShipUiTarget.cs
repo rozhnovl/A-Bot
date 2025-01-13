@@ -4,7 +4,7 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public interface IShipUiTarget : IUIElement, IObjectIdInMemory, IObjectIdInt64, ISelectable
 	{
-		IUIElementText[] LabelText
+		string[] LabelText
 		{
 			get;
 		}
@@ -18,5 +18,6 @@ namespace Sanderling.Interface.MemoryStruct
 		{
 			get;
 		}
+		public int? Distance { get; }
 	}
 }

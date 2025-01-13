@@ -98,9 +98,10 @@ namespace Sanderling.ABot.Bot.Task
 					yield break;
 				}
 
+				var levelCount = Math.Min(ListMenuListPriorityEntryRegexPattern?.Length ?? 0, listMenu?.Length ?? 0);
+				var nextLevelToOpen = 0;
 				if (MenuOpenOnRootPossible() && mouseClickOnRootAge <= listMenu?.Length)
 				{
-					var levelCount = Math.Min(ListMenuListPriorityEntryRegexPattern?.Length ?? 0, listMenu?.Length ?? 0);
 
 					for (int levelIndex = 0; levelIndex < levelCount; levelIndex++)
 					{
@@ -118,14 +119,14 @@ namespace Sanderling.ABot.Bot.Task
 							break;
 
 						menuEntryToContinue = menuEntry;
-
+						nextLevelToOpen = levelIndex;
 						if (!(menuEntry?.HighlightVisible ?? false))
 							break;
 					}
 				}
 
 				var buttonToUse = ListMenuListPriorityEntryRegexPattern.IsNullOrEmpty() || menuEntryToContinue != null
-					? BotEngine.Motor.MouseButtonIdEnum.Left
+					? (nextLevelToOpen > 0 && nextLevelToOpen < levelCount - 1) ? BotEngine.Motor.MouseButtonIdEnum.None : BotEngine.Motor.MouseButtonIdEnum.Left
 					: BotEngine.Motor.MouseButtonIdEnum.Right;
 				if (ModifierKeys != null)
 				{
@@ -149,6 +150,41 @@ namespace Sanderling.ABot.Bot.Task
 		{
 			return
 				$"{nameof(MenuPathTask)}[{RootUIElement}@{string.Join("=>", ListMenuListPriorityEntryRegexPattern?.Select(a => string.Join("|", a)) ?? new string[0])}";
+		}
+	}
+
+	public class MultiClickTask : ISerializableBotTask
+	{
+		public IUIElement[] uiElements;
+		public VirtualKeyCode[] ModifierKeys { get; set; }
+
+		public IEnumerable<IBotTask> Component => null;
+		public IEnumerable<MotionRecommendation> ClientActions
+		{
+			get
+			{
+				if (uiElements.IsNullOrEmpty())
+					yield break;
+				
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyDown()?.AsRecommendation();
+					foreach (var e in uiElements)
+					{
+						yield return e?.MouseClick(BotEngine.Motor.MouseButtonIdEnum.Left)
+							?.AsRecommendation(30);
+					}
+
+					foreach (var mod in ModifierKeys.EmptyIfNull())
+						yield return mod.KeyUp()?.AsRecommendation();
+			}
+		}
+
+		public string ToJson() => ToString();
+
+		public override string ToString()
+		{
+			return
+				$"{nameof(MultiClickTask)}[{string.Join("|", uiElements.Select(e=>e.ToString()))}]";
 		}
 	}
 }

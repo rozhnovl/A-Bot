@@ -11,7 +11,7 @@ namespace Sanderling.Interface.MemoryStruct
 			set;
 		}
 
-		public string Text => base.LabelText?.Select((IUIElementText label) => label?.Text)?.OrderByDescending((string text) => text?.Length ?? (-1))?.FirstOrDefault();
+		public string Text { get; init; }
 
 		public MenuEntry()
 			: this(null)

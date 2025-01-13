@@ -38,11 +38,9 @@ namespace Sanderling.Interface.MemoryStruct
 		{
 			get;
 		}
-
-		IShipUiModule[] Module
-		{
-			get;
-		}
+		
+		public List<ShipUIModuleButton> ModuleButtons { get; }
+		public ModuleButtonsRows ModuleButtonsRows { get; }
 
 		IUIElementText[] Readout
 		{

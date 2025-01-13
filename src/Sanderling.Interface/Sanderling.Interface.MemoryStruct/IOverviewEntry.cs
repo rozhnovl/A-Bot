@@ -38,6 +38,7 @@ namespace Sanderling.Interface.MemoryStruct
 	public class OverviewWindowEntryCommonIndications
 	{
 		public bool Targeting { get; set; }
+		public bool AttackingMe { get; set; }
 		public bool TargetedByMe { get; set; }
 		public bool IsJammingMe { get; set; }
 		public bool IsWarpDisruptingMe { get; set; }

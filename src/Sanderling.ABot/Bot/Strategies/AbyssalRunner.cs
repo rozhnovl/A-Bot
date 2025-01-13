@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
@@ -22,7 +23,8 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public AbyssalRunner()
 		{
-			currentState = new ReloadAtStationState(requiredCargoContent);
+			currentState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole())
+				.CreateLogger(nameof(AbyssalFightState)));//new WarpToBookmarkInSystemState("abyssal spot");// new ReloadAtStationState(requiredCargoContent);
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -42,7 +44,7 @@ namespace Sanderling.ABot.Bot.Strategies
 							nextState = new WarpToBookmarkInSystemState("abyssal spot");
 							break;
 						case WarpToBookmarkInSystemState _:
-							nextState = new AbyssalFightState();
+							nextState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger(nameof(AbyssalFightState)));
 							break;
 						case TakeMissionsState takeMissionsState:
 						{

@@ -20,13 +20,13 @@ namespace Sanderling.ABot.Bot
 			var droneListView = memoryMeasurement?.WindowDroneView?.DroneGroups;
 
 
-			droneInBayCount = memoryMeasurement?.WindowDroneView.DroneGroupInBay?.Header?.MainText
+			droneInBayCount = memoryMeasurement?.WindowDroneView?.DroneGroupInBay?.Header?.MainText
 				?.CountFromDroneGroupCaption() ?? 0;
-			droneInLocalSpaceCount = memoryMeasurement?.WindowDroneView.DroneGroupInSpace?.Header?.MainText
+			droneInLocalSpaceCount = memoryMeasurement?.WindowDroneView?.DroneGroupInSpace?.Header?.MainText
 				?.CountFromDroneGroupCaption() ?? 0;
 
 			droneInLocalSpaceSetStatus =
-				memoryMeasurement?.WindowDroneView.DroneGroupInSpace?.Children
+				memoryMeasurement?.WindowDroneView?.DroneGroupInSpace?.Children
 					//TODO double check
 					?.Select(drone => drone?.Entry?.MainText?.StatusStringFromDroneEntryText())
 					?.WhereNotDefault()?.Distinct()?.ToArray();

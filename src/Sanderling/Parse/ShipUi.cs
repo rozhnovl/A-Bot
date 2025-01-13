@@ -12,10 +12,6 @@ namespace Sanderling.Parse
 {
 	public interface IShipUiTarget : MemoryStruct.IShipUiTarget
 	{
-		Int64? DistanceMin { get; }
-
-		Int64? DistanceMax { get; }
-
 		string[] TextRow { get; }
 	}
 
@@ -23,9 +19,7 @@ namespace Sanderling.Parse
 	{
 		MemoryStruct.IShipUiTarget Raw;
 
-		public Int64? DistanceMin { set; get; }
-
-		public Int64? DistanceMax { set; get; }
+		public int? Distance { set; get; }
 
 		public string[] TextRow { set; get; }
 
@@ -41,7 +35,7 @@ namespace Sanderling.Parse
 
 		public bool? IsSelected => Raw?.IsSelected;
 
-		public MemoryStruct.IUIElementText[] LabelText => Raw?.LabelText;
+		public string[] LabelText => Raw?.LabelText;
 
 		public RectInt? Region => Raw?.Region ?? RectInt.Empty;
 
@@ -61,14 +55,11 @@ namespace Sanderling.Parse
 			}
 
 			var TextRow =
-				raw?.LabelText?.OrderByCenterVerticalDown()
-				?.Select(labelText => labelText?.Text?.RemoveXmlTag())
+				raw?.LabelText
+				?.Select(labelText => labelText?.RemoveXmlTag())
 				?.ToArray();
 
-			var DistanceMinMax = TextRow?.LastOrDefault()?.DistanceParseMinMaxKeyValue();
-
-			DistanceMin = DistanceMinMax?.Key;
-			DistanceMax = DistanceMinMax?.Value;
+			Distance = raw.Distance;
 
 			this.TextRow = TextRow?.Reverse()?.Skip(1)?.Reverse()?.ToArray();
 		}
@@ -154,8 +145,8 @@ namespace Sanderling.Parse
 		public IUIElement ButtonSpeed0 => Raw?.ButtonSpeed0;
 
 		public IUIElement ButtonSpeedMax => Raw?.ButtonSpeedMax;
-
-		public IShipUiModule[] Module => Raw?.Module;
+		public List<ShipUIModuleButton> ModuleButtons => Raw.ModuleButtons;
+		public ModuleButtonsRows ModuleButtonsRows => Raw.ModuleButtonsRows;
 
 		public IUIElementText[] Readout => Raw?.Readout;
 

@@ -8,6 +8,8 @@ var cache = builder.AddRedis("cache")
 var pgSql = builder.AddPostgres("db");
 
 builder.AddProject<Projects.ConsoleRunner>("consolerunner")
-	.WithReference(cache);
+	.WithReference(cache)
+	.WaitFor(cache)
+	.WaitFor(pgSql);
 
 builder.Build().Run();

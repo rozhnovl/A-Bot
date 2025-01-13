@@ -34,7 +34,7 @@ namespace Sanderling.ABot.Bot
 
 		static public int AttackPriorityIndex(
 			this Bot bot,
-			Sanderling.Parse.IOverviewEntry entry) =>
+			Interface.MemoryStruct.IOverviewEntry entry) =>
 			AttackPriorityIndexForOverviewEntryEWar(bot?.OverviewMemory?.SetEWarTypeFromOverviewEntry(entry));
 
 		static public bool ShouldBeIncludedInStepOutput(this IBotTask task) =>
@@ -102,22 +102,23 @@ namespace Sanderling.ABot.Bot
 			};
 		}
 
-		static public bool ShouldBeActivePermanent(this Accumulation.IShipUiModule module, Bot bot)
+		static public bool ShouldBeActivePermanent(this ShipUIModuleButton module, Bot bot)
 		{
-			System.Diagnostics.Debug.WriteLine($"Checking module {module.TooltipLast}" +
-				$" IsHardener: {module?.TooltipLast?.Value?.IsHardener}" +
-			                                   $" IsActive: {module.IsActive(bot)}" +
-			                                   $" RampActive: {module.RampActive}" +
-				$" ;RegionX: {module.Region?.Min0};RegionY: {module.Region?.Min1}");
-			
-			if(module?.TooltipLast?.Value?.IsHardener?? false)
-				return true;
+			throw new NotImplementedException();
+			//System.Diagnostics.Debug.WriteLine($"Checking module {module.TooltipLast}" +
+			//	$" IsHardener: {module?.TooltipLast?.Value?.IsHardener}" +
+			//                                   $" IsActive: {module.IsActive}" +
+			//                                   $" RampActive: {module.RampActive}" +
+			//	$" ;RegionX: {module.Region?.Min0};RegionY: {module.Region?.Min1}");
 
-			return
-				bot?.ConfigSerialAndStruct.Value?.ModuleActivePermanentSetTitlePattern
-					?.Any(activePermanentTitlePattern =>
-						module?.TooltipLast?.Value?.TitleElementText()?.Text
-							?.RegexMatchSuccessIgnoreCase(activePermanentTitlePattern) ?? false) ?? false;
+			//if(module?.TooltipLast?.Value?.IsHardener?? false)
+			//	return true;
+
+			//return
+			//	bot?.ConfigSerialAndStruct.Value?.ModuleActivePermanentSetTitlePattern
+			//		?.Any(activePermanentTitlePattern =>
+			//			module?.TooltipLast?.Value?.TitleElementText()?.Text
+			//				?.RegexMatchSuccessIgnoreCase(activePermanentTitlePattern) ?? false) ?? false;
 		}
 	}
 }

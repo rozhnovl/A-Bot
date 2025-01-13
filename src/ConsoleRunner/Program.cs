@@ -7,6 +7,7 @@ using Sanderling.Motor;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Text.Json;
 using Bib3.RateLimit;
 using Sanderling.ABot;
 using BotEngine.Client;
@@ -34,13 +35,17 @@ var app = new App();
 //app.InterfaceExchange();
 var eve64bit = true;
 
-int? processId = 40780;
+var process = Process.GetProcesses().FirstOrDefault(p => p.MainWindowTitle.Contains("Gil-Gelad"));
+int? processId = process.Id;
+
 IImmutableList<ulong>? possibleRootAddresses = null;
 var cachedProcessRoots = redis.StringGet($"ProcessRoot:{processId}");
 if (cachedProcessRoots.HasValue)
 {
 	possibleRootAddresses = cachedProcessRoots.ToString().Split(',').Select(ulong.Parse).ToImmutableList();
 }
+
+int cycleCount = 0;
 while (true)
 {
 	var sw = new Stopwatch(); sw.Start();
@@ -58,43 +63,53 @@ while (true)
 
 			Console.WriteLine("Got Root addresses: " + string.Join(',', uiRootCandidatesAddresses));
 
+			try
+			{
 
-		IImmutableList<UITreeNode> ReadUITrees() =>
-			uiRootCandidatesAddresses
-				.Select(uiTreeRoot => Eve64.EveOnline64.ReadUITreeFromAddress(uiTreeRoot, memoryReader, 99))
-				.Where(uiTree => uiTree != null)
-				.ToImmutableList();
+				IImmutableList<UITreeNode> ReadUITrees() =>
+					uiRootCandidatesAddresses
+						.Select(uiTreeRoot => Eve64.EveOnline64.ReadUITreeFromAddress(uiTreeRoot, memoryReader, 99))
+						.Where(uiTree => uiTree != null)
+						.ToImmutableList();
 
-		var uiTrees = ReadUITrees();
-		var uiTreesWithStats =
-			uiTrees
-				.Select(uiTree =>
-					new
-					{
-						uiTree = uiTree,
-						nodeCount = uiTree.EnumerateSelfAndDescendants().Count()
-					})
-				.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
-				.ToImmutableList();
+				var uiTrees = ReadUITrees();
+				var uiTreesWithStats =
+					uiTrees
+						.Select(uiTree =>
+							new
+							{
+								uiTree = uiTree,
+								nodeCount = uiTree.EnumerateSelfAndDescendants().Count()
+							})
+						.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
+						.ToImmutableList();
 
-		var uiTreesReport =
-			uiTreesWithStats
-				.Select(uiTreeWithStats =>
-					$"\n0x{uiTreeWithStats.uiTree.pythonObjectAddress:X}: {uiTreeWithStats.nodeCount} nodes.")
-				.ToImmutableList();
+				var uiTreesReport =
+					uiTreesWithStats
+						.Select(uiTreeWithStats =>
+							$"\n0x{uiTreeWithStats.uiTree.pythonObjectAddress:X}: {uiTreeWithStats.nodeCount} nodes.")
+						.ToImmutableList();
 
-		Console.WriteLine($"Read {uiTrees.Count} UI trees:" + string.Join("", uiTreesReport));
+				Console.WriteLine($"Read {uiTrees.Count} UI trees:" + string.Join("", uiTreesReport));
 
-		var largestUiTree =
-			uiTreesWithStats
-				.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
-				.FirstOrDefault().uiTree;
+				var largestUiTree =
+					uiTreesWithStats
+						.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
+						.FirstOrDefault().uiTree;
 
+				redis.StringSet($"UiTree:{processId}:{cycleCount++}", JsonSerializer.Serialize(largestUiTree));
 
-		app.MemoryMeasurementLast =
-			new FromProcessMeasurement<IMemoryMeasurement>(
-				Parser.ParseUserInterfaceFromUITree(Parser.ParseUITreeWithDisplayRegionFromUITree(largestUiTree)), 0,
-				0, processId.Value);
+				app.MemoryMeasurementLast =
+					new FromProcessMeasurement<IMemoryMeasurement>(
+						Parser.ParseUserInterfaceFromUITree(
+							Parser.ParseUITreeWithDisplayRegionFromUITree(largestUiTree)), 0,
+						0, processId.Value);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine("Failed to read memory: "+e);
+				continue;
+			}
 	}
 	else
 	{
@@ -104,7 +119,7 @@ while (true)
 	sw.Stop();
 	Console.WriteLine($"Successfully read memory ({sw.Elapsed}): " + app.MemoryMeasurementLast?.Value?.InfoPanelContainer?.LocationInfo?.CurrentSolarSystemName);
 
-	app.BotProgress(false);
+	app.BotProgress(true);
 	await Task.Delay(500);
 }
 
@@ -124,8 +139,6 @@ namespace Sanderling
 		const string BotConfigFileName = "bot.config";
 
 		PropertyGenTimespanInt64<MotionResult[]> BotStepLastMotionResult;
-
-		PropertyGenTimespanInt64<KeyValuePair<Exception, StringAtPath>> BotConfigLoaded;
 
 		public Int64? MeasurementRequestTime()
 		{
@@ -155,14 +168,11 @@ namespace Sanderling
 				//TODO if (time <= bot?.StepLastInput?.TimeMilli)
 					//return;
 
-				BotConfigLoad();
-
 				var stepResult = bot.Step(new BotStepInput
 				{
 					TimeMilli = time.Value,
 					FromProcessMemoryMeasurement = memoryMeasurementLast,
 					StepLastMotionResult = BotStepLastMotionResult?.Value,
-					ConfigSerial = BotConfigLoaded?.Value.Value,
 				});
 
 				if (motionEnable)
@@ -206,29 +216,7 @@ namespace Sanderling
 			Thread.Sleep(sequenceMotion.Max(sm => sm.DelayAfterMs ?? FromMotionToMeasurementDelayMilli));
 		}
 
-		void BotConfigLoad()
-		{
-			Exception exception = null;
-			string configString = null;
-			var configFilePath = Path.Combine(Directory.GetCurrentDirectory(), BotConfigFileName);// AssemblyDirectoryPath.PathToFilesysChild(BotConfigFileName);
-
-			try
-			{
-				using (var fileStream = new FileStream(configFilePath, FileMode.Open, FileAccess.Read))
-					configString = new StreamReader(fileStream).ReadToEnd();
-			}
-			catch (Exception e)
-			{
-				exception = e;
-			}
-
-			BotConfigLoaded = new PropertyGenTimespanInt64<KeyValuePair<Exception, StringAtPath>>(
-				new KeyValuePair<Exception, StringAtPath>(
-					exception,
-					new StringAtPath { Path = configFilePath, String = configString }), GetTimeStopwatch());
-		}
-
-		readonly Sensor sensor = new Sensor();
+		//readonly Sensor sensor = new Sensor();
 
 		public FromProcessMeasurement<IMemoryMeasurement> MemoryMeasurementLast;
 
@@ -256,12 +244,12 @@ namespace Sanderling
 
 		public void MeasurementMemoryTake(int processId, Int64 measurementBeginTimeMinMilli)
 		{
-			var measurement = sensor.MeasurementTake(processId, measurementBeginTimeMinMilli);
+			//var measurement = sensor.MeasurementTake(processId, measurementBeginTimeMinMilli);
 
-			if (null == measurement)
-				return;
+			//if (null == measurement)
+			//	return;
 
-			MemoryMeasurementLast = measurement;
+			//MemoryMeasurementLast = measurement;
 		}
 		//static string AssemblyDirectoryPath => Bib3.FCL.Glob.ZuProcessSelbsctMainModuleDirectoryPfaadBerecne().EnsureEndsWith(@"\");
 

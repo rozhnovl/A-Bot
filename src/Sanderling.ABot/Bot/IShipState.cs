@@ -6,10 +6,11 @@ namespace Sanderling.ABot.Bot
 	{
 		bool ManeuverStartPossible { get; }
 		IShipHitpointsAndEnergy HitpointsAndEnergy { get; }
-		ShipManeuverTypeEnum Maneuver { get; }
+		ShipManeuverType Maneuver { get; }
 		DronesContoller Drones { get; }
 		ActiveTargetsContoller ActiveTargets { get; }
 		bool IsInAbyss { get; }
+		int AttackRange { get; }
 		ISerializableBotTask GetTurnOnAlwaysActiveModulesTask();
 		ISerializableBotTask GetSetModuleActiveTask(ShipFit.ModuleType type, bool shouldBeActive);
 		ISerializableBotTask GetNextTankingModulesTask(double estimatedIncomingDps);

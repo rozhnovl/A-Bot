@@ -12,7 +12,7 @@ namespace Sanderling.ABot.Bot.Memory
 	{
 		private readonly IDictionary<Int64, HashSet<EWarTypeEnum>> setEWarTypeFromOverviewEntryId = new Dictionary<Int64, HashSet<EWarTypeEnum>>();
 
-		public IEnumerable<EWarTypeEnum> SetEWarTypeFromOverviewEntry(Sanderling.Parse.IOverviewEntry entry) =>
+		public IEnumerable<EWarTypeEnum> SetEWarTypeFromOverviewEntry(Interface.MemoryStruct.IOverviewEntry entry) =>
 			setEWarTypeFromOverviewEntryId?.TryGetValueOrDefault(entry?.Id ?? -1);
 
 		private static readonly IEnumerable<ShipManeuverType> setManeuverReset =

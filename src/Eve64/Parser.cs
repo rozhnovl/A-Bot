@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bib3.Geometrik;
 using Newtonsoft.Json.Linq;
@@ -76,7 +78,7 @@ namespace Eve64
 				//ProbeScannerWindow = ParseProbeScannerWindowFromUITreeRoot(uiTree),
 				//DirectionalScannerWindow = ParseDirectionalScannerWindowFromUITreeRoot(uiTree),
 				WindowStation = ParseStationWindowFromUITreeRoot(uiTree),
-				WindowInventory = ParseInventoryWindowsFromUITreeRoot(uiTree)?.ToArray(),
+				WindowInventory = ParseInventoryWindowsFromUITreeRoot(uiTree)?.ToArray<IWindowInventory>(),
 				ModuleButtonTooltip = ParseModuleButtonTooltipFromUITreeRoot(uiTree),
 				//HeatStatusTooltip = ParseHeatStatusTooltipFromUITreeRoot(uiTree),
 				//ChatWindowStacks = ParseChatWindowStacksFromUITreeRoot(uiTree),
@@ -289,7 +291,62 @@ namespace Eve64
 		}
 
 		// Methods for parsing specific parts of the user interface
-		private static IMenu[] ParseContextMenusFromUITreeRoot(UITreeNodeWithDisplayRegion uiTree) => null;
+		private static IMenu[] ParseContextMenusFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			// Find the "l_menu" layer menu node
+			var layerMenu = uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(child =>
+					string.Equals(child.UINode.GetNameFromDictEntries()?.ToLower(), "l_menu", StringComparison.OrdinalIgnoreCase));
+
+			if (layerMenu == null)
+			{
+				return new IMenu[0];
+			}
+
+			// Parse all menu-like children of the "l_menu" layer
+			return layerMenu
+				.ListDescendantsWithDisplayRegion()
+				.Where(child =>
+					child.UINode.PythonObjectTypeName.ToLower().Contains("menu"))
+				.Select(ParseContextMenu)
+				.ToArray();
+		}
+
+		private static IMenu ParseContextMenu(UITreeNodeWithDisplayRegion menuNode)
+		{
+			// Find all menu entry nodes
+			var entriesUINodes = menuNode
+				.ListDescendantsWithDisplayRegion()
+				.Where(node => node.UINode.PythonObjectTypeName.ToLower().Contains("menuentry"))
+				.ToList();
+
+			// Parse the entries
+			var entries = entriesUINodes
+				.Select(entryUINode =>
+				{
+					// Find the display text for the entry
+					var text = entryUINode
+						.ListDescendantsWithDisplayRegion()
+						.Select(descendant => descendant.UiNode.GetDisplayText())
+						.Where(t=>t!=null)
+						.OrderByDescending(text => text.Length)
+						.FirstOrDefault() ?? string.Empty;
+
+					return new MenuEntry(entryUINode.AsUiElement())
+					{
+						HighlightVisible = (entryUINode?.Children?.FirstOrDefault(c=>c.NodeWithRegion?.UiNode.GetColorPercentFromDictEntries()!=null)?.NodeWithRegion?.UINode?.GetColorPercentFromDictEntries()?.APercent > 80),
+						Text = text,
+					};
+				})
+				.OrderBy(entry => entry.Region.Value.Min1)
+				.ToList();
+
+			return new Menu(menuNode.AsUiElement())
+			{
+				Entry = entries.ToArray()
+			};
+		}
 
 		private static IShipUi? ParseShipUIFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
@@ -410,6 +467,7 @@ namespace Eve64
 				("Jump", ShipManeuverType.Jump),
 				("Orbit", ShipManeuverType.Orbit),
 				("Approach", ShipManeuverType.Approach),
+				("Keeping at Range", ShipManeuverType.KeepAtRange),
 				// Korean samples
 				("워프 드라이브 가동", ShipManeuverType.Warp),
 				("점프 중", ShipManeuverType.Jump)
@@ -468,7 +526,8 @@ namespace Eve64
 				.Where(node => node.UINode.GetNameFromDictEntries() == "heatGauge")
 				.Select(gaugeNode =>
 				{
-					var rotationPercent = (int)(gaugeNode.UINode.GetRotationFloatFromDictEntries() * 100);
+					//TODO fails with null here
+					var rotationPercent = (int)((gaugeNode.UINode.GetRotationFloatFromDictEntries()??0) * 100);
 					return new ShipUIHeatGauge
 					{
 						UINode = gaugeNode.AsUiElement(),
@@ -648,11 +707,12 @@ namespace Eve64
 				UINode = infoPanelNode,
 				ListSurroundingsButton = maybeListSurroundingsButton,
 				CurrentSolarSystemName = currentSolarSystemName,
-				SecurityStatusPercent = securityStatusPercent?.ToString(),
+				SecurityStatusPercent = securityStatusPercent ?? -5,//ABYSS throw new InvalidOperationException("Failed to parse security status of system"),
 				ExpandedContent = expandedContent
 			};
 		}
 
+		private static string[] AbyssSystems = ["Trbet"];
 		// Placeholders for undefined methods
 		public static InfoPanelRoute? ParseInfoPanelRouteFromInfoPanelContainer(
 			UITreeNodeWithDisplayRegion containerNode) => null;
@@ -660,18 +720,24 @@ namespace Eve64
 		//public static InfoPanelAgentMissions? ParseInfoPanelAgentMissionsFromInfoPanelContainer(UITreeNodeWithDisplayRegion containerNode) => null;
 		public static int? ParseSecurityStatusPercentFromUINodeText(string text)
 		{
-			string?[] patterns =
-			{
-				GetSubstringBetweenXmlTagsAfterMarker(text, "hint='Security status'"),
-				GetSubstringBetweenXmlTagsAfterMarker(text, "hint=\"Security status\"><color=")
-			};
+			string[] patterns =
+			[
+				@"<hint='Security status'>.*?<color=[^>]+>([\d.]+)</color>",
+				@"<hint=""Security status"">.*?<color=[^>]+>([\d.]+)</color>"
+			];
+			
 
-			foreach (var pattern in patterns.Where(p => p != null))
+			foreach (var pattern in patterns)
 			{
-				if (float.TryParse(pattern.Trim(), out var value))
+				Match match = Regex.Match(text, pattern);
+				if (match.Success && float.TryParse(match.Groups[1].Value, out var value))
 				{
 					return (int)Math.Round(value * 100);
 				}
+				//TODO else
+				//{
+				//	Console.WriteLine("No match found.");
+				//}
 			}
 
 			return null;
@@ -753,12 +819,33 @@ namespace Eve64
 			return new ShipUiTarget(targetNode.AsUiElement())
 			{
 				IsSelected = isActiveTarget,
+				Distance = textsTopToBottom.Select(ParseDistance).Where(e=>e.HasValue).FirstOrDefault(),
+				RegionInteractionElement = barAndImageCont.AsUiElement(),
+				LabelText = textsTopToBottom.ToArray(),
 				//TODO
 				/*BarAndImageCont = barAndImageCont,
 				TextsTopToBottom = textsTopToBottom,
 				AssignedContainerNode = assignedContainerNode,
 				AssignedIcons = assignedIcons*/
 			};
+		}
+
+		private static int? ParseDistance(string distanceString)
+		{
+			// Remove HTML-like tags and trim whitespace
+			var strippedInput = distanceString.Replace(" km", "000").Replace("<center>", "").Replace("m", "").Trim();
+
+			// Remove any remaining non-numeric characters (except commas, which are part of the number format)
+			strippedInput = new string(strippedInput.Where(c => char.IsDigit(c) || c == ',').ToArray());
+
+			// Try parsing the number as an integer
+			if (int.TryParse(strippedInput, NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out int result))
+			{
+				return result;
+			}
+
+			// Return null if parsing fails
+			return null;
 		}
 
 		public static List<WindowOverView> ParseOverviewWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
@@ -811,7 +898,7 @@ namespace Eve64
 			List<(string HeaderText, UITreeNodeWithDisplayRegion HeaderRegion)> entriesHeaders,
 			UITreeNodeWithDisplayRegion listViewEntryNode)
 		{
-			if (!entriesHeaders.Any())
+			if (!(entriesHeaders?.Any() ?? false))
 			{
 				return new ListViewEntryResult
 				{
@@ -937,6 +1024,16 @@ namespace Eve64
 				.Where(hint => hint != null)
 				.ToList();
 
+			var commonIndications = new OverviewWindowEntryCommonIndications()
+			{
+				Targeting = namesUnderSpaceObjectIcon.Contains("targeting"),
+				TargetedByMe = namesUnderSpaceObjectIcon.Contains("targetedByMeIndicator"),
+				AttackingMe = namesUnderSpaceObjectIcon.Contains("attackingMe"),
+				IsJammingMe =
+					rightAlignedIconsHints.Contains("is jamming me", StringComparer.InvariantCultureIgnoreCase),
+				IsWarpDisruptingMe = rightAlignedIconsHints.Contains("is warp disrupting me",
+					StringComparer.InvariantCultureIgnoreCase),
+			};
 			return new OverviewWindowEntry()
 			{
 				UINode = overviewEntryNode,
@@ -950,7 +1047,8 @@ namespace Eve64
 				IconSpriteColorPercent = iconSpriteColorPercent,
 				NamesUnderSpaceObjectIcon = namesUnderSpaceObjectIcon,
 				BgColorFillsPercent = bgColorFillsPercent,
-				RightAlignedIconsHints = rightAlignedIconsHints
+				RightAlignedIconsHints = rightAlignedIconsHints,
+				CommonIndications = commonIndications,
 			};
 		}
 
@@ -1246,12 +1344,12 @@ namespace Eve64
 				.FirstOrDefault();
 		}
 
-		public static string? GetDisplayText(UITreeNodeWithDisplayRegion uiNode)
+		public static string? GetDisplayText(this UITreeNode uiNode)
 		{
 			var propertiesToCheck = new[] { "_setText", "_text" };
 
 			return propertiesToCheck
-				.Select(propertyName => uiNode.UiNode.DictEntriesOfInterest.TryGetValue(propertyName, out var value)
+				.Select(propertyName => uiNode.DictEntriesOfInterest.TryGetValue(propertyName, out var value)
 					? GetDisplayTextFromDictEntry(value)
 					: null)
 				.Where(text => text != null)
@@ -1269,7 +1367,11 @@ namespace Eve64
 				}
 				else if (dictEntryValue is UITreeNodeWithDisplayRegion asNode)
 				{
-					return asNode != null ? GetDisplayText(asNode) : null;
+					return asNode != null ? GetDisplayText(asNode.UiNode) : null;
+				}
+				else if (dictEntryValue is UITreeNode uiNode)
+				{
+					return uiNode != null ? GetDisplayText(uiNode) : null;
 				}
 			}
 			catch
@@ -1287,7 +1389,7 @@ namespace Eve64
 				.ToList();
 
 			return nodes
-				.Select(GetDisplayText)
+				.Select(n=>GetDisplayText(n.UiNode))
 				.Where(text => text != null)
 				.ToList();
 		}
@@ -1302,7 +1404,7 @@ namespace Eve64
 			return nodesWithRegion
 				.Select(descendant =>
 				{
-					var displayText = GetDisplayText(descendant);
+					var displayText = GetDisplayText(descendant.UiNode);
 					return !string.IsNullOrEmpty(displayText)
 						? (displayText, descendant)
 						: default((string, UITreeNodeWithDisplayRegion)?);
@@ -1359,7 +1461,7 @@ namespace Eve64
 		}
 
 		// Supporting Classes
-		public class InventoryWindow
+		public class InventoryWindow: IWindowInventory
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
 
@@ -1367,25 +1469,28 @@ namespace Eve64
 			public string? SubCaptionLabelText { get; set; }
 
 			//public InventoryWindowCapacityGauge? SelectedContainerCapacityGauge { get; set; }
-			public Inventory? SelectedContainerInventory { get; set; }
+			public IInventory? SelectedContainerInventory { get; set; }
+			public IUIElement? LootAllButton { get; }
 			public UITreeNodeWithDisplayRegion? ButtonToSwitchToListView { get; set; }
 			public UITreeNodeWithDisplayRegion? ButtonToStackAll { get; set; }
 		}
 
-		public class Inventory
+		public class Inventory : IInventory
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
-			public List<InventoryItemsListViewEntry>? ItemsView { get; set; }
+
+			public List<IInventoryItemsListViewEntry>? ItemsView { get; set; }
 			//public ScrollControls? ScrollControls { get; set; }
 		}
 
-		public class InventoryItemsListViewEntry
+		public class InventoryItemsListViewEntry : IInventoryItemsListViewEntry
 		{
 			public UITreeNodeWithDisplayRegion UINode { get; set; }
 			public Dictionary<string, string> CellsTexts { get; set; } = new();
+			public IUIElement Element => UINode.AsUiElement();
 		}
 
-		public static List<InventoryWindow> ParseInventoryWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		public static List<IWindowInventory> ParseInventoryWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
 			return uiTreeRoot
 				.ListDescendantsWithDisplayRegion()
@@ -1395,7 +1500,7 @@ namespace Eve64
 				.ToList();
 		}
 
-		public static InventoryWindow ParseInventoryWindow(UITreeNodeWithDisplayRegion windowUiNode)
+		public static IWindowInventory ParseInventoryWindow(UITreeNodeWithDisplayRegion windowUiNode)
 		{
 			var selectedContainerCapacityGaugeNode = windowUiNode
 				.ListDescendantsWithDisplayRegion()
@@ -1561,7 +1666,7 @@ namespace Eve64
 				.OrderByDescending(node => node.ListDescendantsWithDisplayRegion().Count())
 				.FirstOrDefault();
 		}
-		public static InventoryItemsListViewEntry ParseInventoryItemsListViewEntry(
+		public static IInventoryItemsListViewEntry ParseInventoryItemsListViewEntry(
 			List<(string HeaderText, UITreeNodeWithDisplayRegion HeaderRegion)> entriesHeaders,
 			UITreeNodeWithDisplayRegion inventoryEntryNode)
 		{
@@ -1747,7 +1852,7 @@ namespace Eve64
 		public WindowShipFitting[] WindowShipFitting { get; init; }
 		public WindowFittingMgmt[] WindowFittingMgmt { get; init; }
 		public IWindowSurveyScanView[] WindowSurveyScanView { get; init; }
-		public InventoryWindow[] WindowInventory { get; init; }
+		public IWindowInventory[] WindowInventory { get; init; }
 		public IWindowAgentDialogue[] WindowAgentDialogue { get; init; }
 		public WindowAgentBrowser[] WindowAgentBrowser { get; init; }
 		public WindowTelecom[] WindowTelecom { get; init; }
@@ -1787,8 +1892,9 @@ namespace Eve64
 	{
 		public UITreeNodeWithDisplayRegion UINode { get; set; }
 		public UITreeNodeWithDisplayRegion? ListSurroundingsButton { get; set; }
-		public string? CurrentSolarSystemName { get; set; }
-		public string? SecurityStatusPercent { get; set; }
+		public IUIElement? ListSurroundingsButtonElement => ListSurroundingsButton?.AsUiElement();
+		public string CurrentSolarSystemName { get; set; }
+		public int SecurityStatusPercent { get; set; }
 		public string? ExpandedContent { get; set; }
 	}
 

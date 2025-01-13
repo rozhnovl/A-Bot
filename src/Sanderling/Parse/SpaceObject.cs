@@ -74,7 +74,7 @@ namespace Sanderling.Parse
 			oreTypeString = null;
 
 			var LabelAggregatedLessXml =
-				target?.LabelText?.Select(label => label?.Text)?.StringJoin(" ")?.RemoveXmlTag()?.Trim();
+				target?.LabelText?.StringJoin(" ")?.RemoveXmlTag()?.Trim();
 
 			if (null == LabelAggregatedLessXml)
 			{

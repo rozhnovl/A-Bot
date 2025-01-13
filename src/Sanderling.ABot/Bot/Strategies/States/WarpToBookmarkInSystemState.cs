@@ -28,12 +28,15 @@ namespace Sanderling.ABot.Bot.Strategies
 				return undockTask;
 
 			if (memory?.Menu == null)
-				return memory.InfoPanelCurrentSystem.ListSurroundingsButton.ClickTask();
+				return memory.InfoPanelContainer.LocationInfo.ListSurroundingsButtonElement.ClickTask();
 
-			if (memory.Menu.Count() > 1 && memory.Menu.Skip(1).FirstOrDefault().Entry.Any(e => e.Text == "Approach Location"))
+			if (memory.Menu.Count() > 1 && memory.Menu.Any(m => m.Entry.Any(e => e.Text == "Approach Location")))
+			{
 				arrived = true;
-				
-			return memory.InfoPanelCurrentSystem.ListSurroundingsButton.ClickMenuEntryByRegexPattern(bot, bookmarkName,
+				return new BotTask("");
+			}
+
+			return memory.InfoPanelContainer.LocationInfo.ListSurroundingsButtonElement.ClickMenuEntryByRegexPattern(bot, "Locations", bookmarkName,
 				"Warp to Location Within .*");
 		}
 		

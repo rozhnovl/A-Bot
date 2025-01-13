@@ -6,6 +6,7 @@
 		int AssignedEffectsCount { get; }
 		string Name { get; }
 		ISerializableBotTask GetUnlockTask();
+		ISerializableBotTask GetOrbitTask();
 		bool WeaponAssigned { get; }
 		bool DroneAssigned { get; }
 	}

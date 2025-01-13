@@ -18,10 +18,6 @@ namespace Sanderling.ABot.Bot.Task
 
 		public bool AllowAnomalyEnter;
 
-		private const int AllowRoamSessionDurationMin = 60 * 7;
-
-		private const int AllowAnomalyEnterSessionDurationMin = AllowRoamSessionDurationMin + 60 * 7;
-
 		/// <summary>
 		/// Checks that current chat contains only trusted chars
 		/// </summary>
@@ -46,13 +42,12 @@ namespace Sanderling.ABot.Bot.Task
 			{
 				var memoryMeasurement = Bot?.MemoryMeasurementAtTime?.Value;
 
-				var charIsLocatedInHighsec = 500 <= memoryMeasurement?.InfoPanelCurrentSystem?.SecurityLevelMilli;
+				var charIsLocatedInHighsec = 50 <= memoryMeasurement?.InfoPanelContainer.LocationInfo.SecurityStatusPercent;
 
 				if (charIsLocatedInHighsec)
 				{
 					AllowRoam = true;
-					AllowAnomalyEnter = AllowAnomalyEnterSessionDurationMin <=
-					                    memoryMeasurement?.SessionDurationRemaining;
+					AllowAnomalyEnter = true;
 					yield break;
 				}
 
@@ -70,12 +65,10 @@ namespace Sanderling.ABot.Bot.Task
 				if (null == localChatWindow)
 					yield return new DiagnosticTask(LocalChatWindowNotFoundDiagnosticText);
 
-				var sessionDurationSufficient = AllowRoamSessionDurationMin <= memoryMeasurement?.SessionDurationRemaining;
-
-				if (sessionDurationSufficient && (charIsLocatedInHighsec || ChatIsClean(localChatWindow)))
+				if ((charIsLocatedInHighsec || ChatIsClean(localChatWindow)))
 				{
 					AllowRoam = true;
-					AllowAnomalyEnter = AllowAnomalyEnterSessionDurationMin <= memoryMeasurement?.SessionDurationRemaining;
+					AllowAnomalyEnter = true;
 					yield break;
 				}
 

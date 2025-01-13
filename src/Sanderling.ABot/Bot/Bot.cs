@@ -1,14 +1,11 @@
 ﻿using Bib3;
 using BotEngine.Interface;
-using System.Linq;
-using System.Collections.Generic;
-using System;
-using Bib3.Geometrik;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Bot.Memory;
 using Sanderling.ABot.Bot.Strategies;
 using Sanderling.ABot.Serialization;
 using Sanderling.Parse;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot
 {
@@ -21,7 +18,7 @@ namespace Sanderling.ABot.Bot
 
 		public PropertyGenTimespanInt64<BotStepResult> StepLastResult { private set; get; }
 
-		private IStrategy strategy = /*new AnomalyHunting();// */new AbyssalRunner();// new CorporationMissionTaker();
+		private IStrategy strategy = /*new AnomalyHunting();//*/new AbyssalRunner();// new CorporationMissionTaker();
 
 		private int motionId;
 
@@ -31,8 +28,6 @@ namespace Sanderling.ABot.Bot
 		/// </summary>
 		public FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement> MemoryMeasurementAtTime { private set; get; }
 
-		readonly public Accumulator.MemoryMeasurementAccumulator MemoryMeasurementAccu = new Accumulator.MemoryMeasurementAccumulator();
-
 		readonly public OverviewMemory OverviewMemory = new OverviewMemory();
 
 		private readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
@@ -40,7 +35,7 @@ namespace Sanderling.ABot.Bot
 		/// <summary>
 		/// Step number on which modules have been activated last time. Prevents duplicate clicks on modules during their activation
 		/// </summary>
-		private readonly IDictionary<Accumulation.IShipUiModule, int> ToggleLastStepIndexFromModule = new Dictionary<Accumulation.IShipUiModule, int>();
+		private readonly IDictionary<ShipUIModuleButton, int> ToggleLastStepIndexFromModule = new Dictionary<ShipUIModuleButton, int>();
 
 		public KeyValuePair<Deserialization, Config> ConfigSerialAndStruct { private set; get; }
 
@@ -54,18 +49,14 @@ namespace Sanderling.ABot.Bot
 			return stepIndex - interactionLastStepIndex;
 		}
 
-		public long? ToggleLastAgeStepCountFromModule(Accumulation.IShipUiModule module) =>
+		public long? ToggleLastAgeStepCountFromModule(ShipUIModuleButton module) =>
 			module == null ? null :
 			stepIndex - ToggleLastStepIndexFromModule?.TryGetValueNullable(module);
 
 
 		private void MemorizeStepInput(BotStepInput input)
 		{
-			ConfigSerialAndStruct = (input?.ConfigSerial?.String).DeserializeIfDifferent(ConfigSerialAndStruct);
-
 			MemoryMeasurementAtTime = input?.FromProcessMemoryMeasurement?.MapValue(measurement => measurement?.Parse());
-
-			MemoryMeasurementAccu.Accumulate(MemoryMeasurementAtTime);
 
 			OverviewMemory.Aggregate(MemoryMeasurementAtTime);
 		}
@@ -106,7 +97,7 @@ namespace Sanderling.ABot.Bot
 					?.ToArray();
 
 				foreach (var moduleToggle in outputListTaskPath.ConcatNullable().OfType<ModuleToggleTask>()
-					.Select(moduleToggleTask => moduleToggleTask?.module).WhereNotDefault())
+					.SelectMany(moduleToggleTask => moduleToggleTask?.modules).WhereNotDefault())
 					ToggleLastStepIndexFromModule[moduleToggle] = stepIndex;
 
 				foreach (var effect in outputListTaskPath.EmptyIfNull().SelectMany(taskPath =>

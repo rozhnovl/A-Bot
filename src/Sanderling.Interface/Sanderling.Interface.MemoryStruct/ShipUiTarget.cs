@@ -5,7 +5,7 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public class ShipUiTarget : UIElement, IShipUiTarget, IUIElement, IObjectIdInMemory, IObjectIdInt64, ISelectable
 	{
-		public IUIElementText[] LabelText
+		public string[] LabelText
 		{
 			get;
 			set;
@@ -29,6 +29,7 @@ namespace Sanderling.Interface.MemoryStruct
 			set;
 		}
 
+		public int? Distance { get; set; }
 		public override IUIElement RegionInteraction => RegionInteractionElement?.WithRegionSizeBoundedMaxPivotAtCenter(new Vektor2DInt(40L, 40L));
 
 		public ShipUiTargetAssignedGroup[] Assigned

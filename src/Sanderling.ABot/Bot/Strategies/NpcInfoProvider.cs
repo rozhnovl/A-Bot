@@ -78,6 +78,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			{"Triglavian Bioadaptive Cache", 0},
 			{"Triglavian Extraction Node", 0},
 			{"Triglavian Extraction SubNode", 0},
+			{"Guristas Despoiler", 29},
+			{"Triglavian Biocombinative Cache", 0},
 		};
 
 		public double CalculateApproximateDps(IList<IOverviewEntry> entries)
@@ -104,6 +106,8 @@ namespace Sanderling.ABot.Bot.Strategies
 
 		public int CalcTargetPriority(IOverviewEntry entry)
 		{
+			if (entry.Name.Contains("Guristas"))
+				return 20;
 			if (entry.Name.Contains("Anchoring"))
 				return 1;
 

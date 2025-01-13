@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bib3;
 using Bib3.Geometrik;
 using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Parse;
@@ -84,9 +85,9 @@ namespace Sanderling.ABot.Bot.Strategies
 		{
 			var memory = bot.MemoryMeasurementAtTime.Value;
 
-			if (memory.InfoPanelCurrentSystem.HeaderText != SystemForMissions)
+			if (memory.InfoPanelContainer.LocationInfo.CurrentSolarSystemName != SystemForMissions)
 			{
-				SystemForMissions = memory.InfoPanelCurrentSystem.HeaderText;
+				SystemForMissions = memory.InfoPanelContainer.LocationInfo.CurrentSolarSystemName;
 				missionBookingInProgress = false;
 				missionsToBookmark = null;
 			}
@@ -95,8 +96,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			{
 				if (missionsToBookmark == null)
 				{
-					if (memory?.Menu == null)
-						return memory.InfoPanelCurrentSystem.ListSurroundingsButton.ClickTask();
+					if (!(memory?.Menu?.Any() ?? false))
+						return memory.InfoPanelContainer.LocationInfo.ListSurroundingsButtonElement.ClickTask();
 					missionsToBookmark = memory.Menu.FirstOrDefault()?.Entry
 						.SkipWhile(me => !me.Text.StartsWith("Agent Missions"))
 						.Skip(1)
@@ -113,7 +114,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					{
 						case null:
 						case 0:
-							return memory.InfoPanelCurrentSystem.ListSurroundingsButton.ClickTask();
+							return memory.InfoPanelContainer.LocationInfo.ListSurroundingsButtonElement.ClickTask();
 						case 1:
 							return menus[0].Entry.FirstOrDefault(me => me.Text == nextMission).ClickTask();
 						case 2:

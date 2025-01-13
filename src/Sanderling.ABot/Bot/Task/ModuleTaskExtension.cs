@@ -1,24 +1,12 @@
 ﻿using Sanderling.Accumulation;
 using System.Collections.Generic;
 using System.Linq;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot.Task
 {
 	public static class ModuleTaskExtension
 	{
-		public static bool? IsActive(
-			this Sanderling.Accumulation.IShipUiModule module,
-			Bot bot)
-		{
-			if (bot?.MouseClickLastAgeStepCountFromUIElement(module) <= 1)
-				return null;
-
-			if (bot?.ToggleLastAgeStepCountFromModule(module) <= 1)
-				return null;
-
-			return module?.RampActive;
-		}
-
 		public static bool IsReloading(
 			this Sanderling.Accumulation.IShipUiModule module,
 			Bot bot)
@@ -28,9 +16,9 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
-			Sanderling.Accumulation.IShipUiModule module)
+			ShipUIModuleButton module)
 		{
-			if (module?.IsActive(bot) ?? true)
+			if (module?.IsActive ?? true)
 				return null;
 
 			return new ModuleToggleTask(module);
@@ -38,9 +26,9 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsInactive(
 			this Bot bot,
-			Sanderling.Accumulation.IShipUiModule module)
+			ShipUIModuleButton module)
 		{
-			if (module?.IsActive(bot) ?? false)
+			if (module?.IsActive ?? false)
 
 				return new ModuleToggleTask(module);
 			return null;
@@ -48,8 +36,13 @@ namespace Sanderling.ABot.Bot.Task
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
-			IEnumerable<Sanderling.Accumulation.IShipUiModule> setModule) =>
-			new BotTask(nameof(EnsureIsActive) + " for list of modules")
-				{Component = setModule?.Select(module => bot?.EnsureIsActive(module))};
+			IEnumerable<ShipFit.ModuleInfo> setModule){
+
+			var notActiveModules = setModule.Where(m=>m.UiModule?.IsActive !=true).ToArray();
+			return !notActiveModules.Any() ? null : new BotTask(nameof(EnsureIsActive) + " for list of modules")
+			{
+				Component = [new ModuleToggleTask(notActiveModules, null),]
+			};
+		}
 	}
 }

@@ -56,7 +56,8 @@ namespace Sanderling.Motor
 				if (null == waypointUIElementCurrent)
 					throw new ApplicationException("mouse waypoint not anymore contained in UITree");
 
-				var waypointRegion = waypointUIElementCurrent.RegionInteraction?.Region;
+				var waypointRegion = waypointUIElementCurrent.RegionInteraction?.Region 
+					?? waypointUIElementCurrent.Region;
 
 				var waypointRegionReplacement = mouseWaypoint.RegionReplacement;
 

@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Sanderling.ABot.Bot.Task;
+﻿using Sanderling.ABot.Bot.Task;
 using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot.Strategies
@@ -13,7 +12,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			this.bookmarkName = bookmarkName;
 		}
 
-		public IBotTask GetStateActions(Bot bot)
+		public IBotTask? GetStateActions(Bot bot)
 		{
 			var memory = bot.MemoryMeasurementAtTime.Value;
 			var ManeuverType = memory?.ShipUi?.Indication?.ManeuverType;

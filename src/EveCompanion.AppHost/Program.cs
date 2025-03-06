@@ -12,4 +12,8 @@ builder.AddProject<Projects.ConsoleRunner>("consolerunner")
 	.WaitFor(cache)
 	.WaitFor(pgSql);
 
+builder.AddProject<Projects.WebUI>("webui")
+	.WithReference(cache)
+	.WaitFor(cache);
+
 builder.Build().Run();

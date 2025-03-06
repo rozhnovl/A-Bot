@@ -1,27 +1,37 @@
 using BotEngine;
+using Newtonsoft.Json.Linq;
 
 namespace Sanderling.Interface.MemoryStruct
 {
-	public interface INeocom : IContainer, IUIElement, IObjectIdInMemory, IObjectIdInt64
+	public interface INeocom
 	{
-		IUIElement EveMenuButton
-		{
-			get;
-		}
+		//IUIElement EveMenuButton
+		//{
+		//	get;
+		//}
 
-		IUIElement CharButton
+		//IUIElement CharButton
+		//{
+		//	get;
+		//}
+		IUIElement InventoryButton
 		{
 			get;
 		}
+		IUIElement PeopleAndPlacesButton { get; }
 
-		ISprite[] Button
-		{
-			get;
-		}
+		IUIElement ChatButton { get; }
 
-		IUIElementText Clock
-		{
-			get;
-		}
+		IUIElement MailButton { get; }
+
+		IUIElement FittingButton { get; }
+
+		IUIElement MarketButton { get; }
+
+
+		//ISprite[] Button
+		//{
+		//	get;
+		//}
 	}
 }

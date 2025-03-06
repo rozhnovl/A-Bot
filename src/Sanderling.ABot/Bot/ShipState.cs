@@ -26,7 +26,7 @@ namespace Sanderling.ABot.Bot
 			Drones = new DronesContoller(memory, fit);
 		}
 
-		private ShipFit Fit { get; }
+		public ShipFit Fit { get; }
 
 		public bool ManeuverStartPossible => memory.ManeuverStartPossible();
 		[NotNull] public IShipHitpointsAndEnergy HitpointsAndEnergy => memory.ShipUi.HitpointsAndEnergy;
@@ -37,6 +37,7 @@ namespace Sanderling.ABot.Bot
 
 		public ActiveTargetsContoller ActiveTargets { get; }
 		public int AttackRange => 11000;//TODO
+		public bool ShouldUseTractorForLooting => Fit.MaxDronesInSpace > 0;//TODO
 		public bool IsInAbyss => !memory.InfoPanelContainer.LocationInfo.CurrentSolarSystemName?.Contains("Maurasi") ?? true;
 
 		public ISerializableBotTask? GetTurnOnAlwaysActiveModulesTask()
@@ -73,7 +74,8 @@ namespace Sanderling.ABot.Bot
 		public ISerializableBotTask? GetAttackTasks()
 		{
 			var focusedTarget = ActiveTargets.ActiveTarget;
-
+			if (focusedTarget == null)
+				return null;
 			ISerializableBotTask? weaponTask = GetSetModuleActiveTask(ShipFit.ModuleType.Weapon,
 				focusedTarget.Distance < AttackRange);
 			if (weaponTask != null)

@@ -97,11 +97,13 @@ namespace Sanderling.Interface.MemoryStruct
 	public class ShipUIIndication: IShipUIIndication
 	{
 		public ShipManeuverType? ManeuverType { get; set; }
+		public string? ManeuverTarget { get; set; }
 		public IUIElement UINode { get; set; }
 	}
 	public interface IShipUIIndication
 	{
 		ShipManeuverType? ManeuverType { get; }
+		public string? ManeuverTarget { get; }
 	}
 	public class ShipUIModuleButton
 	{

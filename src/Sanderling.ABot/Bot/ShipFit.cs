@@ -44,16 +44,32 @@ namespace Sanderling.ABot.Bot
 				throw new ArgumentException("Couldn't determine 3 module groups");
 			High = modulesByY[0].OrderBy(m=>m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
+				if (fitInfo[0].Length <= i)
+					return new ModuleInfo(ModuleType.Etc)
+					{
+						UiModule = m
+					};
 				fitInfo[0][i].UiModule = m;
 				return fitInfo[0][i];
+
 			}).ToArray();
 			Mid = modulesByY[1].OrderBy(m => m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
+				if (fitInfo[1].Length <= i)
+					return new ModuleInfo(ModuleType.Etc)
+					{
+						UiModule = m
+					};
 				fitInfo[1][i].UiModule = m;
 				return fitInfo[1][i];
 			}).ToArray();
 			Low = modulesByY[2].OrderBy(m => m.UINode.Region.Value.Min0).Select((m, i) =>
 			{
+				if (fitInfo[2].Length <= i)
+					return new ModuleInfo(ModuleType.Etc)
+					{
+						UiModule = m
+					};
 				fitInfo[2][i].UiModule = m;
 				return fitInfo[2][i];
 			}).ToArray();

@@ -166,9 +166,7 @@ namespace Sanderling.ABot.Bot.Task
 				yield break;
 				var missionsWindow = MemoryMeasurement?.WindowOther?.FirstOrDefault(w => w.Caption == "Journal");
 				if (missionsWindow == null)
-					yield return MemoryMeasurement?.Neocom?.Button.Single(bt => bt.TexturePath.Contains("journal"))
-						.MouseClick(MouseButtonIdEnum.Left)
-						.AsRecommendation();
+					throw new NotImplementedException("Journal window was removed");
 
 				var acceptedMissions = missionsWindow.LabelText.Where(lt => lt.Text.Contains(">Accepted<"));
 

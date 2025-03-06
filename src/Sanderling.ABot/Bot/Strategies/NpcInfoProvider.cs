@@ -80,6 +80,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			{"Triglavian Extraction SubNode", 0},
 			{"Guristas Despoiler", 29},
 			{"Triglavian Biocombinative Cache", 0},
+			{"Devoted Knight", 100},
 		};
 
 		public double CalculateApproximateDps(IList<IOverviewEntry> entries)

@@ -26,8 +26,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			if (!saveShipTask.AllowRoam)
 				yield break;
 
-
-			var combatTask = new CombatTask(bot, shipFit, new DronesContoller(bot.MemoryMeasurementAtTime.Value, shipFit));
+			var combatTask = new CombatTask(bot, shipFit, new DronesContoller(bot.MemoryMeasurementAtTime.Value, shipFit), new PriorityManager(shipFit, new NpcInfoProvider()));
 
 			yield return combatTask;
 

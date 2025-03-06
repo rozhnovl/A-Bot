@@ -1,4 +1,6 @@
-﻿namespace Sanderling.ABot.Bot
+﻿using Sanderling.Interface.MemoryStruct;
+
+namespace Sanderling.ABot.Bot
 {
 	public abstract class SimpleOverviewEntry : IOverviewEntry
 	{
@@ -23,5 +25,12 @@
 		public long Id { get; }
 		public abstract ISerializableBotTask ClickMenuEntryByRegexPattern(string orbit, string km);
 		public abstract ISerializableBotTask GetSelectTask();
+		public abstract OverviewWindowEntryCommonIndications CommonIndications { get; }
+		public abstract ISerializableBotTask GetApproachTask();
+
+		public override string ToString()
+		{
+			return $"SimpleOverviewEntry ({Name})";
+		}
 	}
 }

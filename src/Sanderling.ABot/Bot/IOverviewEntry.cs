@@ -1,4 +1,6 @@
-﻿namespace Sanderling.ABot.Bot
+﻿using Sanderling.Interface.MemoryStruct;
+
+namespace Sanderling.ABot.Bot
 {
 	public interface IOverviewEntry
 	{
@@ -11,5 +13,7 @@
 		long Id { get; }
 		ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null);
 		ISerializableBotTask GetSelectTask();
+		public OverviewWindowEntryCommonIndications CommonIndications { get; }
+		ISerializableBotTask GetApproachTask();
 	}
 }

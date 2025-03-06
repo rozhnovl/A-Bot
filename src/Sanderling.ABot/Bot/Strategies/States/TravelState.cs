@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Bib3;
-using Bib3.Geometrik;
-using Sanderling.ABot.Bot.Task;
+﻿using Sanderling.ABot.Bot.Task;
 using Sanderling.ABot.Parse;
 using Sanderling.Interface.MemoryStruct;
 

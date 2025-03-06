@@ -9,7 +9,6 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.Json;
 using Bib3.RateLimit;
-using Sanderling.ABot;
 using BotEngine.Client;
 using Sanderling;
 using Eve64;
@@ -37,7 +36,7 @@ var eve64bit = true;
 
 var process = Process.GetProcesses().FirstOrDefault(p => p.MainWindowTitle.Contains("Gil-Gelad"));
 int? processId = process.Id;
-
+redis.StringSet("ProcessId", processId.ToString());
 IImmutableList<ulong>? possibleRootAddresses = null;
 var cachedProcessRoots = redis.StringGet($"ProcessRoot:{processId}");
 if (cachedProcessRoots.HasValue)
@@ -61,55 +60,54 @@ while (true)
 
 		var (memoryReader, uiRootCandidatesAddresses) = GetMemoryReaderAndRootAddresses();
 
-			Console.WriteLine("Got Root addresses: " + string.Join(',', uiRootCandidatesAddresses));
+		Console.WriteLine("Got Root addresses: " + string.Join(',', uiRootCandidatesAddresses));
+		try
+		{
 
-			try
-			{
+			IImmutableList<UITreeNode> ReadUITrees() =>
+				uiRootCandidatesAddresses
+					.Select(uiTreeRoot => Eve64.EveOnline64.ReadUITreeFromAddress(uiTreeRoot, memoryReader, 99))
+					.Where(uiTree => uiTree != null)
+					.ToImmutableList();
 
-				IImmutableList<UITreeNode> ReadUITrees() =>
-					uiRootCandidatesAddresses
-						.Select(uiTreeRoot => Eve64.EveOnline64.ReadUITreeFromAddress(uiTreeRoot, memoryReader, 99))
-						.Where(uiTree => uiTree != null)
-						.ToImmutableList();
+			var uiTrees = ReadUITrees();
+			var uiTreesWithStats =
+				uiTrees
+					.Select(uiTree =>
+						new
+						{
+							uiTree = uiTree,
+							nodeCount = uiTree.EnumerateSelfAndDescendants().Count()
+						})
+					.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
+					.ToImmutableList();
 
-				var uiTrees = ReadUITrees();
-				var uiTreesWithStats =
-					uiTrees
-						.Select(uiTree =>
-							new
-							{
-								uiTree = uiTree,
-								nodeCount = uiTree.EnumerateSelfAndDescendants().Count()
-							})
-						.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
-						.ToImmutableList();
+			var uiTreesReport =
+				uiTreesWithStats
+					.Select(uiTreeWithStats =>
+						$"\n0x{uiTreeWithStats.uiTree.pythonObjectAddress:X}: {uiTreeWithStats.nodeCount} nodes.")
+					.ToImmutableList();
 
-				var uiTreesReport =
-					uiTreesWithStats
-						.Select(uiTreeWithStats =>
-							$"\n0x{uiTreeWithStats.uiTree.pythonObjectAddress:X}: {uiTreeWithStats.nodeCount} nodes.")
-						.ToImmutableList();
+			Console.WriteLine($"Read {uiTrees.Count} UI trees:" + string.Join("", uiTreesReport));
 
-				Console.WriteLine($"Read {uiTrees.Count} UI trees:" + string.Join("", uiTreesReport));
+			var largestUiTree =
+				uiTreesWithStats
+					.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
+					.First().uiTree;
 
-				var largestUiTree =
-					uiTreesWithStats
-						.OrderByDescending(uiTreeWithStats => uiTreeWithStats.nodeCount)
-						.FirstOrDefault().uiTree;
+			redis.StringSet($"UiTree:{processId}:{cycleCount++}", JsonSerializer.Serialize(largestUiTree));
 
-				redis.StringSet($"UiTree:{processId}:{cycleCount++}", JsonSerializer.Serialize(largestUiTree));
-
-				app.MemoryMeasurementLast =
-					new FromProcessMeasurement<IMemoryMeasurement>(
-						Parser.ParseUserInterfaceFromUITree(
-							Parser.ParseUITreeWithDisplayRegionFromUITree(largestUiTree)), 0,
-						0, processId.Value);
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine("Failed to read memory: "+e);
-				continue;
-			}
+			app.MemoryMeasurementLast =
+				new FromProcessMeasurement<IMemoryMeasurement>(
+					Parser.ParseUserInterfaceFromUITree(
+						Parser.ParseUITreeWithDisplayRegionFromUITree(largestUiTree)), 0,
+					0, processId.Value);
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine("Failed to read memory: "+e);
+			continue;
+		}
 	}
 	else
 	{
@@ -119,7 +117,8 @@ while (true)
 	sw.Stop();
 	Console.WriteLine($"Successfully read memory ({sw.Elapsed}): " + app.MemoryMeasurementLast?.Value?.InfoPanelContainer?.LocationInfo?.CurrentSolarSystemName);
 
-	app.BotProgress(true);
+	var result = app.BotProgress(false);
+	redis.StringSet("BotResult", JsonSerializer.Serialize(result));
 	await Task.Delay(500);
 }
 
@@ -153,9 +152,9 @@ namespace Sanderling
 			return memoryMeasurementLast?.Begin + MemoryMeasurementDistanceMaxMilli;
 		}
 
-		internal void BotProgress(bool motionEnable)
+		internal BotStepResult BotProgress(bool motionEnable)
 		{
-			botLock.IfLockIsAvailableEnter(() =>
+			return botLock.IfLockIsAvailableEnter(() =>
 			{
 				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} called BotProgress");
 				var memoryMeasurementLast = MemoryMeasurementLast;
@@ -163,7 +162,7 @@ namespace Sanderling
 				var time = memoryMeasurementLast?.End;
 
 				if (!time.HasValue)
-					return;
+					return null;
 
 				//TODO if (time <= bot?.StepLastInput?.TimeMilli)
 					//return;
@@ -178,6 +177,7 @@ namespace Sanderling
 				if (motionEnable)
 					BotMotion(memoryMeasurementLast, stepResult?.ListMotion);
 				Debug.WriteLine($"Bot at thread {Thread.CurrentThread.ManagedThreadId} finished BotProgress");
+				return stepResult;
 			}, nameof(BotProgress) + Process.GetCurrentProcess().Id);
 		}
 
@@ -208,6 +208,7 @@ namespace Sanderling
 						Success = motionResult?.Success ?? false,
 					});*/
 				}
+				return sequenceMotion;
 			}, "MotionExecution");
 			BotStepLastMotionResult =
 				new PropertyGenTimespanInt64<MotionResult[]>(listMotionResult.ToArray(), startTime,
@@ -384,12 +385,20 @@ namespace Sanderling
 
 		public static void IfLockIsAvailableEnter(this object lockRef, Action action, string lockName = null)
 		{
-			WhenLockIsAvailableEnter(lockRef, 0, action, lockName);
+			WhenLockIsAvailableEnter(lockRef, 0, ()=>
+			{
+				action();
+				return string.Empty;
+			}, lockName);
+		}
+		public static T IfLockIsAvailableEnter<T>(this object lockRef, Func<T> action, string lockName = null)
+		{
+			return WhenLockIsAvailableEnter(lockRef, 0, action, lockName);
 		}
 
 		private static ConcurrentDictionary<string, Mutex> ResolvedMutexes = new ConcurrentDictionary<string, Mutex>();
 
-		public static void WhenLockIsAvailableEnter(this object lockRef, int waitForLockTimeoutMilli, Action action,
+		public static T WhenLockIsAvailableEnter<T>(this object lockRef, int waitForLockTimeoutMilli, Func<T> action,
 			string lockName = null)
 		{
 			bool lockTaken = false;
@@ -411,7 +420,7 @@ namespace Sanderling
 				{
 					lockTaken = mutex.WaitOne(waitForLockTimeoutMilli);
 					if (lockTaken)
-						action();
+						return action();
 				}
 				catch (Exception e)
 				{
@@ -434,7 +443,7 @@ namespace Sanderling
 					Monitor.TryEnter(lockRef, waitForLockTimeoutMilli, ref lockTaken);
 					if (lockTaken)
 					{
-						action();
+						return action();
 					}
 				}
 				catch (Exception e)
@@ -449,6 +458,7 @@ namespace Sanderling
 					}
 				}
 			}
+			return default(T);
 		}
 
 	}

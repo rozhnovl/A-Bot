@@ -44,7 +44,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				$"InputStates[{StateStopwatch.Elapsed}]: {JsonConvert.SerializeObject(new StateInput(shipState, overviewProvider, inventoryProvider))}");
 			try
 			{
-				var task = GetActions(shipState, overviewProvider, inventoryProvider);
+				var task = GetActions(bot, shipState, overviewProvider, inventoryProvider, new PriorityManager(shipFit, npcInfoProvider));
 
 				logger.LogInformation(
 					$"OutputTask[{StateStopwatch.Elapsed}]: {task?.ToJson()}");
@@ -78,15 +78,17 @@ namespace Sanderling.ABot.Bot.Strategies
 			public IInventoryProvider InventoryProvider { get; set; }
 		}
 
-		public ISerializableBotTask GetActions([NotNull] IShipState shipState,
+		public ISerializableBotTask GetActions(Bot bot, [NotNull] IShipState shipState,
 			[NotNull] IOverviewProvider overviewProvider,
-			[NotNull] IInventoryProvider inventoryProvider)
+			[NotNull] IInventoryProvider inventoryProvider,
+			PriorityManager priorityManager)
 		{
 			stepIndex++;
 			var task = new DynamicTask();
 			if (!shipState.ManeuverStartPossible)
 				return null;
 
+			var coreCache = overviewProvider.Entries?.FirstOrDefault(e => e.Name.Contains("Bioadaptive")|| e.Name.Contains("Biocombinative"));
 			var conduit = overviewProvider.Entries
 				?.Where(entry =>
 					(entry.Name ?? entry.Type).Contains("Conduit") && !(entry.Name ?? entry.Type).Contains("Proving"))
@@ -126,17 +128,13 @@ namespace Sanderling.ABot.Bot.Strategies
 				?.Where(entry => !entry.Name.Contains("Extraction"))
 				?.Where(e => e.Type != "Vila Swarmer")
 				?.ToList();
-			var listOverviewEntryToAttack = offensiveOverviewEntries
-				?.Where(entry => entry.Distance <= MaxTargetDistance)
-				?.Where(entry => entry.Name != "Vila Swarmer")
-				?.OrderBy(npcInfoProvider.CalcTargetPriority)
-				?.ThenBy(entry => entry?.Distance ?? int.MaxValue)
-				?.ToArray();
-
+			var listOverviewEntryToAttack = priorityManager.GetEnemies(overviewProvider);
+			if (listOverviewEntryToAttack.Any())
+				changingRoom = false;
 			var estimatedIncomingDps = npcInfoProvider.CalculateApproximateDps(overviewProvider);
 			var orbitBeacon = overviewProvider.Entries?.Where(npcInfoProvider.IsOrbitBeacon)
 				                  ?.OrderBy(npcInfoProvider.CalcTargetPriority)?.FirstOrDefault() ??
-			                  conduit;
+			                  coreCache ?? conduit;
 			task.With($"Current maneuver is {shipState.Maneuver}." +
 			          Environment.NewLine +
 			          $"Incoming DPS is {estimatedIncomingDps}.");
@@ -147,7 +145,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			{
 				if (shipState.Maneuver != ShipManeuverType.Orbit)
 				{
-					task.With($"Orbiting {conduit}");
+					task.With($"Orbiting {orbitBeacon}");
 					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Orbit.*", "5,000 m"));
 				}
 
@@ -167,120 +165,113 @@ namespace Sanderling.ABot.Bot.Strategies
 				    shipState.Maneuver != ShipManeuverType.KeepAtRange
 				    && shipState.Maneuver != ShipManeuverType.Orbit)
 					//TODO HERE
-					return task.With(conduit.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
+					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
 
-				task.With($"Distance to target is {conduit.Distance}.");
-				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, conduit.Distance > 2000);
+				task.With($"Distance to target is {orbitBeacon.Distance}.");
+				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, orbitBeacon.Distance > 2000);
 
 				if (mwdTask != null)
 					return task.With(mwdTask);
 			}
 
-			var tankingTask = shipState.GetNextTankingModulesTask(estimatedIncomingDps);
 
-			if (tankingTask != null)
+			//TODO nested task?
+			var combatTask = new CombatTask(bot, shipState.Fit,
+				new DronesContoller(bot.MemoryMeasurementAtTime.Value, shipState.Fit),
+				new PriorityManager(shipState.Fit, npcInfoProvider));
+			foreach (var ct in combatTask.Component)
 			{
-				return task.With(tankingTask);
-			}
-
-			targetProcessing:
-
-			var wrongTargetedEntries =
-				shipState.ActiveTargets?.List?.Where(t =>
-					((!t.Name.Contains("Extraction") && !offensiveOverviewEntries.Any(oe => oe.Name == t.Name))
-					 || (t.Name.Contains("Extraction") && t.Distance > 50000)));
-			if (wrongTargetedEntries?.Any() ?? false)
-			{
-				task.With(
-					$"Wrong targeted entries: {string.Join(",", wrongTargetedEntries.Select(wte => wte.Name + "@" + wte.Distance + "[" + offensiveOverviewEntries.Any(oe => oe.Name == wte.Name) + "]"))}");
-				return task.With(wrongTargetedEntries.FirstOrDefault().GetUnlockTask());
-			}
-
-			if (shipState.ActiveTargets.Count > 0)
-			{
-				task.With($"Targets selected: {shipState.ActiveTargets.Count}");
-				var attackTask = shipState.GetAttackTasks();
-				if (attackTask != null)
-					return task.With(attackTask);
-			}
-
-			task.With(
-				$"Spare enemies to attack: {listOverviewEntryToAttack.Length}: {string.Concat(listOverviewEntryToAttack.Select(oe => Environment.NewLine + '\t' + (oe.MeTargeted == true ? "[Targeted]" : string.Empty) + oe.Name))}");
-
-			if (shipState.ActiveTargets.Count < 5)
-			{
-				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e =>
-					         e.MeTargeted != true && e.MeActiveTarget != true))
-				{
-					if (lastTargetingAttemptSteps.ContainsKey(overviewEntry.Id))
-						if (lastTargetingAttemptSteps[overviewEntry.Id] > stepIndex - 3)
-							continue;
-					lastTargetingAttemptSteps[overviewEntry.Id] = stepIndex;
-					return task.With(overviewEntry.GetSelectTask());
-				}
-			}
-
-
-			if (!(0 < listOverviewEntryToAttack?.Length))
-			{
-				var reloadTask = shipState.GetReloadTask();
-				if (shipState.Drones.HasNonReturningDronesInSpace)
-					return task.With(HotkeyRegistry.ReturnDrones);
-				else if (reloadTask != null)
-					return task.With(reloadTask);
+				return task.With((ISerializableBotTask)ct);
 			}
 
 			looting:
-			if (overviewProvider.Entries.Any(e => e.Name.Contains("Bioadaptive")))
+			if (shipState.ShouldUseTractorForLooting)
 			{
-				if (conduit.Distance < 2000 && !overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
+				if (coreCache!=null)
 				{
-					var openInventoryTask = inventoryProvider.GetOpenWindowTask();
-					if (openInventoryTask != null)
-						return task.With(openInventoryTask);
+					if (conduit.Distance < 2000 && !overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
+					{
+						var openInventoryTask = inventoryProvider.GetOpenWindowTask();
+						if (openInventoryTask != null)
+							return task.With(openInventoryTask);
 
-					task.With("We are near conduit and have nothing to do. Time to deploy tractor");
-					var launchTractorTask =
-						inventoryProvider.GetActvateItemIfPresentTask("Mobile Tractor Unit", ".*Launch.*");
-					if (launchTractorTask != null)
-						return task.With(launchTractorTask);
+						task.With("We are near conduit and have nothing to do. Time to deploy tractor");
+						var launchTractorTask =
+							inventoryProvider.GetActvateItemIfPresentTask("Mobile Tractor Unit", ".*Launch.*");
+						if (launchTractorTask != null)
+							return task.With(launchTractorTask);
+					}
+				}
+				else if (overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
+				{
+					var tractorEntry = overviewProvider.Entries.Single(e => e.Name.Contains("Tractor"));
+
+					var lootWindowProvider = inventoryProvider.GetLootableWindow();
+
+					if (lootWindowProvider != null)
+					{
+						return task.With(
+							lootWindowProvider.IsEmpty
+								? tractorEntry.ClickMenuEntryByRegexPattern("Scoop.*")
+								: lootWindowProvider.GetClickLootButtonTask());
+					}
+
+					if (tractorEntry.Distance < 2500)
+						return task.With(tractorEntry.ClickMenuEntryByRegexPattern("Open Cargo"));
+					if (shipState.Maneuver != ShipManeuverType.Approach)
+					{
+						return task.With("Approach");
+					}
+				}
+				else if (offensiveOverviewEntries.IsNullOrEmpty())
+				{
+					var closeInventoryTask = inventoryProvider.GetCloseWindowTask();
+					if (closeInventoryTask != null)
+						return task.With(closeInventoryTask);
+					task.With("Room finished, time to jump");
+					if (!changingRoom)
+					{
+						changingRoom = true;
+						return task.With(conduit.ClickMenuEntryByRegexPattern("Activate Gate"));
+					}
 				}
 			}
-			else if (overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
+			else
 			{
-				var tractorEntry = overviewProvider.Entries.Single(e => e.Name.Contains("Tractor"));
-
-				var lootWindowProvider = inventoryProvider.GetLootableWindow();
-
-				if (lootWindowProvider != null)
+				if (coreCache != null)
 				{
-					return task.With(
-						lootWindowProvider.IsEmpty
-							? tractorEntry.ClickMenuEntryByRegexPattern("Scoop.*")
-							: lootWindowProvider.GetClickLootButtonTask());
+					if (coreCache.Name.Contains("Wreck"))
+					{
+						var lootWindowProvider = inventoryProvider.GetLootableWindow();
+
+						if (lootWindowProvider is { IsEmpty: false })
+						{
+							return task.With(lootWindowProvider.GetClickLootButtonTask());
+						}
+
+						if (coreCache.Distance < 2500)
+							return task.With(coreCache.ClickMenuEntryByRegexPattern("Open Cargo"));
+						if (shipState.Maneuver != ShipManeuverType.Approach)
+						{
+							return task.With(coreCache.GetApproachTask());
+						}
+					}
 				}
-
-				if (tractorEntry.Distance < 2500)
-					return task.With(tractorEntry.ClickMenuEntryByRegexPattern("Open Cargo"));
-				if (shipState.Maneuver != ShipManeuverType.Approach)
+				else if (offensiveOverviewEntries.IsNullOrEmpty())
 				{
-					return task.With("Approach");
+					//var closeInventoryTask = inventoryProvider.GetCloseWindowTask();
+					//if (closeInventoryTask != null)
+					//	return task.With(closeInventoryTask);
+					task.With("Room finished, time to jump");
+					return task.With(conduit.ClickMenuEntryByRegexPattern("Activate Gate"));
 				}
 			}
 
-			else if (offensiveOverviewEntries.IsNullOrEmpty())
-			{
-				var closeInventoryTask = inventoryProvider.GetCloseWindowTask();
-				if (closeInventoryTask != null)
-					return task.With(closeInventoryTask);
-				task.With("Room finished, time to jump");
-				return task.With(conduit.ClickMenuEntryByRegexPattern("Activate Gate"));
-			}
-
-			return null;
+			return task;
 		}
 
 		private bool enteringAbyss;
+		private bool changingRoom;
 
 		private ISerializableBotTask EnterAbyssIfNeeded([NotNull] IShipState shipState,
 			[NotNull] IInventoryProvider inventoryProvider)

@@ -1,29 +1,50 @@
 ﻿using WindowsInput.Native;
 using Sanderling.ABot.Parse;
 using Sanderling.Parse;
+using Sanderling.ABot.Bot.Strategies;
+using System.Threading.Tasks;
 
 namespace Sanderling.ABot.Bot.Task
 {
-	public class CombatTask : IBotTask
+	public class PriorityManager(ShipFit shipFit, NpcInfoProvider npcInfoProvider)
+	{
+		public IOverviewEntry[] GetEnemies(IOverviewProvider overview)
+		{
+			var offensiveOverviewEntries = overview.Entries
+				?.Where(entry => entry.IsEnemy)
+				?.Where(entry => !entry.Name.Contains("Extraction"))
+				?.Where(e => e.Type != "Vila Swarmer")
+				?.ToList();
+			var listOverviewEntryToAttack = offensiveOverviewEntries
+				?.Where(entry => entry.Distance <= shipFit.MaxTargetingRange)
+				?.Where(entry => entry.Name != "Vila Swarmer")
+				?.OrderBy(npcInfoProvider.CalcTargetPriority)
+				?.ThenBy(entry => entry?.Distance ?? int.MaxValue)
+				?.ToArray()
+				??[];
+			return listOverviewEntryToAttack;
+		}
+	}
+	public class CombatTask(Bot bot, ShipFit shipFit, DronesContoller dronesController, PriorityManager priorityManager) : IBotTask
 	{
 		private readonly Bot bot;
 		private readonly ShipFit shipFit;
 		private readonly DronesContoller dronesController;
+		private readonly NpcInfoProvider npcInfoProvider = new NpcInfoProvider();
 
 		public bool Completed { private set; get; }
 
-		public CombatTask(Bot bot, ShipFit shipFit, DronesContoller dronesController)
-		{
-			this.bot = bot;
-			this.shipFit = shipFit;
-			this.dronesController = dronesController;
-		}
+		private Dictionary<long, int> lastTargetingAttemptSteps = new Dictionary<long, int>();
+		private int stepIndex = 0;
 
 		public IEnumerable<IBotTask> Component
 		{
 			get
 			{
+				stepIndex++;
 				var shipState = new ShipState(shipFit, bot);
+				var overviewProvider = new MemoryProxyOverviewProvider(bot);
+				var inventoryProvider = new MemoryProxyInventoryProvider(bot);
 				var memoryMeasurementAtTime = bot?.MemoryMeasurementAtTime;
 
 				var memoryMeasurement = memoryMeasurementAtTime?.Value;
@@ -42,14 +63,17 @@ namespace Sanderling.ABot.Bot.Task
 					yield return OverviewTabCombat.ClickTask();
 				*/
 
-				var listOverviewEntryToAttack =
-					memoryMeasurement?.WindowOverview?.FirstOrDefault()?.Entries
-						?.Where(entry => entry?.IconSpriteColorPercent?.IsRed() ?? false)
-						?.Where(e => e.ObjectDistanceInMeters <= shipFit.MaxTargetingRange)
-						?.OrderBy(entry => bot.AttackPriorityIndex(entry))
-						?.ThenBy(entry => entry?.ObjectDistanceInMeters ?? int.MaxValue)
-						?.ToArray()
-					?? [];
+				var listOverviewEntryToAttack = priorityManager.GetEnemies(overviewProvider);
+				var estimatedIncomingDps = npcInfoProvider.CalculateApproximateDps(overviewProvider);
+				yield return new DiagnosticTask($"Current maneuver is {shipState.Maneuver}." +
+				                                Environment.NewLine +
+				                                $"Incoming DPS is {estimatedIncomingDps}.");
+				var tankingTask = shipState.GetNextTankingModulesTask(estimatedIncomingDps);
+
+				if (tankingTask != null)
+				{
+					yield return tankingTask;
+				}
 				//TODO if (listOverviewEntryToAttack.Any())
 				//Bot.currentAnomalyLooted = false;
 				var targetSelected = shipState.ActiveTargets.ActiveTarget;
@@ -69,32 +93,31 @@ namespace Sanderling.ABot.Bot.Task
 					else
 						yield return targetSelected.GetUnlockTask();
 
-				var overviewEntryLockTargets = listOverviewEntryToAttack?
-					.Where(entry =>
-						!(entry?.CommonIndications.Targeting == true ||
-						  entry?.CommonIndications.TargetedByMe == true));
+				yield return
+					new DiagnosticTask(
+				$"Spare enemies to attack: {listOverviewEntryToAttack.Length}: {string.Concat(listOverviewEntryToAttack.Select(oe => Environment.NewLine + '\t' + (oe.MeTargeted == true ? "[Targeted]" : string.Empty) + oe.Name))}");
 
-				if (overviewEntryLockTargets.Any() &&
-				    (memoryMeasurement?.Target?.Length ?? 0) < shipFit.MaxTargets)
+				foreach (var overviewEntry in listOverviewEntryToAttack.Where(e =>
+						         e.CommonIndications.Targeting != true && e.CommonIndications.TargetedByMe != true)
+					         .Take(shipState.Fit.MaxTargets - shipState.ActiveTargets.Count))
 				{
-					yield return overviewEntryLockTargets
-						.Take(shipFit.MaxTargets - (memoryMeasurement?.Target?.Length ?? 0))
-						.Select(e => e.UiElement).ClickWithModifier(VirtualKeyCode.CONTROL);
+					if (lastTargetingAttemptSteps.ContainsKey(overviewEntry.Id))
+						if (lastTargetingAttemptSteps[overviewEntry.Id] > stepIndex - 3)
+							continue;
+					lastTargetingAttemptSteps[overviewEntry.Id] = stepIndex;
+					yield return overviewEntry.GetSelectTask();
 				}
 
-				if (listOverviewEntryToAttack?.Length == 0)
+				if (listOverviewEntryToAttack.Length == 0)
 				{
-					Completed = true;
-				}
-
-				if (!(0 < listOverviewEntryToAttack?.Length))
+					var reloadTask = shipState.GetReloadTask(); 
+					if (reloadTask != null)
+						yield return reloadTask;
+					foreach (var t in dronesController.GetDronesReturnTasks())
+						yield return t;
 					if (dronesController.droneInLocalSpaceCount == 0)
 						Completed = true;
-					else
-					{
-						foreach (var t in dronesController.GetDronesReturnTasks())
-							yield return t;
-					}
+				}
 			}
 		}
 

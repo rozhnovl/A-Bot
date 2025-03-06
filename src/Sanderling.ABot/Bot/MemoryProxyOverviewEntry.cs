@@ -1,5 +1,7 @@
 ﻿using WindowsInput.Native;
 using Sanderling.ABot.Bot.Task;
+using Sanderling.Interface.MemoryStruct;
+using Sanderling.Parse;
 
 namespace Sanderling.ABot.Bot
 {
@@ -9,7 +11,7 @@ namespace Sanderling.ABot.Bot
 		private readonly Interface.MemoryStruct.IOverviewEntry memoryOverviewEntry;
 
 		public MemoryProxyOverviewEntry(Interface.MemoryStruct.IOverviewEntry overviewEntry, Bot bot)
-			: base(overviewEntry.ObjectType, overviewEntry.ObjectName, overviewEntry.IconSpriteColorPercent.RPercent > 50 && overviewEntry.IconSpriteColorPercent.GPercent < 100,
+			: base(overviewEntry.ObjectType, overviewEntry.ObjectName, overviewEntry.IconSpriteColorPercent?.IsRed()??false,
 				(int) overviewEntry.ObjectDistanceInMeters, overviewEntry.CommonIndications.Targeting, overviewEntry.CommonIndications.TargetedByMe, overviewEntry.Id)
 		{
 			this.memoryOverviewEntry = overviewEntry;
@@ -24,6 +26,13 @@ namespace Sanderling.ABot.Bot
 		public override ISerializableBotTask GetSelectTask()
 		{
 			return memoryOverviewEntry.UiElement.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
+		}
+
+		public override OverviewWindowEntryCommonIndications CommonIndications => memoryOverviewEntry.CommonIndications;
+
+		public override ISerializableBotTask GetApproachTask()
+		{
+			return memoryOverviewEntry.UiElement.ClickWithModifier(bot, VirtualKeyCode.VK_Q);
 		}
 	}
 }

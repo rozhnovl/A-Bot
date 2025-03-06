@@ -27,43 +27,17 @@ namespace Sanderling.Parse
 	{
 		public MemoryStruct.INeocom Raw { private set; get; }
 
-		public MemoryStruct.IUIElement PeopleAndPlacesButton { private set; get; }
+		public MemoryStruct.IUIElement PeopleAndPlacesButton => Raw?.PeopleAndPlacesButton;
 
-		public MemoryStruct.IUIElement ChatButton { private set; get; }
+		public MemoryStruct.IUIElement ChatButton => Raw?.ChatButton;
 
-		public MemoryStruct.IUIElement MailButton { private set; get; }
+		public MemoryStruct.IUIElement MailButton => Raw?.MailButton;
 
-		public MemoryStruct.IUIElement FittingButton { private set; get; }
+		public MemoryStruct.IUIElement FittingButton => Raw?.FittingButton;
 
-		public MemoryStruct.IUIElement InventoryButton { private set; get; }
+		public MemoryStruct.IUIElement MarketButton => Raw?.MarketButton;
 
-		public MemoryStruct.IUIElement MarketButton { private set; get; }
-
-		public MemoryStruct.IUIElement EveMenuButton => Raw?.EveMenuButton;
-
-		public MemoryStruct.IUIElement CharButton => Raw?.CharButton;
-
-		public MemoryStruct.ISprite[] Button => Raw?.Button;
-
-		public MemoryStruct.IUIElementText Clock => Raw?.Clock;
-
-		public IEnumerable<MemoryStruct.IUIElementText> ButtonText => Raw?.ButtonText;
-
-		public IEnumerable<MemoryStruct.IUIElementInputText> InputText => Raw?.InputText;
-
-		public IEnumerable<MemoryStruct.IUIElementText> LabelText => Raw?.LabelText;
-
-		public IEnumerable<MemoryStruct.ISprite> Sprite => Raw?.Sprite;
-
-		public RectInt? Region => Raw?.Region ?? default(RectInt);
-
-		public Int32? InTreeIndex => Raw?.InTreeIndex;
-
-		public Int32? ChildLastInTreeIndex => Raw?.ChildLastInTreeIndex;
-
-		public MemoryStruct.IUIElement RegionInteraction => Raw?.RegionInteraction;
-
-		public Int64 Id => Raw?.Id ?? 0;
+		public MemoryStruct.IUIElement InventoryButton => Raw?.InventoryButton;
 
 		Neocom()
 		{ }
@@ -77,20 +51,20 @@ namespace Sanderling.Parse
 				return;
 			}
 
-			var ButtonWithTexturePathMatch = new Func<string, MemoryStruct.IUIElement>(texturePathRegexPattern =>
-				raw?.Button?.FirstOrDefault(candidate => candidate?.TexturePath?.RegexMatchSuccess(texturePathRegexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase) ?? false));
+			//var ButtonWithTexturePathMatch = new Func<string, MemoryStruct.IUIElement>(texturePathRegexPattern =>
+			//	raw?.Button?.FirstOrDefault(candidate => candidate?.TexturePath?.RegexMatchSuccess(texturePathRegexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase) ?? false));
 
-			PeopleAndPlacesButton = ButtonWithTexturePathMatch("peopleandplaces");
+			//PeopleAndPlacesButton = ButtonWithTexturePathMatch("peopleandplaces");
 
-			ChatButton = ButtonWithTexturePathMatch("chat");
+			//ChatButton = ButtonWithTexturePathMatch("chat");
 
-			MailButton = ButtonWithTexturePathMatch("mail");
+			//MailButton = ButtonWithTexturePathMatch("mail");
 
-			FittingButton = ButtonWithTexturePathMatch("fitting");
+			//FittingButton = ButtonWithTexturePathMatch("fitting");
 
-			InventoryButton = ButtonWithTexturePathMatch("items");
+			////InventoryButton = ButtonWithTexturePathMatch("items");
 
-			MarketButton = ButtonWithTexturePathMatch("market");
+			//MarketButton = ButtonWithTexturePathMatch("market");
 		}
 	}
 }

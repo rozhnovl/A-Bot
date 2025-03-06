@@ -35,7 +35,7 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 		}
 
-		IShipUi ShipUi
+		IShipUi? ShipUi
 		{
 			get;
 		}

@@ -45,26 +45,17 @@
     <Compile Include="ParsedAssemblyQualifiedName\ParsedAssemblyQualifiedName.cs" />
     <Compile Include="IFuncVoid.cs" />
     <Compile Include="SictAufgaabe.cs" />
-    <Compile Include="CallRateScranke.cs" />
     <Compile Include="Costura.cs" />
     <Compile Include="DemoException.cs" />
     <Compile Include="EnumerableExtension.cs" />
     <Compile Include="Extension.cs" />
     <Compile Include="SictIdentInt64Fabrik.cs" />
     <Compile Include="IntervalExtension.cs" />
-    <Compile Include="Kombinatoorik.cs" />
-    <Compile Include="SictScatenscpaicerDict`2.cs" />
     <Compile Include="SictScnitTcpKlientVerkeerAsync.cs" />
     <Compile Include="SictSctroomZiil`1.cs" />
-    <Compile Include="SictSctroomZiilStream.cs" />
-    <Compile Include="SictSctroomZiilStreamOoneRead.cs" />
-    <Compile Include="SictSctroomZiilStreamMitRead.cs" />
     <Compile Include="SictSctroomZiilPufer`1.cs" />
     <Compile Include="SictVersazInDaatesctrukturAtribut.cs" />
     <Compile Include="SictScnitTcpKlient.cs" />
-    <Compile Include="ObjectChange.cs" />
-    <Compile Include="StaticTextBoxChange.cs" />
-    <Compile Include="ObjectChangeToken.cs" />
     <Compile Include="SictStreamZuLeeseKombinatioon.cs" />
     <Compile Include="StringEqualityComparerCaseInsensitive.cs" />
     <Compile Include="SictScnitTcpKlientKümere.cs" />
@@ -72,8 +63,6 @@
     <Compile Include="Glob.cs" />
     <Compile Include="SictMesungZaitraumAusStopwatch.cs" />
     <Compile Include="SictPropagiireListeRepräsentatioonProfile.cs" />
-    <Compile Include="Konventioon.cs" />
-    <Compile Include="Krypto.cs" />
     <Compile Include="ZipExtension.cs" />
     <Compile Include="WertZuZaitpunktStruct`1.cs" />
     <Compile Include="IIntervalInt64.cs" />
@@ -83,15 +72,6 @@
     <Compile Include="PropertyGenIntervalInt64`1.cs" />
     <Compile Include="PropertyGenTimespanInt64`1.cs" />
     <Compile Include="StructPropertyGenIntervalInt64`1.cs" />
-    <Compile Include="WebSocket\SictWebSocketFrameKonstruktor.cs" />
-    <Compile Include="WebSocket\SictWebSocketFrameOpcodeTyp.cs" />
-    <Compile Include="WebSocket\SictWebSocketFrameLeeser.cs" />
-    <Compile Include="WebSocket\SictWebSocketMessage.cs" />
-    <Compile Include="WebSocket\SictWebSocketLeeser.cs" />
-    <Compile Include="TimeSpanExtension\TimeSpanExtension.cs" />
-    <Compile Include="Serialis\SerialisatioonWertSctandard.cs" />
-    <Compile Include="Serialis\SerialisatioonWertOptionaal.cs" />
-    <Compile Include="Serialis\Xml.cs" />
     <Compile Include="RateLimit\IRateLimitStateInt.cs" />
     <Compile Include="RateLimit\RateLimitStateIntSingle.cs" />
     <Compile Include="RateLimit\RateLimitExtension.cs" />
@@ -101,8 +81,6 @@
     <Compile Include="ProcessEnvironment\OperatingSystem.cs" />
     <Compile Include="ProcessEnvironment\ProcessEnvironment.cs" />
     <Compile Include="Synchronization\LockExtension.cs" />
-    <Compile Include="Emitent\IEmitent.cs" />
-    <Compile Include="Emitent\EmitentExtension.cs" />
     <Compile Include="Geometrik\RectInt.cs" />
     <Compile Include="Geometrik\Geometrik.cs" />
     <Compile Include="Geometrik\RectExtension.cs" />
@@ -111,11 +89,11 @@
     <Compile Include="Geometrik\Transform2DAfinIntMikroStruct.cs" />
     <Compile Include="Geometrik\Vektor2DDouble.cs" />
     <Compile Include="Geometrik\Vektor2DInt.cs" />
-    <Compile Include="Cache\CacheSingleInt64`1.cs" />
     <Compile Include="AppDomain\AssemblyInflateLaade.cs" />
     <Compile Include="AppDomain\AppDomainProxy.cs" />
     <Compile Include="AppDomain\AppDomainProxyZiilKonstrukt`1.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

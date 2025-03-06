@@ -6,6 +6,7 @@ using Bib3.Geometrik;
 using System.Collections.Generic;
 using System.Linq;
 using Sanderling.Accumulation;
+using Newtonsoft.Json.Linq;
 
 namespace Sanderling.Accumulator
 {
@@ -66,8 +67,7 @@ namespace Sanderling.Accumulator
 				(instant?.Value?.Location).HasValue &&
 				(moduleButtonTooltip?.LabelText?.Any() ?? false))
 			{
-				var tooltipWithTimespan = moduleButtonTooltip.WithTimespanInt64(instant);
-
+				var tooltipWithTimespan = new PropertyGenTimespanInt64<IModuleButtonTooltip>(moduleButtonTooltip, instant);
 				var previousTooltip = ListTooltip?.LastOrDefault();
 
 				ListTooltip.Enqueue(tooltipWithTimespan);

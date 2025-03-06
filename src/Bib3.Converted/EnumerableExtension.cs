@@ -41,24 +41,6 @@ namespace Bib3
       enumerator
     }) as IEnumerator;
 
-    public static IEnumerator<T> Cast<T>(this IEnumerator enumerator)
-    {
-      while (enumerator.MoveNext())
-        yield return (T) enumerator.Current;
-    }
-
-    public static IEnumerable AsIEnumerable(this IEnumerator enumerator)
-    {
-      while (enumerator.MoveNext())
-        yield return enumerator.Current;
-    }
-
-    public static IEnumerable<T> AsIEnumerable<T>(this IEnumerator<T> enumerator)
-    {
-      while (enumerator.MoveNext())
-        yield return enumerator.Current;
-    }
-
     public static bool ContainsAny<T>(this IEnumerable<T> container, IEnumerable<T> set) => set != null && set.Any<T>((Func<T, bool>) (element =>
     {
       IEnumerable<T> source = container;

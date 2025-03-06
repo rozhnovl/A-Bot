@@ -69,7 +69,7 @@ namespace Bib3.RefBaumKopii
       {
         (IEnumerable<MemberInfo>) ((Type) null == baseType ? (MemberInfo[]) null : RefBaumKopiiStatic.FürTypeMengeMemberKandidaatFürSerialis(baseType)),
         (IEnumerable<MemberInfo>) members
-      }).ListeEnumerableAgregiirt<MemberInfo>();
+      }).SelectMany(e=>e);
       return source != null ? source.ToArray<MemberInfo>() : (MemberInfo[]) null;
     }
 

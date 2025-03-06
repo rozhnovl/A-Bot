@@ -3,13 +3,8 @@ using Bib3.AppDomain;
 using Bib3.RefNezDiferenz;
 using Bib3.RefNezDiferenz.NewtonsoftJson;
 using BotEngine.Common;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace BotEngine.Interface
 {

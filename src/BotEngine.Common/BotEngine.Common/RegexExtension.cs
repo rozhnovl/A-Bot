@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Bib3;
 
 namespace BotEngine.Common;
 
@@ -76,7 +75,7 @@ public static class RegexExtension
 			yield break;
 		}
 		string restString = @string;
-		while (!restString.IsNullOrEmpty())
+		while (!string.IsNullOrEmpty(restString))
 		{
 			Match match = regex.Match(restString);
 			if (match.Success)

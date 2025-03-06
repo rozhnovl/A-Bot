@@ -51,8 +51,8 @@ namespace Bib3.RefNezDiferenz
       {
         (IEnumerable<MemberInfo>) ((Type) null == baseType ? (MemberInfo[]) null : SictMengeTypeBehandlungRictliinie.FürTypeMengeMemberKandidaatFürSerialis(baseType)),
         (IEnumerable<MemberInfo>) members
-      }).ListeEnumerableAgregiirt<MemberInfo>();
-      return source != null ? source.ToArray<MemberInfo>() : (MemberInfo[]) null;
+      }).SelectMany(e => e);
+			return source != null ? source.ToArray<MemberInfo>() : (MemberInfo[]) null;
     }
 
     public bool AbbildFraigaabeBerecne(Type type)

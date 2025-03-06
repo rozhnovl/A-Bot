@@ -611,28 +611,9 @@ label_1:;
       return type;
     }
 
-    public static CallRateScranke CallRateScrankeStopwatchMili(
-      this Action action,
-      int distanzScrankeMinMili)
-    {
-      return new CallRateScranke(action, new Func<long>(Glob.StopwatchZaitMiliSictInt), distanzScrankeMinMili);
-    }
-
     public static IEnumerable<T> Yield<T>(this T w)
     {
       yield return w;
-    }
-
-    public static WertZuZaitpunktStruct<T>? AlsBeginZaitpunktStruct<T>(
-      this PropertyGenIntervalInt64<T> w)
-    {
-      return w == null ? new WertZuZaitpunktStruct<T>?() : new WertZuZaitpunktStruct<T>?(new WertZuZaitpunktStruct<T>(w.Value, w.Low));
-    }
-
-    public static WertZuZaitpunktStruct<T>? AlsEndeZaitpunktStruct<T>(
-      this PropertyGenIntervalInt64<T> w)
-    {
-      return w == null ? new WertZuZaitpunktStruct<T>?() : new WertZuZaitpunktStruct<T>?(new WertZuZaitpunktStruct<T>(w.Value, w.Up));
     }
 
     public static IEnumerable<T> WhereNotNullSelectValue<T>(this IEnumerable<T?> sequenz) where T : struct
@@ -648,14 +629,6 @@ label_1:;
         objs = source != null ? source.Select<T?, T>((Func<T?, T>) (t => t.Value)) : (IEnumerable<T>) null;
       }
       return objs;
-    }
-
-    public static string AssemblyShortNameVonAssemblyName(this string assemblyName)
-    {
-      if (assemblyName == null)
-        return (string) null;
-      System.Text.RegularExpressions.Match match = Extension.AssemblyShortNameRegex.Match(assemblyName);
-      return !match.Success ? assemblyName : match.Groups[1].Value;
     }
 
     public static T NullIfEmpty<T>(this T seq) where T : IEnumerable => seq.IsNullOrEmpty() ? default (T) : seq;

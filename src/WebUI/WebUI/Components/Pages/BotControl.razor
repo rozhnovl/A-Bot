@@ -1,0 +1,130 @@
+@page "/bot-control"
+@using WebUI.Models
+@using WebUI.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject IBotStateService BotStateService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Bot Control - AbyssalBot</PageTitle>
+
+<div class="bot-control-container">
+    <div class="header-section">
+        <h1>🤖 AbyssalBot Control</h1>
+        <div class="connection-status @(isConnected ? "connected" : "disconnected")">
+            @if (isConnected)
+            {
+                <span>🟢 Connected</span>
+            }
+            else
+            {
+                <span>🔴 Disconnected</span>
+            }
+        </div>
+    </div>
+
+    @if (botState != null)
+    {
+        <BotControlPanel
+            BotState="@botState"
+            OnCommand="@HandleCommand" />
+
+        <ShipStatusComponent
+            ShipStatus="@botState.ShipStatus" />
+
+        <TargetListComponent
+            Targets="@botState.ActiveTargets" />
+
+        <ActionLogComponent
+            Actions="@botState.RecentActions" />
+    }
+    else
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Connecting to bot...</p>
+        </div>
+    }
+</div>
+
+@code {
+    private BotStateDto? botState;
+    private HubConnection? hubConnection;
+    private bool isConnected = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get initial state
+        botState = await BotStateService.GetCurrentStateAsync();
+
+        // Setup SignalR connection
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/bothub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<BotStateDto>("ReceiveBotState", (state) =>
+        {
+            botState = state;
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.Reconnecting += (error) =>
+        {
+            isConnected = false;
+            InvokeAsync(StateHasChanged);
+            return Task.CompletedTask;
+        };
+
+        hubConnection.Reconnected += (connectionId) =>
+        {
+            isConnected = true;
+            InvokeAsync(StateHasChanged);
+            return Task.CompletedTask;
+        };
+
+        hubConnection.Closed += (error) =>
+        {
+            isConnected = false;
+            InvokeAsync(StateHasChanged);
+            return Task.CompletedTask;
+        };
+
+        try
+        {
+            await hubConnection.StartAsync();
+            isConnected = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error connecting to hub: {ex.Message}");
+        }
+
+        // Subscribe to state changes
+        BotStateService.StateChanged += OnStateChanged;
+    }
+
+    private void OnStateChanged(object? sender, BotStateDto newState)
+    {
+        botState = newState;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleCommand(BotCommandDto command)
+    {
+        await BotStateService.SendCommandAsync(command);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        BotStateService.StateChanged -= OnStateChanged;
+
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

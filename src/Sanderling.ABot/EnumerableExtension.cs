@@ -1,19 +1,16 @@
-﻿using System.Collections.Generic;
+﻿namespace Sanderling.ABot;
 
-namespace Sanderling.ABot
+public static class EnumerableExtension
 {
-	static public class EnumerableExtension
+	public static IEnumerable<IEnumerable<T>> EnumerateSubsequencesStartingWithFirstElement<T>(
+		this IEnumerable<T> sequence)
 	{
-		static public IEnumerable<IEnumerable<T>> EnumerateSubsequencesStartingWithFirstElement<T>(
-			this IEnumerable<T> sequence)
-		{
-			var subsequence = new List<T>();
+		List<T> subsequence = [];
 
-			foreach (var element in sequence)
-			{
-				subsequence.Add(element);
-				yield return subsequence.ToArray();
-			}
+		foreach (var element in sequence)
+		{
+			subsequence.Add(element);
+			yield return subsequence.ToArray();
 		}
 	}
 }

@@ -5,6 +5,8 @@ using WebUI.Client.Pages;
 using WebUI.Components;
 using WebUI.Components.Account;
 using WebUI.Data;
+using WebUI.Hubs;
+using WebUI.Services;
 
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis; // Requires NuGet package
@@ -45,6 +47,15 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+// Add SignalR for real-time bot updates
+builder.Services.AddSignalR();
+
+// Add bot control services
+builder.Services.AddSingleton<IBotStateService, BotStateService>();
+
+// Add controllers for API endpoints
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 
@@ -77,5 +88,11 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Map SignalR hub
+app.MapHub<BotHub>("/bothub");
+
+// Map API controllers
+app.MapControllers();
 
 app.Run();

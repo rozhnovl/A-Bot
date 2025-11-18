@@ -1,0 +1,69 @@
+@using WebUI.Models
+
+<div class="action-log-component card">
+    <div class="card-header">
+        <h3>📋 Action Log</h3>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleExpanded">
+            @(isExpanded ? "Collapse" : "Expand")
+        </button>
+    </div>
+    <div class="card-body @(isExpanded ? "expanded" : "")">
+        @if (Actions != null && Actions.Any())
+        {
+            <div class="action-log-list">
+                @foreach (var action in Actions.Take(displayCount))
+                {
+                    <div class="log-entry @GetLogEntryClass(action)">
+                        <span class="log-text">@action</span>
+                    </div>
+                }
+            </div>
+
+            @if (Actions.Count > displayCount && !isExpanded)
+            {
+                <div class="text-center mt-2">
+                    <button class="btn btn-sm btn-link" @onclick="() => displayCount += 10">
+                        Show More
+                    </button>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">No actions logged yet</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<string> Actions { get; set; } = new();
+
+    private bool isExpanded = false;
+    private int displayCount = 10;
+
+    private void ToggleExpanded()
+    {
+        isExpanded = !isExpanded;
+        if (isExpanded)
+        {
+            displayCount = 50;
+        }
+        else
+        {
+            displayCount = 10;
+        }
+    }
+
+    private string GetLogEntryClass(string action)
+    {
+        var lower = action.ToLower();
+        if (lower.Contains("emergency") || lower.Contains("error") || lower.Contains("failed"))
+            return "log-error";
+        if (lower.Contains("warning") || lower.Contains("retreat"))
+            return "log-warning";
+        if (lower.Contains("started") || lower.Contains("completed") || lower.Contains("success"))
+            return "log-success";
+        return "log-info";
+    }
+}

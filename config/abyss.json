@@ -1,0 +1,22 @@
+{
+  "FilamentType": "Raging Exotic Filament",
+  "InvulnerabilityWaitTimeSeconds": 46,
+  "TotalInvulnerabilityDurationSeconds": 72,
+  "UseTractorForLooting": true,
+  "TractorDeploymentDistance": 2000,
+  "LootingDistance": 2500,
+  "IgnoredNpcTypes": [
+    "Vila Swarmer",
+    "Extraction"
+  ],
+  "CacheNames": [
+    "Bioadaptive",
+    "Biocombinative"
+  ],
+  "ConduitNames": [
+    "Conduit"
+  ],
+  "ConduitExclusions": [
+    "Proving"
+  ]
+}

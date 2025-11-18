@@ -1,33 +1,26 @@
-using System;
-using System.Linq;
-
 namespace BotEngine.Client;
 
 public class AuthRequest
 {
-	public string ServiceId;
+	public string? ServiceId { get; init; }
 
-	public string ServiceInterfaceId;
+	public string? ServiceInterfaceId { get; init; }
 
-	public string LicenseKey;
+	public string? LicenseKey { get; init; }
 
-	public bool Consume;
+	public bool Consume { get; init; }
 
-	public string SessionId;
+	public string? SessionId { get; init; }
 
-	public byte[] ProofOfWork;
+	public byte[]? ProofOfWork { get; init; }
 
-	public string ReffererId;
+	public string? ReffererId { get; init; }
 
 	public const int ProofOfWorkAmountMin = 10000;
 
-	public static byte[] ProofOfWorkConstruct(int amount)
-	{
-		return Enumerable.Range(0, amount).Select((Func<int, byte>)((int _) => 0)).ToArray();
-	}
+	public static byte[] ProofOfWorkConstruct(int amount) =>
+		Enumerable.Range(0, amount).Select(_ => (byte)0).ToArray();
 
-	public static byte[] ProofOfWorkConstruct()
-	{
-		return ProofOfWorkConstruct(10000);
-	}
+	public static byte[] ProofOfWorkConstruct() =>
+		ProofOfWorkConstruct(ProofOfWorkAmountMin);
 }

@@ -1,0 +1,526 @@
+/* Mobile-First Bot Control Styles */
+
+/* Container */
+.bot-control-container {
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header Section */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-section h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.connection-status {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.connection-status.connected {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.connection-status.disconnected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Cards */
+.card {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+/* Bot Control Panel */
+.bot-control-panel .status-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-badge,
+.state-badge,
+.step-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.status-badge.status-running {
+    background-color: #d4edda;
+    color: #155724;
+    border: 2px solid #28a745;
+}
+
+.status-badge.status-paused {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffc107;
+}
+
+.status-badge.status-stopped {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 2px solid #dc3545;
+}
+
+.state-badge {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 2px solid #17a2b8;
+}
+
+.step-badge {
+    background-color: #e7e7e7;
+    color: #383838;
+    border: 2px solid #6c757d;
+}
+
+/* Control Buttons */
+.control-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.primary-controls {
+    justify-content: center;
+}
+
+.control-buttons button {
+    flex: 1;
+    min-width: 140px;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.control-buttons button:active {
+    transform: scale(0.95);
+}
+
+.emergency-btn {
+    width: 100%;
+    background-color: #dc3545 !important;
+    color: white !important;
+    font-size: 1.1rem !important;
+    padding: 1.2rem !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.emergency-controls {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px dashed #dc3545;
+}
+
+/* State Controls */
+.state-controls {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.state-controls h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Ship Status Component */
+.ship-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.info-item .label {
+    font-weight: bold;
+    color: #6c757d;
+}
+
+.info-item .value {
+    color: #212529;
+}
+
+/* HP Bars */
+.hp-section {
+    margin: 1rem 0;
+}
+
+.hp-bar-container {
+    margin-bottom: 1rem;
+}
+
+.hp-bar-container label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.hp-bar-container .progress {
+    height: 30px;
+    font-size: 0.85rem;
+    background-color: #e9ecef;
+    border-radius: 6px;
+}
+
+.hp-bar-container .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: width 0.3s ease;
+}
+
+.hp-percent {
+    display: block;
+    text-align: right;
+    margin-top: 0.25rem;
+    font-weight: bold;
+}
+
+/* Modules Info */
+.modules-info {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-around;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.module-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.module-stat .badge {
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+}
+
+.module-stat span:last-child {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Target List Component */
+.target-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.target-item {
+    padding: 0.75rem;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.target-item.active-target {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+}
+
+.target-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.target-name-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.active-indicator {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.3; }
+}
+
+.target-meta {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.target-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-item {
+    display: flex;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.stat-label {
+    color: #6c757d;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.target-hp-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.mini-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mini-progress small {
+    min-width: 60px;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.mini-progress .progress {
+    flex: 1;
+}
+
+.no-targets {
+    padding: 2rem;
+    text-align: center;
+}
+
+/* Action Log Component */
+.action-log-component .card-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.action-log-component .card-body.expanded {
+    max-height: 600px;
+}
+
+.action-log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.log-entry {
+    padding: 0.5rem;
+    border-left: 4px solid #6c757d;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+}
+
+.log-entry.log-error {
+    border-left-color: #dc3545;
+    background-color: #fff5f5;
+    color: #721c24;
+}
+
+.log-entry.log-warning {
+    border-left-color: #ffc107;
+    background-color: #fffbf0;
+    color: #856404;
+}
+
+.log-entry.log-success {
+    border-left-color: #28a745;
+    background-color: #f0fff4;
+    color: #155724;
+}
+
+.log-entry.log-info {
+    border-left-color: #17a2b8;
+    background-color: #f0f9ff;
+    color: #0c5460;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+    .header-section h1 {
+        font-size: 2rem;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .control-buttons button {
+        min-width: 160px;
+        font-size: 1.1rem;
+    }
+
+    .bot-control-container {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .bot-control-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 1rem;
+    }
+
+    .header-section {
+        grid-column: 1 / -1;
+    }
+
+    .bot-control-panel {
+        grid-column: 1 / -1;
+    }
+
+    .action-log-component {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (min-width: 1200px) {
+    .bot-control-container {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .header-section {
+        grid-column: 1 / -1;
+    }
+
+    .bot-control-panel {
+        grid-column: 1 / -1;
+    }
+
+    .ship-status-component {
+        grid-column: 1 / 3;
+    }
+
+    .target-list-component {
+        grid-column: 3 / 4;
+        grid-row: 3 / 5;
+    }
+
+    .action-log-component {
+        grid-column: 1 / 3;
+    }
+}
+
+/* Touch Improvements */
+@media (hover: none) and (pointer: coarse) {
+    .control-buttons button {
+        min-height: 60px;
+        font-size: 1.1rem;
+    }
+
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+        border-color: #333;
+    }
+
+    .card-header {
+        background-color: #2a2a2a;
+        border-bottom-color: #444;
+    }
+
+    .info-item {
+        background-color: #2a2a2a;
+    }
+
+    .target-item {
+        background-color: #1a1a1a;
+        border-color: #444;
+    }
+
+    .log-entry {
+        background-color: #2a2a2a;
+    }
+}

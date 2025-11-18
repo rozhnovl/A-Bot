@@ -116,25 +116,25 @@ public static class Extension
 		return result;
 	}
 
-	public static KeyValuePair<T, string>[] ListeEnumWertUndSictStringAbbildBerecne<T>(Func<T, string> sictString) where T : struct, IConvertible
+	public static KeyValuePair<T, string>[] ListeEnumWertUndSictStringAbbildBerecne<T>(Func<T, string>? sictString) where T : struct, IConvertible
 	{
 		if (!typeof(T).IsEnum)
 		{
 			throw new ArgumentException("!typeof(T).IsEnum");
 		}
-		List<KeyValuePair<T, string>> list = new List<KeyValuePair<T, string>>();
+		List<KeyValuePair<T, string>> list = [];
 		string[] names = Enum.GetNames(typeof(T));
 		foreach (string value in names)
 		{
 			T val = (T)Enum.Parse(typeof(T), value);
-			string value2 = null;
+			string? value2 = null;
 			if (sictString != null)
 			{
 				value2 = sictString(val);
 			}
 			list.Add(new KeyValuePair<T, string>(val, value2));
 		}
-		return list.ToArray();
+		return [.. list];
 	}
 
 	public static IEnumerable<T> TrimHeadToKeepEnumerator<T>(this Queue<T> toTrimQueue, int toKeepCount)

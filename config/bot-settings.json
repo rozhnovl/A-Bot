@@ -1,0 +1,7 @@
+{
+  "DefaultShipFit": "Hawk",
+  "EnableDiagnostics": true,
+  "EnablePerformanceMonitoring": false,
+  "DefaultActionDelayMs": 100,
+  "AutoRefillAfterAbyss": false
+}

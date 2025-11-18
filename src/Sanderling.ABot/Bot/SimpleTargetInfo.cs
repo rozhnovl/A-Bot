@@ -3,10 +3,10 @@ using System.Text.RegularExpressions;
 using Sanderling.ABot.Bot.Task;
 using IShipUiTarget = Sanderling.Parse.IShipUiTarget;
 
-namespace Sanderling.ABot.Bot
+namespace Sanderling.ABot.Bot;
+
+public class SimpleTargetInfo : ITarget
 {
-	public class SimpleTargetInfo : ITarget
-	{
 		private readonly Bot bot;
 		[NotNull] private readonly IShipUiTarget memoryTarget;
 
@@ -52,4 +52,3 @@ namespace Sanderling.ABot.Bot
 			return memoryTarget.ClickWithModifier(bot, HotkeyRegistry.OrbitModifier);
 		}
 	}
-}

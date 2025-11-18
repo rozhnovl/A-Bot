@@ -1,9 +1,8 @@
-﻿namespace Sanderling.ABot.Bot
-{
-	public class Config
-	{
-		public string RetreatBookmark;
+﻿namespace Sanderling.ABot.Bot;
 
-		public string[] ModuleActivePermanentSetTitlePattern;
-	}
+public record Config
+{
+	public string? RetreatBookmark { get; init; }
+
+	public string[]? ModuleActivePermanentSetTitlePattern { get; init; }
 }

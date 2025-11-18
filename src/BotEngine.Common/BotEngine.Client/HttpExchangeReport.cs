@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 
 namespace BotEngine.Client;
@@ -9,17 +8,19 @@ public class HttpExchangeReport<TRequest, TResponse> : IHttpExchangeReport
 
 	public readonly TResponse Response;
 
-	public string Uri { get; private set; }
+	public string? Uri { get; private set; }
 
-	public Exception Exception { get; private set; }
+	public Exception? Exception { get; private set; }
 
 	public HttpStatusCode? HttpStatusCode { get; private set; }
 
 	protected HttpExchangeReport()
 	{
+		Request = default!;
+		Response = default!;
 	}
 
-	public HttpExchangeReport(TRequest request, TResponse response, string uri, Exception exception, HttpStatusCode? httpStatusCode)
+	public HttpExchangeReport(TRequest request, TResponse response, string? uri, Exception? exception, HttpStatusCode? httpStatusCode)
 	{
 		Request = request;
 		Response = response;

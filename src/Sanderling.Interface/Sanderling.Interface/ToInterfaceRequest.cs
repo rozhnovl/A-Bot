@@ -1,13 +1,12 @@
-namespace Sanderling.Interface
+namespace Sanderling.Interface;
+
+public record ToInterfaceRequest
 {
-	public class ToInterfaceRequest
-	{
-		public MemoryMeasurementInitParam MemoryMeasurementInitTake;
+	public MemoryMeasurementInitParam? MemoryMeasurementInitTake { get; init; }
 
-		public bool MemoryMeasurementInitGetLast;
+	public bool MemoryMeasurementInitGetLast { get; init; }
 
-		public bool MemoryMeasurementTake;
+	public bool MemoryMeasurementTake { get; init; }
 
-		public bool MemoryMeasurementGetLast;
-	}
+	public bool MemoryMeasurementGetLast { get; init; }
 }

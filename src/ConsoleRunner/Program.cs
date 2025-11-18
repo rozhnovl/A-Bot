@@ -20,9 +20,17 @@ using UITreeNode = PythonStructures.UITreeNode;
 //using Sanderling.ABot.Bot;
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis; // Requires NuGet package
+using AbyssalBot.Application;
 
 var hostBuilder = Host.CreateApplicationBuilder(args);
 hostBuilder.AddRedisClient(connectionName: "cache");
+
+// Configure dependency injection
+hostBuilder.Services
+    .AddDomainServices()
+    .AddApplicationServices()
+    .AddInfrastructureServices();
+
 var host = hostBuilder.Build();
 
 var redisMultiplexer = host.Services.GetRequiredService<IConnectionMultiplexer>();
@@ -30,7 +38,10 @@ var redis = redisMultiplexer.GetDatabase();
 
 Console.WriteLine("Hello, World!");
 InterfaceAppDomainSetup.Setup();
-var app = new App();
+
+// Create bot instance using DI
+var bot = host.Services.GetRequiredService<Bot>();
+var app = new App(bot);
 //app.InterfaceExchange();
 var eve64bit = true;
 
@@ -129,7 +140,7 @@ namespace Sanderling
 	{
 		readonly object botLock = new object();
 
-		readonly Bot bot = new Bot();
+		readonly Bot bot;
 
 		const int FromMotionToMeasurementDelayMilli = 300;
 
@@ -257,8 +268,9 @@ namespace Sanderling
 		static public Int64 GetTimeStopwatch() => Glob.StopwatchZaitMiliSictInt();
 
 		//todo
-		public App()
+		public App(Bot bot)
 		{
+			this.bot = bot;
 			AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
 			SensorServerDispatcher.CyclicExchangeStart();

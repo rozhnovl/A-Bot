@@ -1,0 +1,132 @@
+@using WebUI.Models
+
+<div class="bot-control-panel card">
+    <div class="card-header">
+        <h3>🎮 Control Panel</h3>
+    </div>
+    <div class="card-body">
+        <!-- Status Display -->
+        <div class="status-section">
+            <div class="status-badge @GetStatusClass()">
+                <strong>Status:</strong> @GetStatusText()
+            </div>
+            <div class="state-badge">
+                <strong>State:</strong> @BotState.CurrentState
+            </div>
+            <div class="step-badge">
+                <strong>Step:</strong> @BotState.StepIndex
+            </div>
+        </div>
+
+        <!-- Primary Controls -->
+        <div class="control-buttons primary-controls">
+            @if (!BotState.IsRunning)
+            {
+                <button class="btn btn-success btn-lg" @onclick="StartBot">
+                    ▶️ Start Bot
+                </button>
+            }
+            else if (BotState.IsPaused)
+            {
+                <button class="btn btn-primary btn-lg" @onclick="ResumeBot">
+                    ▶️ Resume
+                </button>
+                <button class="btn btn-danger btn-lg" @onclick="StopBot">
+                    ⏹️ Stop
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-warning btn-lg" @onclick="PauseBot">
+                    ⏸️ Pause
+                </button>
+                <button class="btn btn-danger btn-lg" @onclick="StopBot">
+                    ⏹️ Stop
+                </button>
+            }
+        </div>
+
+        <!-- Emergency Controls -->
+        <div class="control-buttons emergency-controls">
+            <button class="btn btn-danger btn-lg emergency-btn" @onclick="EmergencyRetreat">
+                🚨 EMERGENCY RETREAT
+            </button>
+        </div>
+
+        <!-- State Controls -->
+        <div class="state-controls">
+            <h4>Manual State Control</h4>
+            <div class="control-buttons">
+                <button class="btn btn-outline-primary" @onclick="() => ChangeState('AbyssalFightState')">
+                    ⚔️ Fight
+                </button>
+                <button class="btn btn-outline-primary" @onclick="() => ChangeState('TravelState')">
+                    🚀 Travel
+                </button>
+                <button class="btn btn-outline-primary" @onclick="() => ChangeState('ReloadAtStationState')">
+                    🔄 Reload
+                </button>
+                <button class="btn btn-outline-primary" @onclick="() => ChangeState('WaitForCommandState')">
+                    ⏳ Wait
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public BotStateDto BotState { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<BotCommandDto> OnCommand { get; set; }
+
+    private string GetStatusClass()
+    {
+        if (!BotState.IsRunning) return "status-stopped";
+        if (BotState.IsPaused) return "status-paused";
+        return "status-running";
+    }
+
+    private string GetStatusText()
+    {
+        if (!BotState.IsRunning) return "Stopped";
+        if (BotState.IsPaused) return "Paused";
+        return "Running";
+    }
+
+    private async Task StartBot()
+    {
+        await OnCommand.InvokeAsync(new BotCommandDto { CommandType = BotCommandType.Start });
+    }
+
+    private async Task StopBot()
+    {
+        await OnCommand.InvokeAsync(new BotCommandDto { CommandType = BotCommandType.Stop });
+    }
+
+    private async Task PauseBot()
+    {
+        await OnCommand.InvokeAsync(new BotCommandDto { CommandType = BotCommandType.Pause });
+    }
+
+    private async Task ResumeBot()
+    {
+        await OnCommand.InvokeAsync(new BotCommandDto { CommandType = BotCommandType.Resume });
+    }
+
+    private async Task EmergencyRetreat()
+    {
+        await OnCommand.InvokeAsync(new BotCommandDto { CommandType = BotCommandType.EmergencyRetreat });
+    }
+
+    private async Task ChangeState(string state)
+    {
+        var command = new BotCommandDto
+        {
+            CommandType = BotCommandType.ChangeState,
+            Parameters = new Dictionary<string, object> { { "state", state } }
+        };
+        await OnCommand.InvokeAsync(command);
+    }
+}

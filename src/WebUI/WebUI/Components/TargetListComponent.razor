@@ -1,0 +1,102 @@
+@using WebUI.Models
+
+<div class="target-list-component card">
+    <div class="card-header">
+        <h3>🎯 Active Targets</h3>
+    </div>
+    <div class="card-body">
+        @if (Targets != null && Targets.Any())
+        {
+            <div class="target-list">
+                @foreach (var target in Targets.OrderByDescending(t => t.Priority))
+                {
+                    <div class="target-item @(target.IsActiveTarget ? "active-target" : "")">
+                        <div class="target-header">
+                            <div class="target-name-section">
+                                @if (target.IsActiveTarget)
+                                {
+                                    <span class="active-indicator">🔴</span>
+                                }
+                                <strong>@target.Name</strong>
+                            </div>
+                            <div class="target-meta">
+                                <span class="badge bg-secondary">@target.Type</span>
+                                <span class="badge bg-info">Priority: @target.Priority</span>
+                            </div>
+                        </div>
+
+                        <div class="target-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Distance:</span>
+                                <span class="stat-value">@FormatDistance(target.Distance)</span>
+                            </div>
+                        </div>
+
+                        <div class="target-hp-bars">
+                            @if (target.ShieldPercent > 0)
+                            {
+                                <div class="mini-progress">
+                                    <small>Shield</small>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary"
+                                             style="width: @(target.ShieldPercent)%">
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (target.ArmorPercent > 0)
+                            {
+                                <div class="mini-progress">
+                                    <small>Armor</small>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning"
+                                             style="width: @(target.ArmorPercent)%">
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (target.StructurePercent > 0)
+                            {
+                                <div class="mini-progress">
+                                    <small>Hull</small>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-danger"
+                                             style="width: @(target.StructurePercent)%">
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="no-targets">
+                <p class="text-muted">No active targets</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<TargetDto> Targets { get; set; } = new();
+
+    private string FormatDistance(double distance)
+    {
+        if (distance > 1000000)
+        {
+            return $"{(distance / 1000000):F1} M km";
+        }
+        else if (distance > 1000)
+        {
+            return $"{(distance / 1000):F1} km";
+        }
+        else
+        {
+            return $"{distance:F0} m";
+        }
+    }
+}

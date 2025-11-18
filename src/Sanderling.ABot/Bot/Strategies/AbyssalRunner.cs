@@ -7,9 +7,9 @@ using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
 {
-	internal class AbyssalRunner : IStrategy
+	internal class AbyssalRunner(IStateFactory stateFactory) : IStrategy
 	{
-		[NotNull] private IStragegyState currentState;
+		[NotNull] private IStragegyState currentState = stateFactory.CreateAbyssalFightState();
 		private IStragegyState nextState;
 		private bool isFinalizingTask;
 
@@ -20,12 +20,6 @@ namespace Sanderling.ABot.Bot.Strategies
 			("Scourge Fury Light Missile", 1000),
 			("Scourge Precision Light Missile", 1000),
 		};
-
-		public AbyssalRunner()
-		{
-			currentState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole())
-				.CreateLogger(nameof(AbyssalFightState)));//new WarpToBookmarkInSystemState("abyssal spot");// new ReloadAtStationState(requiredCargoContent);
-		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
 		{
@@ -38,13 +32,13 @@ namespace Sanderling.ABot.Bot.Strategies
 					switch (currentState)
 					{
 						case ShipCheckingState _:
-							nextState = new ReloadAtStationState(requiredCargoContent);
+							nextState = stateFactory.CreateReloadAtStationState(requiredCargoContent);
 							break;
 						case ReloadAtStationState _:
-							nextState = new WarpToBookmarkInSystemState("abyssal spot");
+							nextState = stateFactory.CreateWarpToBookmarkInSystemState("abyssal spot");
 							break;
 						case WarpToBookmarkInSystemState _:
-							nextState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger(nameof(AbyssalFightState)));
+							nextState = stateFactory.CreateAbyssalFightState();
 							break;
 						case TakeMissionsState takeMissionsState:
 						{

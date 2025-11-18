@@ -1,0 +1,126 @@
+@using WebUI.Models
+
+<div class="ship-status-component card">
+    <div class="card-header">
+        <h3>🚀 Ship Status</h3>
+    </div>
+    <div class="card-body">
+        @if (ShipStatus != null)
+        {
+            <!-- Location & Status -->
+            <div class="ship-info">
+                <div class="info-item">
+                    <span class="label">📍 Location:</span>
+                    <span class="value">@ShipStatus.Location</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🎯 Maneuver:</span>
+                    <span class="value">@ShipStatus.CurrentManeuver</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🌀 In Abyss:</span>
+                    <span class="value">@(ShipStatus.IsInAbyss ? "Yes" : "No")</span>
+                </div>
+            </div>
+
+            <!-- Hit Points -->
+            <div class="hp-section">
+                <div class="hp-bar-container">
+                    <label>Shield</label>
+                    <div class="progress">
+                        <div class="progress-bar bg-primary"
+                             role="progressbar"
+                             style="width: @(ShipStatus.ShieldPercent)%"
+                             aria-valuenow="@ShipStatus.ShieldPercent"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @ShipStatus.ShieldHp.ToString("F0") / @ShipStatus.ShieldMax.ToString("F0")
+                        </div>
+                    </div>
+                    <small class="hp-percent @GetHpClass(ShipStatus.ShieldPercent)">
+                        @ShipStatus.ShieldPercent.ToString("F1")%
+                    </small>
+                </div>
+
+                <div class="hp-bar-container">
+                    <label>Armor</label>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning"
+                             role="progressbar"
+                             style="width: @(ShipStatus.ArmorPercent)%"
+                             aria-valuenow="@ShipStatus.ArmorPercent"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @ShipStatus.ArmorHp.ToString("F0") / @ShipStatus.ArmorMax.ToString("F0")
+                        </div>
+                    </div>
+                    <small class="hp-percent @GetHpClass(ShipStatus.ArmorPercent)">
+                        @ShipStatus.ArmorPercent.ToString("F1")%
+                    </small>
+                </div>
+
+                <div class="hp-bar-container">
+                    <label>Structure</label>
+                    <div class="progress">
+                        <div class="progress-bar bg-danger"
+                             role="progressbar"
+                             style="width: @(ShipStatus.StructurePercent)%"
+                             aria-valuenow="@ShipStatus.StructurePercent"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @ShipStatus.StructureHp.ToString("F0") / @ShipStatus.StructureMax.ToString("F0")
+                        </div>
+                    </div>
+                    <small class="hp-percent @GetHpClass(ShipStatus.StructurePercent)">
+                        @ShipStatus.StructurePercent.ToString("F1")%
+                    </small>
+                </div>
+
+                <div class="hp-bar-container">
+                    <label>Capacitor</label>
+                    <div class="progress">
+                        <div class="progress-bar bg-info"
+                             role="progressbar"
+                             style="width: @(ShipStatus.CapacitorPercent)%"
+                             aria-valuenow="@ShipStatus.CapacitorPercent"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @ShipStatus.Capacitor.ToString("F0") / @ShipStatus.CapacitorMax.ToString("F0")
+                        </div>
+                    </div>
+                    <small class="hp-percent @GetHpClass(ShipStatus.CapacitorPercent)">
+                        @ShipStatus.CapacitorPercent.ToString("F1")%
+                    </small>
+                </div>
+            </div>
+
+            <!-- Module/Drone Info -->
+            <div class="modules-info">
+                <div class="module-stat">
+                    <span class="badge bg-success">@ShipStatus.ActiveModules</span>
+                    <span>Active Modules</span>
+                </div>
+                <div class="module-stat">
+                    <span class="badge bg-primary">@ShipStatus.DronesInSpace</span>
+                    <span>Drones in Space</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No ship data available</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ShipStatusDto? ShipStatus { get; set; }
+
+    private string GetHpClass(double percent)
+    {
+        if (percent < 25) return "text-danger fw-bold";
+        if (percent < 50) return "text-warning fw-bold";
+        return "text-success";
+    }
+}

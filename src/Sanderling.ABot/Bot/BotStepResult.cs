@@ -1,13 +1,10 @@
-﻿using System;
+﻿namespace Sanderling.ABot.Bot;
 
-namespace Sanderling.ABot.Bot
+public record BotStepResult
 {
-	public class BotStepResult
-	{
-		public Exception Exception;
+	public Exception? Exception { get; init; }
 
-		public MotionRecommendation[] ListMotion;
+	public MotionRecommendation[]? ListMotion { get; init; }
 
-		public IBotTask[][] OutputListTaskPath;
-	}
+	public IBotTask[][]? OutputListTaskPath { get; init; }
 }

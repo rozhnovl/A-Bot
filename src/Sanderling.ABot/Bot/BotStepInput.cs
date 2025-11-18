@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace Sanderling.ABot.Bot;
 
-namespace Sanderling.ABot.Bot
+public record BotStepInput
 {
-	public class BotStepInput
-	{
-		public Int64 TimeMilli;
+	public long TimeMilli { get; init; }
 
-		public BotEngine.Interface.FromProcessMeasurement<Interface.MemoryStruct.IMemoryMeasurement> FromProcessMemoryMeasurement;
+	public BotEngine.Interface.FromProcessMeasurement<Interface.MemoryStruct.IMemoryMeasurement>? FromProcessMemoryMeasurement { get; init; }
 
-		public MotionResult[] StepLastMotionResult;
-	}
+	public MotionResult[]? StepLastMotionResult { get; init; }
 }

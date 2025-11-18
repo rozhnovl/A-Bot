@@ -1,0 +1,108 @@
+{
+  "Ships": {
+    "Gila": {
+      "ShipName": "Gila",
+      "MaxTargetingRange": 0,
+      "MaxTargets": 0,
+      "MaxDronesInSpace": 2,
+      "HighSlots": [
+        {
+          "ModuleType": "Weapon",
+          "Hotkey": "F1",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "ShieldBooster",
+          "Hotkey": "F2",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "ShieldBooster",
+          "Hotkey": "F3",
+          "OptimalRange": 4000
+        }
+      ],
+      "MidSlots": [
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        }
+      ],
+      "LowSlots": [
+        {
+          "ModuleType": "Hardener",
+          "Hotkey": "CONTROL+F1",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "Hardener",
+          "Hotkey": "CONTROL+F2",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "MWD",
+          "Hotkey": "CONTROL+F3",
+          "OptimalRange": 4000
+        }
+      ]
+    },
+    "Hawk": {
+      "ShipName": "Hawk",
+      "MaxTargetingRange": 20000,
+      "MaxTargets": 4,
+      "MaxDronesInSpace": 0,
+      "HighSlots": [
+        {
+          "ModuleType": "Weapon",
+          "Hotkey": "F1",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "Weapon",
+          "Hotkey": "F2",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "ShieldBooster",
+          "Hotkey": "F3",
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "MWD",
+          "Hotkey": "F4",
+          "OptimalRange": 4000
+        }
+      ],
+      "MidSlots": [
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        }
+      ],
+      "LowSlots": [
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        },
+        {
+          "ModuleType": "Etc",
+          "Hotkey": null,
+          "OptimalRange": 4000
+        }
+      ]
+    }
+  }
+}

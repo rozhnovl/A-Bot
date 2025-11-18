@@ -1,12 +1,10 @@
-using System;
-
 namespace BotEngine.Motor;
 
 public class MotionResult
 {
 	public readonly bool Success;
 
-	public readonly Exception Exception;
+	public readonly Exception? Exception;
 
 	private MotionResult()
 	{

@@ -1,9 +1,8 @@
-﻿namespace Sanderling.ABot
-{
-	public class StringAtPath
-	{
-		public string Path;
+﻿namespace Sanderling.ABot;
 
-		public string @String;
-	}
+public record StringAtPath
+{
+	public string? Path { get; init; }
+
+	public string? String { get; init; }
 }

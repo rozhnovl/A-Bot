@@ -7,18 +7,17 @@ using Sanderling.ABot.Serialization;
 using Sanderling.Parse;
 using Sanderling.Interface.MemoryStruct;
 
-namespace Sanderling.ABot.Bot
+namespace Sanderling.ABot.Bot;
+
+public class Bot(IStrategy strategy)
 {
-	
-	public class Bot
-	{
 		static public readonly Func<long> GetTimeMilli = Bib3.Glob.StopwatchZaitMiliSictInt;
 
-		public BotStepInput StepLastInput { private set; get; }
+		public BotStepInput? StepLastInput { private set; get; }
 
-		public PropertyGenTimespanInt64<BotStepResult> StepLastResult { private set; get; }
+		public PropertyGenTimespanInt64<BotStepResult>? StepLastResult { private set; get; }
 
-		private IStrategy strategy = /*new AnomalyHunting();//*/new AbyssalRunner();// new CorporationMissionTaker();
+		private readonly IStrategy strategy = strategy;
 
 		private int motionId;
 
@@ -26,18 +25,18 @@ namespace Sanderling.ABot.Bot
 		/// <summary>
 		/// Current measurements
 		/// </summary>
-		public FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement> MemoryMeasurementAtTime { private set; get; }
+		public FromProcessMeasurement<Sanderling.Parse.IMemoryMeasurement>? MemoryMeasurementAtTime { private set; get; }
 
-		readonly public OverviewMemory OverviewMemory = new OverviewMemory();
+		public readonly OverviewMemory OverviewMemory = new();
 
-		private readonly IDictionary<long, int> MouseClickLastStepIndexFromUIElementId = new Dictionary<long, int>();
+		private readonly Dictionary<long, int> MouseClickLastStepIndexFromUIElementId = [];
 
 		/// <summary>
 		/// Step number on which modules have been activated last time. Prevents duplicate clicks on modules during their activation
 		/// </summary>
-		private readonly IDictionary<ShipUIModuleButton, int> ToggleLastStepIndexFromModule = new Dictionary<ShipUIModuleButton, int>();
+		private readonly Dictionary<ShipUIModuleButton, int> ToggleLastStepIndexFromModule = [];
 
-		public KeyValuePair<Deserialization, Config> ConfigSerialAndStruct { private set; get; }
+		public KeyValuePair<Deserialization, Config>? ConfigSerialAndStruct { private set; get; }
 
 		public long? MouseClickLastAgeStepCountFromUIElement(Interface.MemoryStruct.IUIElement uiElement)
 		{
@@ -80,11 +79,11 @@ namespace Sanderling.ABot.Bot
 
 			StepLastInput = input;
 
-			Exception exception = null;
+			Exception? exception = null;
 
-			var listMotion = new List<MotionRecommendation>();
+			List<MotionRecommendation> listMotion = [];
 
-			IBotTask[][] outputListTaskPath = null;
+			IBotTask[][]? outputListTaskPath = null;
 
 			try
 			{
@@ -127,4 +126,3 @@ namespace Sanderling.ABot.Bot
 			return stepResult;
 		}
 	}
-}

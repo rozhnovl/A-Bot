@@ -1,7 +1,6 @@
-namespace Sanderling.Interface
+namespace Sanderling.Interface;
+
+public record MemoryMeasurementInitParam
 {
-	public class MemoryMeasurementInitParam
-	{
-		public int ProcessId;
-	}
+	public required int ProcessId { get; init; }
 }

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Bib3;
 using Microsoft.Extensions.Logging;
@@ -11,25 +11,34 @@ namespace Sanderling.ABot.Bot.Strategies
 {
 	internal class AbyssalFightState : IStragegyState
 	{
-		private readonly ILogger logger;
-		private const int MaxTargetDistance = 55000;
+		private readonly ILogger<AbyssalFightState> logger;
+		private readonly INpcInfoProvider npcInfoProvider;
+		private readonly IProviderFactory providerFactory;
+		private readonly CombatConfiguration combatConfig;
+		private readonly AbyssConfiguration abyssConfig;
 
 		//[NotNull] private static StreamWriter sw;
-		[NotNull] private readonly Stopwatch StateStopwatch;
-		private readonly NpcInfoProvider npcInfoProvider = new NpcInfoProvider();
+		[NotNull] private readonly Stopwatch StateStopwatch = Stopwatch.StartNew();
 
 		AbyssEnemySpawnContext dbContext = new AbyssEnemySpawnContext();
 
 		private bool enteredAbyss;
 
 
-		public AbyssalFightState(ILogger logger)
+		public AbyssalFightState(
+			ILogger<AbyssalFightState> logger,
+			INpcInfoProvider npcInfoProvider,
+			IProviderFactory providerFactory)
 		{
 			this.logger = logger;
-			StateStopwatch = new Stopwatch();
-			StateStopwatch.Start();
-		}
+			this.npcInfoProvider = npcInfoProvider;
+			this.providerFactory = providerFactory;
 
+			// Load configurations
+			var configSet = ConfigurationLoader.LoadConfigurationsStandalone();
+			this.combatConfig = configSet.Combat;
+			this.abyssConfig = configSet.Abyss;
+		}
 
 		private int MwdLastTurnOnAttempt = 0;
 
@@ -38,8 +47,8 @@ namespace Sanderling.ABot.Bot.Strategies
 			var shipFit = FitsRegistry.Hawk(bot);
 			var shipState = new ShipState(shipFit, bot);
 
-			var overviewProvider = new MemoryProxyOverviewProvider(bot);
-			var inventoryProvider = new MemoryProxyInventoryProvider(bot);
+			var overviewProvider = providerFactory.CreateOverviewProvider(bot);
+			var inventoryProvider = providerFactory.CreateInventoryProvider(bot);
 			logger.LogInformation(
 				$"InputStates[{StateStopwatch.Elapsed}]: {JsonConvert.SerializeObject(new StateInput(shipState, overviewProvider, inventoryProvider))}");
 			try
@@ -88,15 +97,19 @@ namespace Sanderling.ABot.Bot.Strategies
 			if (!shipState.ManeuverStartPossible)
 				return null;
 
-			var coreCache = overviewProvider.Entries?.FirstOrDefault(e => e.Name.Contains("Bioadaptive")|| e.Name.Contains("Biocombinative"));
+			var coreCache = overviewProvider.Entries?.FirstOrDefault(e =>
+				abyssConfig.CacheNames.Any(cacheName => e.Name.Contains(cacheName)));
+
 			var conduit = overviewProvider.Entries
 				?.Where(entry =>
-					(entry.Name ?? entry.Type).Contains("Conduit") && !(entry.Name ?? entry.Type).Contains("Proving"))
-				?.SingleOrDefault(); //!!!!
+					abyssConfig.ConduitNames.Any(conduitName => (entry.Name ?? entry.Type).Contains(conduitName)) &&
+					!abyssConfig.ConduitExclusions.Any(exclusion => (entry.Name ?? entry.Type).Contains(exclusion)))
+				?.SingleOrDefault();
+
 			if (conduit == null && LeavingAbyssTimestamp.HasValue &&
-			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
+			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(abyssConfig.InvulnerabilityWaitTimeSeconds)) > StateStopwatch.Elapsed)
 				return task.With(
-					$"Left abyss. Waiting {LeavingAbyssTimestamp.Value.Add(TimeSpan.FromMinutes(1.2)) - StateStopwatch.Elapsed} to leave invulnerability");
+					$"Left abyss. Waiting {LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(abyssConfig.TotalInvulnerabilityDurationSeconds)) - StateStopwatch.Elapsed} to leave invulnerability");
 			/*dbContext.Spawns.Add(new AbyssEnemySpawn()
 				{Enemies = overviewProvider.Entries.Select(e => e.Name).ToArray(), Id = Guid.NewGuid(), Time = DateTime.Now});*/
 			if (conduit == null)
@@ -125,8 +138,8 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			var offensiveOverviewEntries = overviewProvider.Entries
 				?.Where(entry => entry.IsEnemy)
-				?.Where(entry => !entry.Name.Contains("Extraction"))
-				?.Where(e => e.Type != "Vila Swarmer")
+				?.Where(entry => !abyssConfig.IgnoredNpcTypes.Any(ignoredType => entry.Name.Contains(ignoredType)))
+				?.Where(e => !abyssConfig.IgnoredNpcTypes.Any(ignoredType => e.Type == ignoredType))
 				?.ToList();
 			var listOverviewEntryToAttack = priorityManager.GetEnemies(overviewProvider);
 			if (listOverviewEntryToAttack.Any())
@@ -141,17 +154,17 @@ namespace Sanderling.ABot.Bot.Strategies
 
 
 			//goto targetProcessing;
-			if (estimatedIncomingDps > 200)
+			if (estimatedIncomingDps > combatConfig.Engagement.DefensiveManeuverDpsThreshold)
 			{
 				if (shipState.Maneuver != ShipManeuverType.Orbit)
 				{
 					task.With($"Orbiting {orbitBeacon}");
-					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Orbit.*", "5,000 m"));
+					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Orbit.*", $"{combatConfig.Engagement.OrbitDistance / 1000:N0},{combatConfig.Engagement.OrbitDistance % 1000:000} m"));
 				}
 
 				//var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD,
-				//	shipState.HitpointsAndEnergy.Capacitor > 200);
-				//if (mwdTask != null && MwdLastTurnOnAttempt < stepIndex - 10)
+				//	shipState.HitpointsAndEnergy.Capacitor > combatConfig.Engagement.MinimumCapacitorForMwd);
+				//if (mwdTask != null && MwdLastTurnOnAttempt < stepIndex - combatConfig.Engagement.MinStepsBetweenTargetingAttempts)
 				//{
 				//	MwdLastTurnOnAttempt = stepIndex;
 				//	return task.With(mwdTask);
@@ -165,10 +178,10 @@ namespace Sanderling.ABot.Bot.Strategies
 				    shipState.Maneuver != ShipManeuverType.KeepAtRange
 				    && shipState.Maneuver != ShipManeuverType.Orbit)
 					//TODO HERE
-					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Keep at range", "500 m"));
+					return task.With(orbitBeacon.ClickMenuEntryByRegexPattern("Keep at range", $"{combatConfig.Engagement.KeepAtRangeDistance} m"));
 
 				task.With($"Distance to target is {orbitBeacon.Distance}.");
-				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, orbitBeacon.Distance > 2000);
+				var mwdTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.MWD, orbitBeacon.Distance > combatConfig.Engagement.MwdActivationDistance);
 
 				if (mwdTask != null)
 					return task.With(mwdTask);
@@ -185,11 +198,11 @@ namespace Sanderling.ABot.Bot.Strategies
 			}
 
 			looting:
-			if (shipState.ShouldUseTractorForLooting)
+			if (abyssConfig.UseTractorForLooting && shipState.ShouldUseTractorForLooting)
 			{
 				if (coreCache!=null)
 				{
-					if (conduit.Distance < 2000 && !overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
+					if (conduit.Distance < abyssConfig.TractorDeploymentDistance && !overviewProvider.Entries.Any(e => e.Name.Contains("Tractor")))
 					{
 						var openInventoryTask = inventoryProvider.GetOpenWindowTask();
 						if (openInventoryTask != null)
@@ -216,7 +229,7 @@ namespace Sanderling.ABot.Bot.Strategies
 								: lootWindowProvider.GetClickLootButtonTask());
 					}
 
-					if (tractorEntry.Distance < 2500)
+					if (tractorEntry.Distance < abyssConfig.LootingDistance)
 						return task.With(tractorEntry.ClickMenuEntryByRegexPattern("Open Cargo"));
 					if (shipState.Maneuver != ShipManeuverType.Approach)
 					{
@@ -249,7 +262,7 @@ namespace Sanderling.ABot.Bot.Strategies
 							return task.With(lootWindowProvider.GetClickLootButtonTask());
 						}
 
-						if (coreCache.Distance < 2500)
+						if (coreCache.Distance < abyssConfig.LootingDistance)
 							return task.With(coreCache.ClickMenuEntryByRegexPattern("Open Cargo"));
 						if (shipState.Maneuver != ShipManeuverType.Approach)
 						{
@@ -289,7 +302,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			if (openTask != null)
 				return openTask;
 
-			return inventoryProvider.GetActvateItemIfPresentTask("Raging Exotic Filament", "Use .*");
+			return inventoryProvider.GetActvateItemIfPresentTask(abyssConfig.FilamentType, "Use .*");
 		}
 
 

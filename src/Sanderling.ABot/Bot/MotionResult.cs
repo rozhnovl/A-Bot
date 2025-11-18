@@ -1,11 +1,8 @@
-﻿using System;
+﻿namespace Sanderling.ABot.Bot;
 
-namespace Sanderling.ABot.Bot
+public record MotionResult
 {
-	public class MotionResult
-	{
-		public Int64 Id;
+	public long Id { get; init; }
 
-		public bool Success;
-	}
+	public bool Success { get; init; }
 }

@@ -1,35 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using WindowsInput.Native;
+﻿using WindowsInput.Native;
 using Microsoft.EntityFrameworkCore;
 using Sanderling.ABot.Bot.Task;
-using Sanderling.Parse;
-using Sanderling.Interface.MemoryStruct;
 
-namespace Sanderling.ABot.Bot
+namespace Sanderling.ABot.Bot;
+
+public class AbyssEnemySpawnContext: DbContext
 {
-
-	public class AbyssEnemySpawnContext: DbContext
+	/*
+	public System.Data.Entity.DbSet<AbyssEnemySpawn> Spawns { get; set; }
+	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 	{
-		/*
-		public System.Data.Entity.DbSet<AbyssEnemySpawn> Spawns { get; set; }
-		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-		{
-			optionsBuilder.UseSqlServer(@"Server=.\RESTO;Database=EveBot;Trusted_Connection=True;");
-		}*/
-	}
+		optionsBuilder.UseSqlServer(@"Server=.\RESTO;Database=EveBot;Trusted_Connection=True;");
+	}*/
+}
 
-	public class AbyssEnemySpawn
-	{
-		public Guid Id { get; set; }
-		public DateTime Time { get; set; }
-		public string[] Enemies { get; set; }
+public record AbyssEnemySpawn
+{
+	public Guid Id { get; set; }
+	public DateTime Time { get; set; }
+	public string[]? Enemies { get; set; }
+}
 
-	}
-
-	public class ShipFit
-	{
+public class ShipFit
+{
 		public int MaxTargetingRange { get; init; }
 		public int MaxTargets { get; init; }
 		public int MaxDronesInSpace { get; init; }
@@ -124,7 +117,7 @@ namespace Sanderling.ABot.Bot
 			}
 		}
 
-		public class ModuleInfo
+	public class ModuleInfo
 		{
 			public ModuleInfo(ModuleType type, params VirtualKeyCode[] hotKey)
 			{
@@ -157,13 +150,12 @@ namespace Sanderling.ABot.Bot
 			}
 		}
 
-		public enum ModuleType
-		{
-			Hardener,
-			Weapon,
-			ShieldBooster,
-			MWD,
-			Etc,
-		}
-	}
+public enum ModuleType
+{
+	Hardener,
+	Weapon,
+	ShieldBooster,
+	MWD,
+	Etc,
+}
 }

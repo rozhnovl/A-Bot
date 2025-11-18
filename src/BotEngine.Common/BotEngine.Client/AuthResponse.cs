@@ -1,40 +1,38 @@
-using System;
-
 namespace BotEngine.Client;
 
-public class AuthResponse
+public record AuthResponse
 {
-	public DateTime? NowTimeCal;
+	public DateTime? NowTimeCal { get; init; }
 
-	public bool LicenseKeyValid;
+	public bool LicenseKeyValid { get; init; }
 
-	public bool LicenseTimeframeMet;
+	public bool LicenseTimeframeMet { get; init; }
 
-	public DateTime? LicenseReplenishTimeCal;
+	public DateTime? LicenseReplenishTimeCal { get; init; }
 
-	public bool LicenseReplenishIntervalExhaustedNot;
+	public bool LicenseReplenishIntervalExhaustedNot { get; init; }
 
-	public bool LicenseSessionConcurrencyLimitExhaustedNot;
+	public bool LicenseSessionConcurrencyLimitExhaustedNot { get; init; }
 
-	public bool ServiceSelectValid;
+	public bool ServiceSelectValid { get; init; }
 
-	public bool ServiceTimeframeMet;
+	public bool ServiceTimeframeMet { get; init; }
 
-	public DateTime? LicenseConsumeStartTimeCal;
+	public DateTime? LicenseConsumeStartTimeCal { get; init; }
 
-	public DateTime? LicenseStartTimeCal;
+	public DateTime? LicenseStartTimeCal { get; init; }
 
-	public DateTime? LicenseEndTimeCal;
+	public DateTime? LicenseEndTimeCal { get; init; }
 
-	public DateTime? ServiceStartTimeCal;
+	public DateTime? ServiceStartTimeCal { get; init; }
 
-	public DateTime? ServiceEndTimeCal;
+	public DateTime? ServiceEndTimeCal { get; init; }
 
-	public string ServiceId;
+	public string? ServiceId { get; init; }
 
-	public string SessionId;
+	public string? SessionId { get; init; }
 
-	public DateTime? SessionEndTimeCal;
+	public DateTime? SessionEndTimeCal { get; init; }
 
-	public int RequestTimeDistanceMaxMilli;
+	public int RequestTimeDistanceMaxMilli { get; init; }
 }

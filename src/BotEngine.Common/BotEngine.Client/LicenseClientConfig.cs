@@ -1,12 +1,12 @@
 namespace BotEngine.Client;
 
-public class LicenseClientConfig
+public record LicenseClientConfig
 {
-	public string ApiVersionAddress;
+	public string? ApiVersionAddress { get; init; }
 
-	public string ApiOverviewAddress;
+	public string? ApiOverviewAddress { get; init; }
 
-	public string VersionId;
+	public string? VersionId { get; init; }
 
-	public AuthRequest Request;
+	public AuthRequest? Request { get; init; }
 }

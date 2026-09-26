@@ -70,6 +70,39 @@ namespace Sanderling.ABot.Bot.Task
 		/// <summary>Below this remaining fraction we finish the current target rather than switch away.</summary>
 		private const double FinishBelowFraction = 0.25;
 
+		/// <summary>
+		/// FC tags (operator, 2026-09-27): the lead tags its kill queue up front — hold "1" and click
+		/// the overview rows in priority order, the client numbers them 1, 2, 3… — so every wing locks
+		/// and shoots the same rat first even when three of them carry the same name. Tags already on
+		/// grid are the FC's word and are never overwritten; a batch is tried again only after a pause.
+		/// </summary>
+		private const int MaxFcTags = 9;
+		private const int FcTagCooldownMs = 8000;
+		private static readonly Dictionary<int, long> LastFcTagTickByPid = new();
+
+		private static ISerializableBotTask? FcTagTask(Bot bot, IReadOnlyList<IOverviewEntry> queue, out string what)
+		{
+			what = "";
+			if (bot == null || queue == null || queue.Count == 0) return null;
+			if (!global::Sanderling.ABot.Bot.Strategies.AbyssalFightState.IsLooter(bot)) return null;
+			if (queue.Any(e => PriorityManager.IsTagged(e))) return null;
+
+			var batch = queue.Take(MaxFcTags).ToList();
+			var rows = batch.Select(e => e.SelectElement).Where(e => e != null).ToArray();
+			if (rows.Length == 0 || rows.Length != batch.Count) return null;
+
+			var now = Environment.TickCount64;
+			lock (LastFcTagTickByPid)
+			{
+				if (LastFcTagTickByPid.TryGetValue(bot.Pid, out var last) && now - last < FcTagCooldownMs)
+					return null;
+				LastFcTagTickByPid[bot.Pid] = now;
+			}
+
+			what = string.Join(", ", batch.Select((e, i) => $"{i + 1}:{e.Name}"));
+			return rows.ClickWithModifier(VirtualKeyCode.VK_1);
+		}
+
 		public IEnumerable<IBotTask> Component
 		{
 			get
@@ -119,6 +152,14 @@ namespace Sanderling.ABot.Bot.Task
 				{
 					yield return new DiagnosticTask($"Ammo swap — {ammoReason}.");
 					yield return ammoTask;
+				}
+
+				// The lead hands out the kill order as tags before anybody locks (see FcTagTask).
+				var fcTagTask = FcTagTask(bot, listOverviewEntryToAttack, out var fcTagWhat);
+				if (fcTagTask != null)
+				{
+					yield return new DiagnosticTask($"FC tags: {fcTagWhat}");
+					yield return fcTagTask;
 				}
 
 				var targetSelected = shipState.ActiveTargets.ActiveTarget;

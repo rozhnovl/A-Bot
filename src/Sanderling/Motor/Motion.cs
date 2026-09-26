@@ -12,9 +12,6 @@ namespace Sanderling.Motor
 	{
 		public IUIElement UIElement;
 
-		[Obsolete("We recommend using the property RegionReplacementAbsolute instead.", false)]
-		public RectInt? RegionReplacement;
-
 		public RectInt? RegionReplacementAbsolute;
 
 		public MotionParamMouseRegion()

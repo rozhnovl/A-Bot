@@ -10,8 +10,10 @@ namespace Sanderling.ABot.Parse
 {
 	static public partial class ParseExtension
 	{
+		// Header reads "Drones in Bay (3)" or "Drones in Space (2/5)" — take the first number after
+		// "(", so both the "(N)" and "(N/M)" forms parse (the old \((\d+)\) missed "(2/5)").
 		static public int? CountFromDroneGroupCaption(this string groupCaption) =>
-			groupCaption?.RegexMatchIfSuccess(@"\((\d+)\)")?.Groups[1]?.Value?.TryParseInt();
+			groupCaption?.RegexMatchIfSuccess(@"\((\d+)")?.Groups[1]?.Value?.TryParseInt();
 
 		/// <summary>
 		/// Hobgoblin I ( <color=0xFF00FF00>Idle</color> )

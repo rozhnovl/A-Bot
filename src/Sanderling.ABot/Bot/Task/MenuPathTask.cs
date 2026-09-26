@@ -40,6 +40,11 @@ namespace Sanderling.ABot.Bot.Task
 
 		public string[][] ListMenuListPriorityEntryRegexPattern;
 		public VirtualKeyCode[] ModifierKeys { get; set; }
+		/// <summary>
+		/// Open the root menu with a LEFT click instead of a right one — for dropdown buttons that carry
+		/// their menu on the left button (e.g. the inventory's "View mode" MenuButtonIcon).
+		/// </summary>
+		public bool OpenWithLeftClick { get; set; }
 
 		public IEnumerable<IBotTask> Component => null;
 
@@ -127,7 +132,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				var buttonToUse = ListMenuListPriorityEntryRegexPattern.IsNullOrEmpty() || menuEntryToContinue != null
 					? (nextLevelToOpen > 0 && nextLevelToOpen < levelCount - 1) ? BotEngine.Motor.MouseButtonIdEnum.None : BotEngine.Motor.MouseButtonIdEnum.Left
-					: BotEngine.Motor.MouseButtonIdEnum.Right;
+					: (OpenWithLeftClick ? BotEngine.Motor.MouseButtonIdEnum.Left : BotEngine.Motor.MouseButtonIdEnum.Right);
 				if (ModifierKeys != null)
 				{
 					foreach (var mod in ModifierKeys.EmptyIfNull())

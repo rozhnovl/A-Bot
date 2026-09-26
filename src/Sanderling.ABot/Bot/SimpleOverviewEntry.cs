@@ -25,6 +25,9 @@ namespace Sanderling.ABot.Bot
 		public long Id { get; }
 		public abstract ISerializableBotTask ClickMenuEntryByRegexPattern(string orbit, string km);
 		public abstract ISerializableBotTask GetSelectTask();
+		/// <summary>Never serialized: UIElement holds parent back-references (self-referencing loop).</summary>
+		[Newtonsoft.Json.JsonIgnore]
+		public virtual IUIElement? SelectElement => null;
 		public abstract OverviewWindowEntryCommonIndications CommonIndications { get; }
 		public abstract ISerializableBotTask GetApproachTask();
 

@@ -6,7 +6,10 @@ namespace Sanderling.ABot.Bot
 	public interface IShipState
 	{
 		bool ManeuverStartPossible { get; }
-		IShipHitpointsAndEnergy HitpointsAndEnergy { get; }
+		/// <summary>Shield charge 0–100%, or null when the gauge is unreadable this tick.</summary>
+		int? ShieldPercent { get; }
+		/// <summary>Capacitor charge 0–100%, or null when the gauge is unreadable this tick.</summary>
+		int? CapacitorPercent { get; }
 		ShipManeuverType Maneuver { get; }
 		[NotNull]
 		DronesContoller Drones { get; }
@@ -19,8 +22,10 @@ namespace Sanderling.ABot.Bot
 		ISerializableBotTask? GetTurnOnAlwaysActiveModulesTask();
 		ISerializableBotTask? GetSetModuleActiveTask(ShipFit.ModuleType type, bool shouldBeActive);
 		ISerializableBotTask? GetAttackTasks();
-		ISerializableBotTask GetNextTankingModulesTask(double estimatedIncomingDps);
+		ISerializableBotTask GetNextTankingModulesTask(double estimatedIncomingDps, double enemyNeutGjPerSec = 0);
 		ISerializableBotTask? GetReloadTask();
+		/// <summary>Act on an overview object through the Selected Item panel (select, then its button).</summary>
+		ISerializableBotTask? GetSelectedItemActionTask(IOverviewEntry entry, string buttonNamePattern);
 		ISerializableBotTask? GetPopupButtonTask(string buttonText);
 	}
 }

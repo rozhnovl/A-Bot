@@ -1,7 +1,5 @@
-using System;
 using System.Net;
 using Bib3;
-using Bib3.AppDomain;
 
 namespace BotEngine.Client;
 

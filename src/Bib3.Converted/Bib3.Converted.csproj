@@ -89,11 +89,10 @@
     <Compile Include="Geometrik\Transform2DAfinIntMikroStruct.cs" />
     <Compile Include="Geometrik\Vektor2DDouble.cs" />
     <Compile Include="Geometrik\Vektor2DInt.cs" />
-    <Compile Include="AppDomain\AssemblyInflateLaade.cs" />
-    <Compile Include="AppDomain\AppDomainProxy.cs" />
-    <Compile Include="AppDomain\AppDomainProxyZiilKonstrukt`1.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="AppDomain\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

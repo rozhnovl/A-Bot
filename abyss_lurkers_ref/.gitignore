@@ -1,0 +1,7 @@
+# Raw Discord export (huge, ~1 GB) and derived intermediates — do not commit.
+*.json
+distilled/
+# Keep the pipeline + synthesized knowledge base:
+!extract.py
+!prioritize.py
+!ABYSS-INTEL.md

@@ -9,5 +9,8 @@ namespace Sanderling.ABot.Bot
 		public MotionRecommendation[] ListMotion;
 
 		public IBotTask[][] OutputListTaskPath;
+
+		/// <summary>Structured summary consumed by every runner/dashboard.</summary>
+		public StrategyStatus StrategyStatus;
 	}
 }

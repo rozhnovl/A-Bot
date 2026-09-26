@@ -1,0 +1,24 @@
+{
+  "activity": "RetributionDeacon",
+  "fleetCommander": "Tank Character Name",
+  "assignments": [
+    {
+      "titleContains": "Tank Character Name",
+      "role": "tank-retri",
+      "turretCount": 4,
+      "perTurretDamageMultiplier": 11.7142,
+      "applicationFactor": 1.0
+    },
+    {
+      "titleContains": "Wing Character Name",
+      "role": "wing-retri",
+      "turretCount": 4,
+      "perTurretDamageMultiplier": 11.7142,
+      "applicationFactor": 1.0
+    },
+    {
+      "titleContains": "Deacon Character Name",
+      "role": "deacon"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+@page "/resources"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+@inject ProductionService Production
+
+<PageTitle>Ресурсы</PageTitle>
+<div class="page-heading compact-heading"><div><div class="eyebrow">УЧЁТ МАТЕРИАЛОВ</div><h1>Ресурсы</h1><p class="heading-note">Остатки, средняя себестоимость и точки пополнения.</p></div><button class="btn btn-primary" @onclick="ToggleForm">+ Добавить ресурс</button></div>
+@if (showForm) { <div class="panel form-panel"><div class="panel-heading"><div><h2>Новый ресурс</h2><p>Добавьте материал или компонент на склад.</p></div><button class="close-button" @onclick="ToggleForm">×</button></div><div class="form-grid"><label>Название<input @bind="resourceName" placeholder="Например, Isogen" /></label><label>Категория<select @bind="resourceCategory"><option>Минералы</option><option>Компоненты</option><option>Модули</option><option>Другое</option></select></label><label>Количество<input type="number" @bind="resourceQuantity" /></label><label>Цена получения за ед.<input type="number" @bind="resourceCost" /></label></div><div class="form-actions"><button class="btn btn-primary" @onclick="AddResource">Сохранить ресурс</button></div></div> }
+<div class="resource-summary"><div><span>Общая стоимость</span><strong>@Money(Production.InventoryValue)</strong></div><div><span>Позиций на складе</span><strong>@Production.Resources.Count</strong></div><div><span>Нужно пополнить</span><strong class="text-warning">@Production.LowStockCount</strong></div></div>
+<section class="panel table-panel full-panel"><div class="toolbar"><div class="search-box">⌕ <input placeholder="Поиск по ресурсам" /></div><button class="filter-button">Все категории ⌄</button><button class="filter-button">Сортировка: стоимость ⌄</button></div><div class="table-scroll"><table class="app-table resource-table"><thead><tr><th>Ресурс</th><th>Категория</th><th>Остаток</th><th>Средняя цена</th><th>Стоимость позиции</th><th>Состояние</th></tr></thead><tbody>@foreach (var resource in Production.Resources) { <tr><td><div class="item-cell"><span class="item-avatar mineral-avatar">◈</span><span><strong>@resource.Name</strong><small>обновлено сегодня</small></span></div></td><td class="muted">@resource.Category</td><td><strong>@resource.Quantity.ToString("N0")</strong> <span class="muted">@resource.Unit</span></td><td>@Money(resource.AverageCost)</td><td><strong>@Money(resource.Quantity * resource.AverageCost)</strong></td><td><span class="status-pill @ResourceClass(resource.Status)">@resource.Status</span></td></tr> }</tbody></table></div></section>
+
+@code {
+    private bool showForm; private string resourceName = ""; private string resourceCategory = "Минералы"; private decimal resourceQuantity = 1; private decimal resourceCost;
+    private void ToggleForm() => showForm = !showForm;
+    private void AddResource() { Production.AddResource(resourceName, resourceCategory, resourceQuantity, resourceCost); resourceName = ""; resourceQuantity = 1; resourceCost = 0; showForm = false; }
+    private static string Money(decimal value) => $"{value:N0} ISK";
+    private static string ResourceClass(string status) => status == "В наличии" ? "green-pill" : status == "Под заказ" ? "blue-pill" : "amber-pill";
+}

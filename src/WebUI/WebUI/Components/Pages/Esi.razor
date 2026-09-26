@@ -1,0 +1,290 @@
+@page "/esi"
+@rendermode InteractiveServer
+@implements IDisposable
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@using WebUI.Esi
+@inject IDbContextFactory<ProductionDbContext> DbFactory
+@inject Microsoft.Extensions.Options.IOptions<EsiOptions> EsiOptions
+@inject EsiSyncHealth SyncHealth
+
+<PageTitle>EVE ESI — наблюдения для планирования</PageTitle>
+
+<div class="page-heading esi-heading">
+    <div><div class="eyebrow">ИСТОЧНИКИ ДАННЫХ</div><h1>Наблюдения EVE ESI</h1><p class="heading-note">Сохранённые снимки производства, рынка и имущества для планирования.</p></div>
+    <button class="btn btn-ghost" @onclick="Load" disabled="@isLoading">@(isLoading ? "Загрузка…" : "Обновить экран")</button>
+</div>
+
+<div class="esi-explainer">Работы показывают ход выпуска, sell orders — ещё не проданные предложения, assets — учтённые предметы. Это наблюдения ESI, а не расчёт прибыли.</div>
+
+<section class="esi-health @HealthClass" aria-live="polite">
+    <div class="esi-health-status"><span class="esi-health-dot"></span><strong>Синхронизация: @HealthStatus(health.State)</strong></div>
+    <div class="esi-health-details">
+        <span>Последний успешный опрос: @FormatDate(health.LastSuccessAt)</span>
+        @if (health.State == "error")
+        {
+            <span>Последняя ошибка: @FormatDate(health.LastFailureAt)</span>
+        }
+    </div>
+    @if (IsStale)
+    {
+        <p>Сохранённые наблюдения могут быть устаревшими. Сверяйте время снимка в каждом разделе перед планированием.</p>
+    }
+    @if ((health.State is "error" or "not-connected") && !string.IsNullOrWhiteSpace(health.Message))
+    {
+        <p>@health.Message</p>
+    }
+</section>
+
+<section class="panel esi-connection">
+    <div class="panel-heading"><div><h2>Подключение</h2><p>Персонажей с разрешением EVE SSO: @connectedCount</p></div></div>
+    @if (!EsiOptions.Value.HasCredentials || string.IsNullOrWhiteSpace(EsiOptions.Value.RedirectUri) ||
+         string.IsNullOrWhiteSpace(EsiOptions.Value.OperatorEmail))
+    {
+        <p>Локальный callback: <code>@EsiOptions.Value.RedirectUri</code>. Зарегистрируйте web-приложение в <a href="https://developers.eveonline.com/" target="_blank" rel="noopener noreferrer">EVE Developers</a> с этим точным адресом и scopes кошелька, производственных работ, рыночных ордеров и assets. Затем задайте на сервере Client ID, Client Secret и <code>Esi__OperatorEmail</code> вне репозитория. После настройки здесь появится вход для назначенного оператора.</p>
+    }
+    else
+    {
+        <a class="btn btn-primary" href="/esi/connect">Подключить персонажа</a>
+    }
+    @if (connectedCount > 0)
+    {
+        <p class="esi-connection-note">Снимки обновляются сервером; кнопка выше перечитывает только уже сохранённые данные.</p>
+    }
+</section>
+
+@if (loadError)
+{
+    <div class="esi-error" role="alert">Не удалось прочитать сохранённые наблюдения. Попробуйте обновить экран.</div>
+}
+
+<div class="esi-grid">
+    <section class="panel esi-panel">
+        <div class="panel-heading"><div><h2>Производственные работы</h2><p>Активные, приостановленные и готовые к выдаче</p></div></div>
+        <div class="esi-snapshot">@SnapshotLabel(EsiResource.IndustryJobs)</div>
+        @if (isLoading)
+        {
+            <p class="esi-empty">Загружаем наблюдения…</p>
+        }
+        else if (jobs.Count == 0)
+        {
+            <p class="esi-empty">@EmptyMessage(EsiResource.IndustryJobs, "подходящих работ")</p>
+        }
+        else
+        {
+            @foreach (var job in jobs)
+            {
+                <div class="esi-row">
+                    <div class="esi-row-head"><strong>Работа #@job.RecordId</strong><span class="status-pill @JobStatusClass(job.Status)">@JobStatus(job.Status)</span></div>
+                    <div class="esi-row-detail">@JobProductLabel(job.ProductTypeId) · @RunsLabel(job.Runs) · персонаж #@job.CharacterId</div>
+                    <div class="esi-row-meta"><span>Плановое завершение: @FormatDate(job.EndDate)</span><span>Наблюдение: @FormatDate(job.ObservedAt)</span></div>
+                </div>
+            }
+        }
+    </section>
+
+    <section class="panel esi-panel">
+        <div class="panel-heading"><div><h2>Открытые sell orders</h2><p>Остаток в продаже и цена размещения</p></div></div>
+        <div class="esi-snapshot">@SnapshotLabel(EsiResource.ActiveOrders)</div>
+        @if (isLoading)
+        {
+            <p class="esi-empty">Загружаем наблюдения…</p>
+        }
+        else if (sellOrders.Count == 0)
+        {
+            <p class="esi-empty">@EmptyMessage(EsiResource.ActiveOrders, "открытых sell orders")</p>
+        }
+        else
+        {
+            @foreach (var order in sellOrders)
+            {
+                <div class="esi-row">
+                    <div class="esi-row-head"><strong>Тип #@order.TypeId</strong><span class="esi-quantity">@order.VolumeRemaining.ToString("N0") шт.</span></div>
+                    <div class="esi-row-detail">@order.Price.ToString("N2") ISK / ед. · ордер #@order.RecordId · персонаж #@order.CharacterId</div>
+                    <div class="esi-row-meta"><span>Истекает: @FormatDate(order.ExpiresAt)</span><span>Наблюдение: @FormatDate(order.ObservedAt)</span></div>
+                </div>
+            }
+        }
+    </section>
+
+    <section class="panel esi-panel">
+        <div class="panel-heading"><div><h2>Assets</h2><p>Предметы и количество в текущем снимке</p></div></div>
+        <div class="esi-snapshot">@SnapshotLabel(EsiResource.Assets)</div>
+        @if (isLoading)
+        {
+            <p class="esi-empty">Загружаем наблюдения…</p>
+        }
+        else if (assets.Count == 0)
+        {
+            <p class="esi-empty">@EmptyMessage(EsiResource.Assets, "предметов")</p>
+        }
+        else
+        {
+            @foreach (var asset in assets)
+            {
+                <div class="esi-row">
+                    <div class="esi-row-head"><strong>Тип #@asset.TypeId</strong><span class="esi-quantity">@AssetQuantityLabel(asset.Quantity)</span></div>
+                    <div class="esi-row-detail">Место #@asset.LocationId · предмет #@asset.RecordId · персонаж #@asset.CharacterId</div>
+                    <div class="esi-row-meta"><span>Наблюдение: @FormatDate(asset.ObservedAt)</span></div>
+                </div>
+            }
+        }
+    </section>
+</div>
+<p class="esi-footnote">Показано до 6 записей каждого раздела из выборки до 120 последних сохранённых записей на источник. ID типов и мест приведены без названий, пока они не доступны в данных.</p>
+
+@code {
+    private const int CandidateLimit = 120;
+    private const int DisplayLimit = 6;
+    private bool isLoading = true;
+    private bool loadError;
+    private EsiSyncSnapshot health = new("waiting", null, null, null, null, null);
+    private System.Threading.Timer? healthTimer;
+    private int connectedCount;
+    private Dictionary<EsiResource, DateTimeOffset> snapshotTimes = [];
+    private List<JobObservation> jobs = [];
+    private List<OrderObservation> sellOrders = [];
+    private List<AssetObservation> assets = [];
+
+    private sealed record StoredObservation(long CharacterId, long RecordId, string RawJson, DateTimeOffset ObservedAt);
+    private sealed record JobObservation(long CharacterId, long RecordId, long? ProductTypeId, long? Runs, string Status, DateTimeOffset? EndDate, DateTimeOffset ObservedAt);
+    private sealed record OrderObservation(long CharacterId, long RecordId, long TypeId, long VolumeRemaining, decimal Price, DateTimeOffset? ExpiresAt, DateTimeOffset ObservedAt);
+    private sealed record AssetObservation(long CharacterId, long RecordId, long TypeId, long Quantity, long LocationId, DateTimeOffset ObservedAt);
+
+    protected override Task OnInitializedAsync()
+    {
+        health = SyncHealth.Snapshot();
+        healthTimer = new System.Threading.Timer(state => _ = InvokeAsync(() =>
+        {
+            health = SyncHealth.Snapshot();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        return Load();
+    }
+
+    private async Task Load()
+    {
+        if (!isLoading) isLoading = true;
+        health = SyncHealth.Snapshot();
+        loadError = false;
+        try
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+            connectedCount = await db.EsiGrants.CountAsync();
+            var pageDates = await db.EsiPages.AsNoTracking()
+                .Where(p => p.Resource == EsiResource.IndustryJobs || p.Resource == EsiResource.ActiveOrders || p.Resource == EsiResource.Assets)
+                .Select(p => new { p.Resource, p.FetchedAt }).ToListAsync();
+            snapshotTimes = pageDates.GroupBy(p => p.Resource).ToDictionary(g => g.Key, g => g.Max(p => p.FetchedAt));
+
+            var jobRows = await RecentRecords(db, EsiRecordKind.IndustryJob, EsiResource.IndustryJobs, false);
+            var orderRows = await RecentRecords(db, EsiRecordKind.Order, EsiResource.ActiveOrders, true);
+            var assetRows = await RecentRecords(db, EsiRecordKind.Asset, EsiResource.Assets, true);
+            jobs = jobRows.Select(ParseJob).OfType<JobObservation>().OrderByDescending(x => x.ObservedAt).Take(DisplayLimit).ToList();
+            sellOrders = orderRows.Select(ParseOrder).OfType<OrderObservation>().OrderByDescending(x => x.ObservedAt).Take(DisplayLimit).ToList();
+            assets = assetRows.Select(ParseAsset).OfType<AssetObservation>().OrderByDescending(x => x.ObservedAt).Take(DisplayLimit).ToList();
+        }
+        catch
+        {
+            loadError = true;
+        }
+        finally
+        {
+            health = SyncHealth.Snapshot();
+            isLoading = false;
+        }
+    }
+
+    private static Task<List<StoredObservation>> RecentRecords(ProductionDbContext db, EsiRecordKind kind, EsiResource resource, bool currentOnly)
+    {
+        var query = db.EsiRecords.AsNoTracking().Where(r => r.Kind == kind && r.Resource == resource);
+        if (currentOnly) query = query.Where(r => r.IsCurrent);
+        return query.OrderByDescending(r => r.Id).Take(CandidateLimit)
+            .Select(r => new StoredObservation(r.CharacterId, r.RecordId, r.RawJson, r.ObservedAt)).ToListAsync();
+    }
+
+    private static JobObservation? ParseJob(StoredObservation row)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(row.RawJson);
+            var value = json.RootElement;
+            if (value.ValueKind != JsonValueKind.Object) return null;
+            var status = Text(value, "status");
+            if (status is not ("active" or "paused" or "ready")) return null;
+            return new(row.CharacterId, row.RecordId, Number(value, "product_type_id"), Number(value, "runs"), status,
+                Date(value, "end_date"), row.ObservedAt);
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static OrderObservation? ParseOrder(StoredObservation row)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(row.RawJson);
+            var value = json.RootElement;
+            if (value.ValueKind != JsonValueKind.Object) return null;
+            if (!value.TryGetProperty("is_buy_order", out var buy) || buy.ValueKind != JsonValueKind.False) return null;
+            var typeId = Number(value, "type_id");
+            var volume = Number(value, "volume_remain");
+            var price = Price(value, "price");
+            if (typeId is not > 0 || volume is not > 0 || price is null) return null;
+            var issued = Date(value, "issued");
+            var duration = Number(value, "duration");
+            DateTimeOffset? expires = issued is not null && duration is >= 0 and <= 365
+                ? issued.Value.AddDays(duration.Value) : null;
+            return new(row.CharacterId, row.RecordId, typeId.Value, volume.Value, price.Value,
+                expires, row.ObservedAt);
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static AssetObservation? ParseAsset(StoredObservation row)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(row.RawJson);
+            var value = json.RootElement;
+            if (value.ValueKind != JsonValueKind.Object) return null;
+            var typeId = Number(value, "type_id");
+            var quantity = Number(value, "quantity");
+            var locationId = Number(value, "location_id");
+            if (typeId is not > 0 || quantity is null || locationId is not > 0) return null;
+            return new(row.CharacterId, row.RecordId, typeId.Value, quantity.Value, locationId.Value, row.ObservedAt);
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static string? Text(JsonElement value, string key) => value.TryGetProperty(key, out var part) && part.ValueKind == JsonValueKind.String ? part.GetString() : null;
+    private static long? Number(JsonElement value, string key) => value.TryGetProperty(key, out var part) && part.ValueKind == JsonValueKind.Number && part.TryGetInt64(out var number) ? number : null;
+    private static decimal? Price(JsonElement value, string key) => value.TryGetProperty(key, out var part) && part.ValueKind == JsonValueKind.Number && part.TryGetDecimal(out var number) ? number : null;
+    private static DateTimeOffset? Date(JsonElement value, string key) => value.TryGetProperty(key, out var part) && part.ValueKind == JsonValueKind.String && part.TryGetDateTimeOffset(out var date) ? date : null;
+    private static string FormatDate(DateTimeOffset? value) => value?.UtcDateTime.ToString("dd.MM.yyyy HH:mm 'UTC'") ?? "нет даты";
+    private string SnapshotLabel(EsiResource resource) => snapshotTimes.TryGetValue(resource, out var time) ? $"Последний ответ страниц ESI: {FormatDate(time)}" : "Ответ ESI ещё не получен";
+    private string EmptyMessage(EsiResource resource, string description) => connectedCount == 0
+        ? "Подключите персонажа, чтобы начать получать наблюдения."
+        : !snapshotTimes.ContainsKey(resource)
+            ? "Ожидаем первый опрос этого источника."
+            : $"В сохранённом снимке нет {description} среди просмотренных записей.";
+    private static string JobStatus(string status) => status switch { "active" => "В работе", "paused" => "Пауза", "ready" => "Готово к выдаче", _ => status };
+    private static string JobStatusClass(string status) => status switch { "active" => "purple-pill", "ready" => "green-pill", _ => "amber-pill" };
+    private static string JobProductLabel(long? typeId) => typeId is > 0 ? $"Тип продукта #{typeId}" : "Тип продукта не указан";
+    private static string RunsLabel(long? runs) => runs is > 0 ? $"{runs} запусков" : "Число запусков не указано";
+    private static string AssetQuantityLabel(long quantity) => quantity > 0 ? $"{quantity:N0} шт." : "Количество не указано";
+    private string HealthClass => IsStale ? "esi-health-stale" : "esi-health-current";
+    private bool IsStale => health.State is "error" or "not-connected" || health.LastSuccessAt is null ||
+        DateTimeOffset.UtcNow - health.LastSuccessAt.Value > FreshnessWindow;
+    private TimeSpan FreshnessWindow => EsiOptions.Value.PollInterval > TimeSpan.Zero
+        ? EsiOptions.Value.PollInterval * 2 : TimeSpan.FromMinutes(30);
+    private static string HealthStatus(string state) => state switch
+    {
+        "waiting" => "Ожидание первого опроса",
+        "syncing" => "Идёт опрос",
+        "healthy" => "Работает",
+        "error" => "Ошибка опроса",
+        "not-connected" => "Нет подключения",
+        _ => "Неизвестно"
+    };
+    public void Dispose() => healthTimer?.Dispose();
+}

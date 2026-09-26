@@ -18,7 +18,7 @@ namespace Sanderling.ABot.Bot.Task
 			this Bot bot,
 			ShipUIModuleButton module)
 		{
-			if (module?.IsActive ?? true)
+			if (module is null || module.AppearsActive || module.IsActive is null)
 				return null;
 
 			return new ModuleToggleTask(module);
@@ -28,17 +28,16 @@ namespace Sanderling.ABot.Bot.Task
 			this Bot bot,
 			ShipUIModuleButton module)
 		{
-			if (module?.IsActive ?? false)
-
-				return new ModuleToggleTask(module);
-			return null;
+			if (module?.AppearsActive != true)
+				return null;
+			return new ModuleToggleTask(module);
 		}
 
 		static public IBotTask EnsureIsActive(
 			this Bot bot,
 			IEnumerable<ShipFit.ModuleInfo> setModule){
 
-			var notActiveModules = setModule.Where(m=>m.UiModule?.IsActive !=true).ToArray();
+			var notActiveModules = setModule.Where(m => m.UiModule != null && !m.UiModule.AppearsActive && m.UiModule.IsActive != null).ToArray();
 			return !notActiveModules.Any() ? null : new BotTask(nameof(EnsureIsActive) + " for list of modules")
 			{
 				Component = [new ModuleToggleTask(notActiveModules, null),]

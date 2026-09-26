@@ -44,6 +44,10 @@ namespace BotEngine.WinApi
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool EnumChildWindows(IntPtr parentHandle, EnumWindowsProc callback, ref ListeIntPtr listeWindowHandle);
 
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool EnumThreadWindows(uint threadId, EnumWindowsProc callback, ref ListeIntPtr listeWindowHandle);
+
 		[DllImport("user32.dll", SetLastError = true)]
 		private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
@@ -133,6 +137,13 @@ namespace BotEngine.WinApi
 		{
 			ListeIntPtr listeWindowHandle = new ListeIntPtr();
 			bool flag = EnumChildWindows(parentWindowHandle, User32.EnumWindowsCallback, ref listeWindowHandle);
+			return listeWindowHandle.Liste;
+		}
+
+		public static IEnumerable<IntPtr> ListeThreadWindowHandle(uint threadId)
+		{
+			ListeIntPtr listeWindowHandle = new ListeIntPtr();
+			bool flag = EnumThreadWindows(threadId, User32.EnumWindowsCallback, ref listeWindowHandle);
 			return listeWindowHandle.Liste;
 		}
 

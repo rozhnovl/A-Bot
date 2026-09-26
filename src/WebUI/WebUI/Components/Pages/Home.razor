@@ -1,7 +1,146 @@
-﻿@page "/"
+@page "/"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+@implements IDisposable
+@inject ProductionService Production
+@inject WebUI.Esi.EsiPlanningService Esi
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Обзор производства — @MonthTitle</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">@HeadingDate</div>
+        <h1>Производство за @MonthTitle <span class="wave">✦</span></h1>
+        <p class="heading-note">Чистая прибыль и открытые работы на сегодня.</p>
+    </div>
+    <div class="heading-actions"><a class="btn btn-primary" href="production">+ Новая работа</a></div>
+</div>
 
-Welcome to your new app.
+<div class="metric-grid">
+    <div class="metric-card"><div class="metric-label">СТОИМОСТЬ ЗАПАСОВ <span class="metric-icon blue">▦</span></div><div class="metric-value">@Money(Production.InventoryValue)</div><div class="metric-foot">Текущая оценка склада</div></div>
+    <div class="metric-card"><div class="metric-label">ОТКРЫТЫЕ РАБОТЫ <span class="metric-icon purple">⚙</span></div><div class="metric-value">@OpenWorksCount <small>шт.</small></div><div class="metric-foot">@InProgressCount в работе · @PlannedCount запланировано</div></div>
+    <div class="metric-card"><div class="metric-label">ЧИСТАЯ ПРИБЫЛЬ · СВЕРЕНО <span class="metric-icon green">↙</span></div><div class="metric-value">@Money(NetProfitToDate)</div><div class="metric-foot">@Production.UnreconciledSalesThisMonth продаж требуют сверки затрат</div></div>
+    <div class="metric-card"><div class="metric-label">ЦЕЛЬ ЧИСТОЙ ПРИБЫЛИ <span class="metric-icon amber">◇</span></div><div class="metric-value">@CompactMoney(Production.MonthlyNetProfitGoal)</div><div class="metric-foot">@GoalPercent.ToString("0.#")% подтверждено</div></div>
+</div>
+
+<section class="panel burndown-panel">
+    <div class="panel-heading">
+        <div><h2>Burndown чистой прибыли за @MonthTitle</h2><p>Факт — только продажи со сверенной себестоимостью, сборами и прочими затратами.</p></div>
+        <div class="goal-editor"><label>Цель / месяц<input type="number" @bind="goalInput" /></label><button class="btn btn-primary" @onclick="SaveGoal">Сохранить</button></div>
+    </div>
+    <div class="burndown-stats">
+        <div><span>Сверенная чистая прибыль</span><strong>@Money(NetProfitToDate)</strong></div>
+        <div><span>Осталось по факту</span><strong>@Money(ActualRemaining)</strong></div>
+        <div><span>Открытые работы · прогноз прибыли</span><strong>@Money(PipelineNetProfit)</strong></div>
+        <div><span>Sell-ордера ESI · потенциал</span><strong>@Money(sellOrders.PotentialRevenue)</strong></div>
+        <div><span>Прогноз остатка</span><strong>@Money(ForecastRemaining)</strong></div>
+    </div>
+    <div class="burndown-figure">
+        <div class="burndown-y">
+            @foreach (var fraction in new[] { 1m, .75m, .5m, .25m, 0m })
+            {
+                <span>@AxisMoney(ChartScaleMax * fraction)</span>
+            }
+        </div>
+        <svg viewBox="0 0 760 170" preserveAspectRatio="none" role="img" aria-label="Плановый остаток до цели чистой прибыли, сверенная прибыль по продажам и прогноз по открытым работам">
+            <line x1="28" y1="18" x2="742" y2="18" class="grid-line" />
+            <line x1="28" y1="52" x2="742" y2="52" class="grid-line" />
+            <line x1="28" y1="86" x2="742" y2="86" class="grid-line" />
+            <line x1="28" y1="120" x2="742" y2="120" class="grid-line" />
+            <line x1="28" y1="154" x2="742" y2="154" class="grid-line" />
+            <polyline points="@PlanPoints" class="plan-line" />
+            <polyline points="@ActualPoints" class="actual-line" />
+            @if (Today < DaysInMonth)
+            {
+                <polyline points="@ForecastPoints" class="forecast-line" />
+                <circle cx="@SvgNumber(ChartX(DaysInMonth))" cy="@SvgNumber(ChartY(ForecastRemaining))" r="4" class="forecast-dot" />
+            }
+            <line x1="@SvgNumber(TodayX)" y1="18" x2="@SvgNumber(TodayX)" y2="154" class="today-line" />
+            <circle cx="@SvgNumber(TodayX)" cy="@SvgNumber(TodayY)" r="4" class="today-dot" />
+        </svg>
+    </div>
+    <div class="burndown-x"><span>1 @MonthName</span><span>@DaysInMonth @MonthName</span></div>
+    <div class="burndown-legend"><span><i class="legend-line plan"></i>План</span><span><i class="legend-line actual"></i>Сверенная прибыль по @TodayDateLabel</span><span><i class="legend-line forecast"></i>Прогноз до конца месяца</span></div>
+    <p class="burndown-note">@Production.UnreconciledSalesThisMonth продаж без полного набора затрат и @UnpricedOpenWorksCount работ без прогноза чистой прибыли не включены в расчёт. Прогноз работ требует реализации в этом месяце. Sell-ордера ESI показаны отдельно как выручка, не прибыль, и не прибавлены: возможен дубль с работами.</p>
+</section>
+
+<div class="lower-grid">
+    <section class="panel table-panel">
+        <div class="panel-heading"><div><h2>Активные производства</h2><p>Что сейчас находится в цехе</p></div><a class="panel-link" href="production">Все работы →</a></div>
+        <div class="table-scroll"><table class="app-table"><thead><tr><th>Изделие</th><th>Количество</th><th>Готовность</th><th>Срок</th><th>Статус</th></tr></thead><tbody>
+            @foreach (var work in Production.Works.Where(w => w.Status != WorkStatus.Done).Take(3))
+            {
+                <tr><td><div class="item-cell"><span class="item-avatar">@(work.Type == "Сборка" ? "◈" : "▧")</span><span><strong>@work.Product</strong><small>@work.Type</small></span></div></td><td>@work.Quantity шт.</td><td><div class="progress-wrap"><div class="progress-track"><div class="progress-value" style="width:@work.Progress%"></div></div><span>@work.Progress%</span></div></td><td class="due-date">@Due(work.DueDate)</td><td><span class="status-pill @StatusClass(work.Status)">@StatusText(work.Status)</span></td></tr>
+            }
+        </tbody></table></div>
+    </section>
+    <section class="panel feed-panel">
+        <div class="panel-heading"><div><h2>Последние продажи</h2><p>Зафиксированные операции</p></div><a class="panel-link" href="sales">Все операции →</a></div>
+        @foreach (var sale in Production.Sales.OrderByDescending(s => s.Date).Take(4))
+        {
+            <div class="feed-row"><span class="feed-icon sale-icon">↙</span><span class="feed-copy"><strong>Продажа • @sale.Product</strong><small>@sale.Customer • @sale.Date.ToString("dd MMM", Russian)</small></span><strong class="feed-amount">+@Money(sale.Total)</strong></div>
+        }
+    </section>
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Russian = System.Globalization.CultureInfo.GetCultureInfo("ru-RU");
+    private decimal goalInput;
+    private WebUI.Esi.EsiSellOrderPipeline sellOrders = new(0, 0, null);
+    private DateTime MonthStart => new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private int DaysInMonth => DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
+    private int Today => DateTime.Today.Day;
+    private string HeadingDate => DateTime.Today.ToString("dddd, d MMMM yyyy", Russian).ToUpper(Russian);
+    private string MonthTitle => DateTime.Today.ToString("MMMM yyyy", Russian);
+    private string MonthName => DateTime.Today.ToString("MMMM", Russian);
+    private string TodayDateLabel => DateTime.Today.ToString("d MMMM", Russian);
+    private int OpenWorksCount => Production.Works.Count(w => w.Status != WorkStatus.Done);
+    private int InProgressCount => Production.Works.Count(w => w.Status == WorkStatus.InProgress);
+    private int PlannedCount => Production.Works.Count(w => w.Status == WorkStatus.Planned);
+    private decimal NetProfitToDate => Production.Sales.Where(s => s.Date.Date >= MonthStart && s.Date.Date <= DateTime.Today).Sum(s => s.NetProfit ?? 0);
+    private decimal GoalPercent => Production.MonthlyNetProfitGoal <= 0 ? 0 : NetProfitToDate / Production.MonthlyNetProfitGoal * 100;
+    private decimal PipelineNetProfit => DueWorks.Sum(w => w.ExpectedNetProfit ?? 0);
+    private int UnpricedOpenWorksCount => DueWorks.Count(w => w.ExpectedNetProfit is null);
+    private IEnumerable<ProductionWork> DueWorks => Production.Works.Where(w => w.Status != WorkStatus.Done && w.DueDate.Year == DateTime.Today.Year && w.DueDate.Month == DateTime.Today.Month);
+    private decimal ActualRemaining => Math.Max(0, Production.MonthlyNetProfitGoal - NetProfitToDate);
+    private decimal ForecastRemaining => Math.Max(0, Production.MonthlyNetProfitGoal - NetProfitToDate - PipelineNetProfit);
+    private decimal ChartScaleMax => Math.Max(Production.MonthlyNetProfitGoal, Math.Max(ForecastRemaining, Enumerable.Range(1, Today).Max(RemainingAt)));
+    private double TodayX => ChartX(Today);
+    private double TodayY => ChartY(ActualRemaining);
+
+    protected override void OnInitialized()
+    {
+        goalInput = Production.MonthlyNetProfitGoal;
+        sellOrders = Esi.SellOrders();
+        Production.Changed += OnProductionChanged;
+    }
+
+    private void OnProductionChanged() => _ = InvokeAsync(() =>
+    {
+        goalInput = Production.MonthlyNetProfitGoal;
+        sellOrders = Esi.SellOrders();
+        StateHasChanged();
+    });
+    private void SaveGoal() => Production.SetMonthlyNetProfitGoal(goalInput);
+    private double ChartX(int day) => 28 + (day - 1) * 714d / Math.Max(1, DaysInMonth - 1);
+    private double ChartY(decimal remaining) => Production.MonthlyNetProfitGoal <= 0
+        ? 154
+        : 18 + (double)((1 - Math.Clamp(remaining / ChartScaleMax, 0, 1)) * 136m);
+    private static string SvgNumber(double value) => value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    private string Point(int day, decimal remaining) => $"{SvgNumber(ChartX(day))},{SvgNumber(ChartY(remaining))}";
+    private string PlanPoints => string.Join(" ", Enumerable.Range(1, DaysInMonth).Select(day => Point(day, Production.MonthlyNetProfitGoal * (DaysInMonth - day) / Math.Max(1, DaysInMonth - 1))));
+    private string ActualPoints => string.Join(" ", Enumerable.Range(1, Today).Select(day => Point(day, RemainingAt(day))));
+    private string ForecastPoints => $"{Point(Today, ActualRemaining)} {Point(DaysInMonth, ForecastRemaining)}";
+    private decimal RemainingAt(int day)
+    {
+        var realized = Production.Sales.Where(s => s.Date.Date >= MonthStart && s.Date.Date <= MonthStart.AddDays(day - 1)).Sum(s => s.NetProfit ?? 0);
+        return Math.Max(0, Production.MonthlyNetProfitGoal - realized);
+    }
+    private static string Money(decimal value) => $"{value:N0} ISK";
+    private static string CompactMoney(decimal value) => value >= 1_000_000_000m ? $"{value / 1_000_000_000m:0.#}kkk ISK" : Money(value);
+    private static string AxisMoney(decimal value) => value == 0 ? "0" : value >= 1_000_000_000m ? $"{value / 1_000_000_000m:0.##}kkk" : value >= 1_000_000m ? $"{value / 1_000_000m:0.##}m" : $"{value:N0}";
+    private static string Due(DateTime date) => date.Date == DateTime.Today ? "Сегодня" : date.Date == DateTime.Today.AddDays(1) ? "Завтра" : date.ToString("dd MMM", Russian);
+    private static string StatusText(WorkStatus status) => status switch { WorkStatus.InProgress => "В работе", WorkStatus.Planned => "Запланировано", _ => "Готово" };
+    private static string StatusClass(WorkStatus status) => status switch { WorkStatus.InProgress => "purple-pill", WorkStatus.Planned => "blue-pill", _ => "green-pill" };
+    public void Dispose() => Production.Changed -= OnProductionChanged;
+}

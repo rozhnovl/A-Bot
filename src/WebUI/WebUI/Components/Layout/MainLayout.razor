@@ -1,23 +1,5 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="page app-shell"><div class="sidebar"><NavMenu /></div><main class="main-area"><div class="top-row app-topbar"><div class="topbar-context">Производственный контур <span class="slash">/</span> <span class="muted">@DateTime.Today.ToString("MMMM yyyy")</span></div><div class="topbar-actions"><AuthorizeView><Authorized><div class="user-chip"><span class="avatar">@context.User.Identity?.Name?.FirstOrDefault()</span><span>@context.User.Identity?.Name</span></div></Authorized></AuthorizeView></div></div><article class="content app-content">@Body</article></main></div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
-
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+<div id="blazor-error-ui" data-nosnippet>Произошла ошибка. <a href="." class="reload">Обновить</a><span class="dismiss">×</span></div>

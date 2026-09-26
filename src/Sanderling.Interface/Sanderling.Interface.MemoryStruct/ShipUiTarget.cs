@@ -32,6 +32,7 @@ namespace Sanderling.Interface.MemoryStruct
 		public int? Distance { get; set; }
 		public override IUIElement RegionInteraction => RegionInteractionElement?.WithRegionSizeBoundedMaxPivotAtCenter(new Vektor2DInt(40L, 40L));
 
+		[System.Obsolete("Not populated by the Eve64 parser — always null (assigned drone/weapon icons are not parsed yet).")]
 		public ShipUiTargetAssignedGroup[] Assigned
 		{
 			get;

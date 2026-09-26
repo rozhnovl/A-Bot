@@ -12,9 +12,13 @@ namespace Sanderling.Accumulation
 		static public bool IsActive(this IShipUiModule moduleAccu) =>
 			moduleAccu?.LastInstant?.Value?.Module?.RampActive ?? false;
 
+		// Legacy accumulator helper: ShipUi.Center is never filled by the Eve64 parser, so this
+		// yields null there — only meaningful for the old Sanderling measurement pipeline.
+#pragma warning disable CS0618
 		static public Vektor2DInt? PositionInShipUi(
 			this MemoryStruct.IShipUiModule module, MemoryStruct.IShipUi shipUi) =>
 			module?.RegionCenter() - shipUi?.Center?.RegionCenter();
+#pragma warning restore CS0618
 
 		static public IEnumerable<IShipUiModule> WhereTooltip(
 			this IEnumerable<IShipUiModule> source,

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
+using Sanderling.ABot.Bot.Configuration;
 using Sanderling.ABot.Bot.Task;
 
 namespace Sanderling.ABot.Bot.Strategies
@@ -13,18 +15,21 @@ namespace Sanderling.ABot.Bot.Strategies
 		private IStragegyState nextState;
 		private bool isFinalizingTask;
 
-		private readonly (string, int)[] requiredCargoContent = {
-			("Mobile Tractor Unit", 1),
-			("Nanite Repair Paste", 100),
-			("Raging Exotic Filament", 3),
-			("Scourge Fury Light Missile", 1000),
-			("Scourge Precision Light Missile", 1000),
-		};
+		private readonly RunProfile profile;
+		private readonly RoomStatsRecorder statsRecorder;
+		private readonly (string, int)[] requiredCargoContent;
 
-		public AbyssalRunner()
+		public AbyssalRunner() : this(ProfilesRegistry.Default) { }
+
+		public AbyssalRunner(RunProfile profile)
 		{
-			currentState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole())
-				.CreateLogger(nameof(AbyssalFightState)));//new WarpToBookmarkInSystemState("abyssal spot");// new ReloadAtStationState(requiredCargoContent);
+			this.profile = profile;
+			statsRecorder = new RoomStatsRecorder(profile.Name);
+			requiredCargoContent = profile.RequiredCargo.Select(c => (c.Item, c.Quantity)).ToArray();
+
+			currentState = new AbyssalFightState(
+				LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger(nameof(AbyssalFightState)),
+				profile, statsRecorder);
 		}
 
 		public IEnumerable<IBotTask> GetTasks(Bot bot)
@@ -44,7 +49,9 @@ namespace Sanderling.ABot.Bot.Strategies
 							nextState = new WarpToBookmarkInSystemState("abyssal spot");
 							break;
 						case WarpToBookmarkInSystemState _:
-							nextState = new AbyssalFightState(LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger(nameof(AbyssalFightState)));
+							nextState = new AbyssalFightState(
+								LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger(nameof(AbyssalFightState)),
+								profile, statsRecorder);
 							break;
 						case TakeMissionsState takeMissionsState:
 						{

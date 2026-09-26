@@ -18,6 +18,10 @@ namespace Eve64
 		public DisplayRegion SelfDisplayRegion { get; set; }
 		public DisplayRegion TotalDisplayRegion { get; set; }
 		public DisplayRegion TotalDisplayRegionVisible { get; set; }
+		// DFS pre-order index = draw/z order (later index is drawn on top). ChildLastTreeIndex is the
+		// largest index in this node's subtree — used to tell which nodes are drawn IN FRONT of it.
+		public int TreeIndex = -1;
+		public int ChildLastTreeIndex = -1;
 	}
 
 	public class ChildOfNodeWithDisplayRegion
@@ -48,12 +52,26 @@ namespace Eve64
 			var selfDisplayRegion = GetDisplayRegionFromDictEntries(uiTree) ??
 			                        new DisplayRegion { X = 0, Y = 0, Width = 0, Height = 0 };
 
-			return AsUITreeNodeWithDisplayRegion(new DisplayRegionParameters
+			var root = AsUITreeNodeWithDisplayRegion(new DisplayRegionParameters
 			{
 				SelfDisplayRegion = selfDisplayRegion,
 				TotalDisplayRegion = selfDisplayRegion,
 				OccludedRegions = new List<DisplayRegion>()
 			}, uiTree);
+			AssignTreeIndices(root, 0);
+			return root;
+		}
+
+		/// <summary>DFS pre-order numbering so InTreeIndex reflects draw/z order (occlusion needs it).</summary>
+		private static int AssignTreeIndices(UITreeNodeWithDisplayRegion? node, int next)
+		{
+			if (node == null) return next;
+			node.TreeIndex = next++;
+			foreach (var child in node.Children ?? new List<ChildOfNodeWithDisplayRegion>())
+				if (child?.NodeWithRegion != null)
+					next = AssignTreeIndices(child.NodeWithRegion, next);
+			node.ChildLastTreeIndex = next - 1;
+			return next;
 		}
 
 		public static ParsedUserInterface ParseUserInterfaceFromUITree(UITreeNodeWithDisplayRegion uiTree)
@@ -73,6 +91,8 @@ namespace Eve64
 				//DirectionalScannerWindow = ParseDirectionalScannerWindowFromUITreeRoot(uiTree),
 				WindowStation = ParseStationWindowFromUITreeRoot(uiTree),
 				WindowInventory = ParseInventoryWindowsFromUITreeRoot(uiTree)?.ToArray<IWindowInventory>(),
+				WindowOther = ParseOtherWindowsFromUITreeRoot(uiTree),
+				WindowRegionsForOcclusion = ParseWindowOccludersFromUITreeRoot(uiTree),
 				ModuleButtonTooltip = ParseModuleButtonTooltipFromUITreeRoot(uiTree),
 				//HeatStatusTooltip = ParseHeatStatusTooltipFromUITreeRoot(uiTree),
 				//ChatWindowStacks = ParseChatWindowStacksFromUITreeRoot(uiTree),
@@ -447,7 +467,7 @@ namespace Eve64
 					ModuleButtons = moduleButtons,
 					ModuleButtonsRows = GroupShipUIModulesIntoRows(capacitor, moduleButtons),
 					OffensiveBuffButtons = offensiveBuffButtons,
-					SquadronsUI = null, //TODO squadronsUI,
+					// SquadronsUI: found above but not parsed yet (member is [Obsolete] until it is)
 					StopButton = FindDescendantNode("StopButton")?.AsUiElement(),
 					MaxSpeedButton = FindDescendantNode("MaxSpeedButton")?.AsUiElement(),
 					HeatGauges = heatGauges != null ? ParseShipUIHeatGaugesFromUINode(heatGauges) : null
@@ -569,14 +589,23 @@ namespace Eve64
 			UITreeNodeWithDisplayRegion moduleButtonNode)
 		{
 			var rampRotationMilli = CalculateRampRotationMilli(slotNode);
+			var slotMatch = System.Text.RegularExpressions.Regex.Match(
+				slotNode.UiNode.NameProperty ?? "", @"^inFlight(High|Medium|Low)Slot(\d+)$",
+				System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+			var slotIndex = slotMatch.Success && int.TryParse(slotMatch.Groups[2].Value, out var oneBasedSlot)
+				? oneBasedSlot - 1
+				: (int?)null;
 
 			return new ShipUIModuleButton
 			{
 				UINode = moduleButtonNode.AsUiElement(),
 				ModuleInfo = ParseModuleDetails(moduleButtonNode),
 				SlotUINode = slotNode.AsUiElement(),
-				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool? ??
-				           false, //TODO check
+				Rack = slotMatch.Success ? slotMatch.Groups[1].Value : null,
+				SlotIndex = slotIndex,
+				// Keep an absent signal unknown. Treating an unreadable ramp as false makes an
+				// always-on hardener receive a second toggle, which switches it back off.
+				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool?,
 				IsHiliteVisible = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
 				IsBusy = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "busy"),
 				RampRotationMilli = rampRotationMilli
@@ -585,8 +614,62 @@ namespace Eve64
 
 		private static ModuleInfo? ParseModuleDetails(UITreeNodeWithDisplayRegion moduleButtonNode)
 		{
-			Console.WriteLine($"Trying to get module info for Id: {moduleButtonNode.UiNode.NameProperty}");
-			return null;
+			// EVE names fitted buttons as ModuleButton_<typeId>. Keeping the type id on the
+			// parsed button lets doctrine actuators identify modules independently of slot order.
+			var name = moduleButtonNode.UiNode.NameProperty;
+			var match = System.Text.RegularExpressions.Regex.Match(name ?? "", @"^ModuleButton_(\d+)$");
+			if (!match.Success || !int.TryParse(match.Groups[1].Value, out var typeId))
+				return null;
+
+			int? chargeTypeId = null;
+			var chargeIcon = moduleButtonNode.UINode.ListDescendants()
+				.FirstOrDefault(node => node.PythonObjectTypeName == "Icon" &&
+				                        node.DictEntriesOfInterest.ContainsKey("typeID"));
+			if (chargeIcon?.DictEntriesOfInterest.TryGetValue("typeID", out var rawChargeType) == true)
+			{
+				try
+				{
+					dynamic value = rawChargeType;
+					chargeTypeId = value is int direct ? direct : Convert.ToInt32(value.int_low32);
+				}
+				catch
+				{
+					// A missing/unrecognised icon is safe: the allocator will focus rather than guess ammo.
+				}
+			}
+
+			// The button carries the loaded-charge count as a plain dict entry ("quantity": 120 on a
+			// 6-stack of 20-round modules in probe.json) — summed over the group, so one read tells
+			// the ammo planner how many rounds the whole launcher group still has.
+			int? chargeQuantity = null;
+			if (moduleButtonNode.UINode.DictEntriesOfInterest.TryGetValue("quantity", out var rawQuantity))
+				chargeQuantity = TryReadInt(rawQuantity);
+
+			return new ModuleInfo { ModuleId = typeId, ChargeTypeId = chargeTypeId, ChargeQuantity = chargeQuantity };
+		}
+
+		/// <summary>Best-effort int out of a raw dict entry (int/long/double/string or a big-int wrapper).</summary>
+		private static int? TryReadInt(object raw)
+		{
+			try
+			{
+				switch (raw)
+				{
+					case null: return null;
+					case int i: return i;
+					case long l: return (int)l;
+					case double d: return (int)d;
+					case float f: return (int)f;
+					case bool: return null;
+					case string s: return int.TryParse(s.Trim(), out var parsed) ? parsed : null;
+				}
+				dynamic value = raw;
+				return Convert.ToInt32(value.int_low32);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		private static int? CalculateRampRotationMilli(UITreeNodeWithDisplayRegion slotNode)
@@ -807,9 +890,14 @@ namespace Eve64
 				.ListDescendantsWithDisplayRegion()
 				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "barAndImageCont");
 
+			// The current EVE target bar uses ActiveTargetIndicator. Older clients exposed
+			// ActiveTargetOnBracket instead. If we miss this marker every locked target is
+			// reported as inactive and an actuator keeps clicking the same target forever.
 			var isActiveTarget = targetNode.UINode
 				.ListDescendants()
-				.Any(node => node.PythonObjectTypeName == "ActiveTargetOnBracket");
+				.Any(node => node.PythonObjectTypeName is "ActiveTargetIndicator" or "ActiveTargetOnBracket" ||
+				             string.Equals(node.NameProperty, "myActiveTargetIndicator",
+					             StringComparison.OrdinalIgnoreCase));
 
 			var assignedContainerNode = targetNode
 				.ListDescendantsWithDisplayRegion()
@@ -826,12 +914,35 @@ namespace Eve64
 				.Where(node => new[] { "Sprite", "Icon" }.Contains(node.UINode.PythonObjectTypeName))
 				.ToList() ?? new List<UITreeNodeWithDisplayRegion>();
 
+			int? HealthPermille(string barName)
+			{
+				var bar = targetNode.UINode.ListDescendants()
+					.FirstOrDefault(node => string.Equals(
+						node.GetNameFromDictEntries(), barName, StringComparison.OrdinalIgnoreCase));
+				if (bar?.DictEntriesOfInterest.TryGetValue("lastState", out var raw) != true)
+					return null;
+				try
+				{
+					return (int)Math.Round(Math.Clamp(Convert.ToDouble(raw), 0, 1) * 1000);
+				}
+				catch
+				{
+					return null;
+				}
+			}
+
 			return new ShipUiTarget(targetNode.AsUiElement())
 			{
 				IsSelected = isActiveTarget,
 				Distance = textsTopToBottom.Select(ParseDistance).Where(e => e.HasValue).FirstOrDefault(),
 				RegionInteractionElement = barAndImageCont.AsUiElement(),
 				LabelText = textsTopToBottom.ToArray(),
+				Hitpoints = new ShipHitpointsAndEnergy
+				{
+					Shield = HealthPermille("shieldBar"),
+					Armor = HealthPermille("armorBar"),
+					Struct = HealthPermille("hullBar"),
+				},
 				//TODO
 				/*BarAndImageCont = barAndImageCont,
 				TextsTopToBottom = textsTopToBottom,
@@ -1090,29 +1201,40 @@ namespace Eve64
 		public static IWindowSelectedItemView? ParseSelectedItemWindowFromUITreeRoot(
 			UITreeNodeWithDisplayRegion uiTreeRoot)
 		{
+			// The current client draws this panel as "SelectedItemWnd" (name "selecteditemview");
+			// the old "ActiveItem" type never matched, so the whole panel parsed as empty.
 			var windowNode = uiTreeRoot
 				.ListDescendantsWithDisplayRegion()
-				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "ActiveItem");
+				.FirstOrDefault(node =>
+					node.UINode.PythonObjectTypeName is "SelectedItemWnd" or "ActiveItem");
 
 			return windowNode != null ? ParseSelectedItemWindow(windowNode) : null;
 		}
 
 		public static IWindowSelectedItemView ParseSelectedItemWindow(UITreeNodeWithDisplayRegion windowNode)
 		{
-			Func<string, UITreeNodeWithDisplayRegion?> actionButtonFromTexturePathEnding = texturePathEnding =>
-				windowNode
-					.ListDescendantsWithDisplayRegion()
-					.FirstOrDefault(node =>
-						node.UINode.GetTexturePathFromDictEntries()?.ToLower().EndsWith(texturePathEnding.ToLower()) ==
-						true);
+			var descendants = windowNode.ListDescendantsWithDisplayRegion();
 
-			var orbitButton = actionButtonFromTexturePathEnding("44_32_21.png");
+			// Icon-only buttons: the client's node name ("selectedItemApproach", "selectedItemOrbit",
+			// "selectedItemActivateGate", …) is the only stable identifier they carry.
+			var actionButtons = descendants
+				.Select(node => new { node, name = node.UINode.GetNameFromDictEntries() })
+				.Where(x => !string.IsNullOrEmpty(x.name) &&
+				            x.name!.StartsWith("selectedItem", StringComparison.OrdinalIgnoreCase))
+				.GroupBy(x => x.name!, StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(g => g.Key, g => g.First().node.AsUiElement(), StringComparer.OrdinalIgnoreCase);
+
+			string? selectedItemName = null;
+			var nameLabelNode = descendants
+				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "nameLabel");
+			if (nameLabelNode != null)
+				selectedItemName = (nameLabelNode.GetAllContainedDisplayTexts() ?? new List<string>())
+					.FirstOrDefault(text => !string.IsNullOrWhiteSpace(text))?.Trim();
 
 			return new WindowSelectedItemView()
 			{
-				//TODO
-				//UINode = windowNode,
-				//OrbitButton = orbitButton
+				SelectedItemName = selectedItemName,
+				ActionButtons = actionButtons,
 			};
 		}
 
@@ -1160,7 +1282,10 @@ namespace Eve64
 				UINode = windowNode,
 				DroneGroups = droneGroups.Cast<IDronesWindowEntryGroupStructure>().ToList(),
 				DroneGroupInBay = droneGroupFromHeaderTextPart("in bay"),
-				DroneGroupInSpace = droneGroupFromHeaderTextPart("in space")
+				// The in-space group header reads "Drones in Local Space (N)", so matching the
+				// literal "in space" failed (the "Local" between the words). Match "space" — the
+				// bay header has no "space", so there's no collision.
+				DroneGroupInSpace = droneGroupFromHeaderTextPart("space")
 			};
 		}
 
@@ -1480,9 +1605,10 @@ namespace Eve64
 
 			//public InventoryWindowCapacityGauge? SelectedContainerCapacityGauge { get; set; }
 			public IInventory? SelectedContainerInventory { get; set; }
-			public IUIElement? LootAllButton { get; }
+			public IUIElement? LootAllButton { get; set; }
 			public UITreeNodeWithDisplayRegion? ButtonToSwitchToListView { get; set; }
 			public UITreeNodeWithDisplayRegion? ButtonToStackAll { get; set; }
+			public IUIElement? SwitchToListViewButton => ButtonToSwitchToListView?.AsUiElement();
 		}
 
 		public class Inventory : IInventory
@@ -1507,6 +1633,56 @@ namespace Eve64
 				.Where(uiNode =>
 					new[] { "InventoryPrimary", "ActiveShipCargo" }.Contains(uiNode.UINode.PythonObjectTypeName))
 				.Select(ParseInventoryWindow)
+				.ToList();
+		}
+
+		/// <summary>
+		/// Capture clickable buttons that live in pop-up / confirmation windows — e.g. the abyssal filament
+		/// activation window ("KeyActivationWindow") whose ActivateButton reads "Activate for fleet"/"Activate",
+		/// or gate/conduit dialogs — and expose them as one window's <c>ButtonText</c> so
+		/// <c>ShipState.GetPopupButtonTask</c> can find and click them. Eve64 otherwise leaves WindowOther/
+		/// ButtonText empty, which is what stalled filament activation (the bot looped on "Use").
+		/// </summary>
+		public static IWindow[] ParseOtherWindowsFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			var buttonTexts = uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.Where(n =>
+				{
+					var t = n.UINode.PythonObjectTypeName;
+					return t == "ActivateButton" || t.EndsWith("Button") || t == "Button";
+				})
+				.Select(n => new
+				{
+					node = n,
+					text = n.GetAllContainedDisplayTexts().FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)),
+				})
+				.Where(x => !string.IsNullOrWhiteSpace(x.text) && x.text.Trim().Length <= 40)
+				.Select(x => (IUIElementText)new UIElementText(x.node.AsUiElement(), x.text.Trim()))
+				.ToList();
+
+			return buttonTexts.Count == 0
+				? System.Array.Empty<IWindow>()
+				: new IWindow[] { new Window { ButtonText = buttonTexts } };
+		}
+
+		/// <summary>
+		/// Opaque top-level windows (types ending in "Window", plus modals) as UIElements carrying their
+		/// draw order, so the motor can skip the part of a click target that sits behind a window in front.
+		/// </summary>
+		public static IReadOnlyList<IUIElement> ParseWindowOccludersFromUITreeRoot(UITreeNodeWithDisplayRegion uiTreeRoot)
+		{
+			return uiTreeRoot
+				.ListDescendantsWithDisplayRegion()
+				.Where(n =>
+				{
+					var t = n.UINode.PythonObjectTypeName;
+					return t.EndsWith("Window") || t.Contains("ModalDialog");
+				})
+				.Where(n => n.TotalDisplayRegion.Width > 0 && n.TotalDisplayRegion.Height > 0)
+				.Select(n => n.AsUiElement())
+				.Where(e => e != null)
+				.Select(e => e!)
 				.ToList();
 		}
 
@@ -1547,7 +1723,10 @@ namespace Eve64
 					new[]
 						{
 							"ShipCargo", "ShipDroneBay", "ShipGeneralMiningHold", "StationItems", "ShipFleetHangar",
-							"StructureItemHangar"
+							"StructureItemHangar",
+							// A looted wreck / container opens INSIDE the same inventory window; without these
+							// its contents never parse, so the bot could not see (or take) any loot at all.
+							"ItemWreck", "ItemCargoContainer", "ItemDeployable"
 						}
 						.Contains(uiNode.UINode.PythonObjectTypeName));
 
@@ -1555,7 +1734,14 @@ namespace Eve64
 				? ParseInventory(maybeSelectedContainerInventoryNode)
 				: null;
 
+			// The view switch is a DROPDOWN ("View mode (Icons)" / "(Details)" / "(List)") opened with a
+			// left click, not the old texture-matched toggle — matching the texture found nothing on the
+			// current client, so cargo stayed icon-only and unreadable (live 2026-09-18).
 			var buttonToSwitchToListView = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					uiNode.UINode.GetHintTextFromDictEntries()?.StartsWith("View mode", StringComparison.OrdinalIgnoreCase) == true)
+				?? rightContainerNode?
 				.ListDescendantsWithDisplayRegion()
 				.FirstOrDefault(uiNode =>
 					uiNode.UINode.PythonObjectTypeName.Contains("ButtonIcon") &&
@@ -1567,6 +1753,17 @@ namespace Eve64
 					uiNode.UINode.PythonObjectTypeName.Contains("ButtonIcon") &&
 					uiNode.UINode.GetHintTextFromDictEntries()?.Contains("Stack All") == true);
 
+			// "Loot All" — only present while a wreck/container is the selected container. Matched by the
+			// client's own node name (verified against a live wreck 2026-09-18: Button "invLootAllBtn" under
+			// rightCont > bottomRightcont > specialActionsCont), with the label text as a fallback.
+			var lootAllButton = rightContainerNode?
+				.ListDescendantsWithDisplayRegion()
+				.FirstOrDefault(uiNode =>
+					uiNode.UINode.GetNameFromDictEntries() == "invLootAllBtn" ||
+					((uiNode.UINode.PythonObjectTypeName?.EndsWith("Button") ?? false) &&
+					 (uiNode.GetAllContainedDisplayTexts() ?? new List<string>())
+						 .Any(text => text?.Trim().Equals("Loot All", StringComparison.OrdinalIgnoreCase) == true)));
+
 			return new InventoryWindow
 			{
 				UINode = windowUiNode,
@@ -1575,7 +1772,8 @@ namespace Eve64
 				//SelectedContainerCapacityGauge = selectedContainerCapacityGauge,
 				SelectedContainerInventory = selectedContainerInventory,
 				ButtonToSwitchToListView = buttonToSwitchToListView,
-				ButtonToStackAll = buttonToStackAll
+				ButtonToStackAll = buttonToStackAll,
+				LootAllButton = lootAllButton?.AsUiElement()
 			};
 		}
 
@@ -1682,10 +1880,33 @@ namespace Eve64
 			UITreeNodeWithDisplayRegion inventoryEntryNode)
 		{
 			var listViewEntry = ParseListViewEntry(entriesHeaders, inventoryEntryNode);
+			var cells = listViewEntry.CellsTexts ?? new Dictionary<string, string>();
+
+			// Flexible across display modes: in LIST/details view the item name & quantity are column
+			// cells (handled above); in ICON view there are no columns — the name lives only in the
+			// item's hint (tooltip), which sits on the node OR one of its descendants (the icon sprite).
+			// Scan node + descendants for the first non-empty hint so a name lookup over CellsTexts works
+			// regardless of how the player has the inventory set.
+			var hint = inventoryEntryNode.UINode.GetHintTextFromDictEntries();
+			if (string.IsNullOrWhiteSpace(hint))
+				hint = inventoryEntryNode.ListDescendantsWithDisplayRegion()
+					.Select(d => d.UINode.GetHintTextFromDictEntries())
+					.FirstOrDefault(h => !string.IsNullOrWhiteSpace(h));
+			if (!string.IsNullOrWhiteSpace(hint))
+			{
+				cells["Hint"] = hint;
+				if (!cells.ContainsKey("Name"))
+					cells["Name"] = hint.Split('\r', '\n')[0].Trim();
+			}
+			var texts = inventoryEntryNode.GetAllContainedDisplayTexts();
+			for (var i = 0; i < texts.Count; i++)
+				if (!string.IsNullOrWhiteSpace(texts[i]))
+					cells[$"_t{i}"] = texts[i];
+
 			return new InventoryItemsListViewEntry
 			{
 				UINode = inventoryEntryNode,
-				CellsTexts = listViewEntry.CellsTexts
+				CellsTexts = cells
 			};
 		}
 
@@ -1771,7 +1992,9 @@ namespace Eve64
 					Min1 = uiTree.TotalDisplayRegion.Y,
 					Max0 = uiTree.TotalDisplayRegion.X + uiTree.TotalDisplayRegion.Width,
 					Max1 = uiTree.TotalDisplayRegion.Y + uiTree.TotalDisplayRegion.Height
-				}
+				},
+				InTreeIndex = uiTree.TreeIndex >= 0 ? uiTree.TreeIndex : null,
+				ChildLastInTreeIndex = uiTree.ChildLastTreeIndex >= 0 ? uiTree.ChildLastTreeIndex : null,
 			};
 		}
 
@@ -1878,8 +2101,10 @@ namespace Eve64
 		public List<DisplayRegion> OccludedRegions { get; set; }
 	}
 
-	public class ParsedUserInterface : IMemoryMeasurement
+	public class ParsedUserInterface : IMemoryMeasurement, IOcclusionModel
 	{
+		public IReadOnlyList<IUIElement> WindowRegionsForOcclusion { get; init; } = new List<IUIElement>();
+
 		public int? SessionDurationRemaining { get; init; }
 		public string UserDefaultLocaleName { get; init; }
 		public string VersionString { get; init; }

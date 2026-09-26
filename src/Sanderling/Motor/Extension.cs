@@ -7,6 +7,7 @@ using Sanderling.Interface.MemoryStruct;
 using Bib3.Geometrik;
 using Bib3;
 using BotEngine.Windows;
+using Sanderling; // SubstractionRemainder / GetOccludedUIElementRemainingRegion
 
 namespace Sanderling.Motor
 {
@@ -59,36 +60,68 @@ namespace Sanderling.Motor
 				var waypointRegion = waypointUIElementCurrent.RegionInteraction?.Region 
 					?? waypointUIElementCurrent.Region;
 
-				var waypointRegionReplacement = mouseWaypoint.RegionReplacement;
-
-				if (waypointRegionReplacement.HasValue)
-					waypointRegion = waypointRegionReplacement.Value + waypointRegion.Value.Center();
-
 				waypointRegion = mouseWaypoint.RegionReplacementAbsolute ?? waypointRegion;
 
 				if (!waypointRegion.HasValue)
 					throw new ArgumentException("Did not find a region for the waypoint.");
 
+				// Capture the target's draw-order frontier before WithRegion (windows with a larger
+				// index are drawn IN FRONT and therefore occlude it).
+				var targetFrontier = waypointUIElementCurrent.ChildLastInTreeIndex
+				                     ?? waypointUIElementCurrent.InTreeIndex;
+
 				waypointUIElementCurrent = waypointUIElementCurrent.WithRegion(waypointRegion.Value);
 
-				var WaypointRegionPortionVisible =
-					waypointUIElementCurrent.GetOccludedUIElementRemainingRegion(
-						memoryMeasurement,
-						c => SetElementExcludedFromOcclusion?.Contains(c) ?? false)
-					//	remaining region is contracted to provide a safety margin.
-					?.Select(portionVisible => portionVisible.WithSizeExpandedPivotAtCenter(-MotionMouseWaypointSafetyMarginMin * 2))
-					?.Where(portionVisible => !portionVisible.IsEmpty())
-					?.ToArray();
+				RectInt[] WaypointRegionPortionVisible = null;
+				if (memoryMeasurement is IOcclusionModel occlusionModel && targetFrontier.HasValue)
+				{
+					//	Native occlusion for the Eve64 model: subtract opaque windows drawn in front of the
+					//	target (higher tree index). No reflection walk — that one throws on this model.
+					var occluderRegions = occlusionModel.WindowRegionsForOcclusion
+						?.Where(w => w?.Region != null && (w.InTreeIndex ?? -1) > targetFrontier.Value)
+						?.Select(w => w.Region.Value)
+						?.ToArray() ?? System.Array.Empty<RectInt>();
+
+					if (0 < occluderRegions.Length)
+						WaypointRegionPortionVisible =
+							waypointRegion.Value.SubstractionRemainder(occluderRegions)
+							?.Select(portionVisible => portionVisible.WithSizeExpandedPivotAtCenter(-MotionMouseWaypointSafetyMarginMin * 2))
+							?.Where(portionVisible => !portionVisible.IsEmpty())
+							?.ToArray();
+				}
+				else
+				{
+					try
+					{
+						WaypointRegionPortionVisible =
+							waypointUIElementCurrent.GetOccludedUIElementRemainingRegion(
+								memoryMeasurement,
+								c => SetElementExcludedFromOcclusion?.Contains(c) ?? false)
+							?.Select(portionVisible => portionVisible.WithSizeExpandedPivotAtCenter(-MotionMouseWaypointSafetyMarginMin * 2))
+							?.Where(portionVisible => !portionVisible.IsEmpty())
+							?.ToArray();
+					}
+					catch { WaypointRegionPortionVisible = null; }
+				}
+
+				//	Native occlusion produced an EMPTY remainder => a window fully covers the target.
+				//	Do NOT fall back to clicking its hidden region (that lands on the covering window and
+				//	is exactly the "easy to break something" case). Skip the click this tick.
+				if (memoryMeasurement is IOcclusionModel && targetFrontier.HasValue &&
+				    WaypointRegionPortionVisible != null && WaypointRegionPortionVisible.Length == 0)
+					yield break;
 
 				var WaypointRegionPortionVisibleLargestPatch =
 					WaypointRegionPortionVisible
 					?.OrderByDescending(patch => Math.Min(patch.Side0Length(), patch.Side1Length()))
 					?.FirstOrDefault();
 
+				//	Fall back to the whole waypoint region when occlusion produced nothing usable,
+				//	rather than aborting the click entirely.
 				if (!(0 < WaypointRegionPortionVisibleLargestPatch?.Side0Length() &&
 					0 < WaypointRegionPortionVisibleLargestPatch?.Side1Length()))
 				{
-					throw new ApplicationException("mouse waypoint region remaining after occlusion is too small");
+					WaypointRegionPortionVisibleLargestPatch = waypointRegion.Value;
 				}
 
 				var Point =

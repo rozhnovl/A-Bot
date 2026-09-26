@@ -5,60 +5,71 @@ namespace Sanderling.Interface.MemoryStruct
 {
 	public class ShipUi : Container, IShipUi, IContainer, IUIElement, IObjectIdInMemory, IObjectIdInt64, ICloneable
 	{
+		// Members marked [Obsolete] are never assigned by the Eve64 parser — see the note on IShipUi.
+		[Obsolete("Not populated by the Eve64 parser — always null.")]
 		public IUIElement Center
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Ship gauges live in HitpointsPercent (0–100 percent) and Capacitor.LevelFromPmarksPercent.")]
 		public IShipHitpointsAndEnergy HitpointsAndEnergy
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship speed is not parsed yet).")]
 		public IUIElementText SpeedLabel
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship EWar indicators are not parsed yet).")]
 		public ShipUiEWarElement[] EWarElement
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Use StopButton.")]
 		public IUIElement ButtonSpeed0
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Use MaxSpeedButton.")]
 		public IUIElement ButtonSpeedMax
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null.")]
 		public IUIElementText[] Readout
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship speed is not parsed yet).")]
 		public long? SpeedMilli
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship timers are not parsed yet).")]
 		public IShipUiTimer[] Timer
 		{
 			get;
 			set;
 		}
 
+		[Obsolete("Not populated by the Eve64 parser — always null (TODO in Eve64/Parser.cs).")]
 		public ISquadronsUI SquadronsUI
 		{
 			get;
@@ -109,17 +120,35 @@ namespace Sanderling.Interface.MemoryStruct
 	{
 		public IUIElement UINode { get; set; }
 		public IUIElement SlotUINode { get; set; }
+		/// <summary>Physical EVE rack from ShipSlot name: High, Medium or Low.</summary>
+		public string Rack { get; set; }
+		/// <summary>Zero-based physical slot number, used for the F1..F8 hotkey mapping.</summary>
+		public int? SlotIndex { get; set; }
 		public bool? IsActive { get; set; }
 		public bool IsHiliteVisible { get; set; }
 		public bool IsBusy { get; set; }
 		public int? RampRotationMilli { get; set; }
 		public ModuleInfo? ModuleInfo { get; set; }
+
+		/// <summary>
+		/// Repeating launchers drop <c>ramp_active</c> between volleys; a click then toggles them off.
+		/// Treat glow or the busy overlay as still running.
+		/// </summary>
+		public bool AppearsActive => IsActive == true || IsBusy || IsHiliteVisible;
 	}
 
 	public class ModuleInfo
 	{
 		public bool IsWeapon { get; set; }
 		public int ModuleId { get; set; }
+		/// <summary>Loaded charge/crystal type id, read from the module's main icon when present.</summary>
+		public int? ChargeTypeId { get; set; }
+		/// <summary>
+		/// Charges loaded right now, summed over the stacked/grouped modules behind this one button
+		/// (the HUD's own <c>quantity</c> entry: 4 grouped launchers × 53 = 212). Null when the client
+		/// did not expose it; 0 is a real "launchers are empty".
+		/// </summary>
+		public int? ChargeQuantity { get; set; }
 		public int ChargeCount { get; set; }
 		public int MaxCharges { get; set; }
 	}

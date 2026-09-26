@@ -1,0 +1,30 @@
+@page "/sales"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+@inject ProductionService Production
+@inject WebUI.Esi.EsiPlanningService Esi
+
+<PageTitle>Продажи</PageTitle>
+<div class="page-heading compact-heading"><div><div class="eyebrow">ФИНАНСОВЫЙ РЕЗУЛЬТАТ</div><h1>Продажи</h1><p class="heading-note">Чистая прибыль после себестоимости, налогов, комиссий и прочих затрат.</p></div><button class="btn btn-primary" @onclick="ToggleForm">+ Зафиксировать продажу</button></div>
+<div class="metric-grid mini-metrics"><div class="metric-card"><div class="metric-label">ВЫРУЧКА ЗА МЕСЯЦ</div><div class="metric-value">@Money(Production.RevenueThisMonth)</div><div class="metric-foot">по зафиксированным продажам</div></div><div class="metric-card"><div class="metric-label">СРЕДНЯЯ ЦЕНА ПРОДАЖИ</div><div class="metric-value">@Money(AverageUnitPrice)</div><div class="metric-foot">взвешена по количеству, за месяц</div></div><div class="metric-card"><div class="metric-label">ЧИСТАЯ ПРИБЫЛЬ · СВЕРЕНО</div><div class="metric-value">@Money(Production.ReconciledNetProfitThisMonth)</div><div class="metric-foot">по продажам с полными затратами</div></div><div class="metric-card"><div class="metric-label">ТРЕБУЮТ СВЕРКИ</div><div class="metric-value">@Production.UnreconciledSalesThisMonth</div><div class="metric-foot">не включены в burndown</div></div></div>
+<div class="insight-banner subtle-banner"><span class="insight-icon">◈</span><div class="insight-copy"><strong>@(fees.HasJournalRecords ? $"Рыночные списания ESI за месяц: {Money(fees.DebitedIsk)}" : "Журнал ESI ещё не содержит наблюдений")</strong><span>Проводок: @fees.EntryCount. Сумма не вычитается автоматически: проводки не сопоставлены с продажами, а история ESI может быть неполной. Укажите сборы в сверке продажи.</span></div></div>
+@if (showForm) { <div class="panel form-panel"><div class="panel-heading"><div><h2>Новая продажа</h2><p>Нулевые сборы указывайте явно, если их действительно не было.</p></div><button class="close-button" @onclick="ToggleForm">×</button></div><div class="form-grid"><label>Изделие<input @bind="product" placeholder="Название изделия" /></label><label>Клиент<input @bind="customer" placeholder="Название клиента" /></label><label>Количество<input type="number" @bind="quantity" /></label><label>Цена за единицу<input type="number" @bind="price" /></label><label>Себестоимость за единицу<input type="number" @bind="unitCost" placeholder="Если известна" /></label><label>Комиссии и налоги за продажу<input type="number" @bind="saleFees" placeholder="Если известны" /></label><label>Прочие затраты за продажу<input type="number" @bind="otherCosts" placeholder="Если известны" /></label></div><div class="form-actions"><button class="btn btn-primary" @onclick="AddSale">Сохранить продажу</button></div></div> }
+<section class="panel table-panel full-panel"><div class="panel-heading"><div><h2>История продаж</h2><p>Сверьте затраты для расчёта чистой прибыли.</p></div></div><div class="table-scroll"><table class="app-table"><thead><tr><th>Дата</th><th>Изделие</th><th>Клиент</th><th>Количество</th><th>Выручка</th><th>Чистая прибыль</th><th>Затраты</th></tr></thead><tbody>@foreach (var sale in Production.Sales) { <tr><td class="muted">@sale.Date.ToString("dd.MM.yyyy")</td><td><strong>@sale.Product</strong></td><td>@sale.Customer</td><td>@sale.Quantity.ToString("N0") шт.</td><td><strong>@Money(sale.Total)</strong></td><td>@(sale.NetProfit is null ? "Не сверено" : Money(sale.NetProfit.Value))</td><td><button class="btn" @onclick="() => BeginReconcile(sale)">Сверить</button></td></tr> }</tbody></table></div></section>
+@if (reconcileSaleId is not null) { <div class="panel form-panel"><div class="panel-heading"><div><h2>Сверка продажи #@reconcileSaleId</h2><p>Себестоимость — за единицу; сборы и прочие затраты — за всю продажу.</p></div><button class="close-button" @onclick="() => reconcileSaleId = null">×</button></div><div class="form-grid"><label>Себестоимость за единицу<input type="number" @bind="reconcileUnitCost" /></label><label>Комиссии и налоги<input type="number" @bind="reconcileFees" /></label><label>Прочие затраты<input type="number" @bind="reconcileOtherCosts" /></label></div><div class="form-actions"><button class="btn btn-primary" @onclick="SaveReconciliation">Сверить продажу</button></div></div> }
+@code {
+    private bool showForm;
+    private string product = "", customer = "";
+    private int quantity = 1;
+    private decimal price;
+    private decimal? unitCost, saleFees, otherCosts;
+    private int? reconcileSaleId;
+    private decimal? reconcileUnitCost, reconcileFees, reconcileOtherCosts;
+    private WebUI.Esi.EsiObservedTradingFees fees = new(0, 0, null, false);
+    protected override void OnInitialized() => fees = Esi.TradingFeesThisMonth();
+    private decimal AverageUnitPrice { get { var sales = Production.Sales.Where(s => s.Date.Year == DateTime.Today.Year && s.Date.Month == DateTime.Today.Month).ToList(); var units = sales.Sum(s => s.Quantity); return units == 0 ? 0 : sales.Sum(s => s.Total) / units; } }
+    private void ToggleForm() => showForm = !showForm;
+    private void AddSale() { Production.AddSale(product, quantity, price, customer, unitCost, saleFees, otherCosts); product = customer = ""; quantity = 1; price = 0; unitCost = saleFees = otherCosts = null; showForm = false; }
+    private void BeginReconcile(SaleRecord sale) { reconcileSaleId = sale.Id; reconcileUnitCost = sale.UnitCost; reconcileFees = sale.Fees; reconcileOtherCosts = sale.OtherCosts; }
+    private void SaveReconciliation() { if (reconcileSaleId is null || reconcileUnitCost is null || reconcileFees is null || reconcileOtherCosts is null) return; Production.ReconcileSale(reconcileSaleId.Value, reconcileUnitCost.Value, reconcileFees.Value, reconcileOtherCosts.Value); reconcileSaleId = null; }
+    private static string Money(decimal v) => $"{v:N0} ISK";
+}

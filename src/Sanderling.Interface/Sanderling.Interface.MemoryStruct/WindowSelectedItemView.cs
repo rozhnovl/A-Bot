@@ -1,4 +1,4 @@
-using BotEngine;
+﻿using BotEngine;
 
 namespace Sanderling.Interface.MemoryStruct
 {
@@ -9,6 +9,10 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 			set;
 		}
+
+		public string? SelectedItemName { get; set; }
+
+		public System.Collections.Generic.IReadOnlyDictionary<string, IUIElement>? ActionButtons { get; set; }
 
 		public WindowSelectedItemView(IWindow @base)
 			: base(@base)

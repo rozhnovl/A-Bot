@@ -9,11 +9,13 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 		}
 
+		/// <summary>The TARGET's shield/armor/hull, in per-mille (0–1000) — populated by the Eve64 parser.</summary>
 		IShipHitpointsAndEnergy Hitpoints
 		{
 			get;
 		}
 
+		[System.Obsolete("Not populated by the Eve64 parser — always null (assigned drone/weapon icons are not parsed yet).")]
 		ShipUiTargetAssignedGroup[] Assigned
 		{
 			get;

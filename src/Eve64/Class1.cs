@@ -156,7 +156,10 @@ namespace Eve64
 			"_name", "_text", "_setText",
 			"children",
 			"texturePath", "_bgTexturePath",
-			"_texture", "_hint", "_display", "_lastValue", "_rotation", "_color", "_opacity", "_texturePath", "itemID", "id", "charge", "moduleinfo", "quantity", "isInActiveState"
+			"_texture", "_hint", "_display", "_lastValue", "_rotation", "_color", "_opacity", "_texturePath", "itemID", "id", "charge", "moduleinfo", "quantity",
+			// ModuleButton.isInActiveState only means the button is usable/online (it is true
+			// even for passive modules). ramp_active is the actual cycling-state signal.
+			"isInActiveState", "ramp_active", "isDeactivating", "online"
 		);
 
 		struct LocalMemoryReadingTools
@@ -438,21 +441,26 @@ namespace Eve64
 			}
 		}
 
-		static UITreeNode ReadUITreeFromAddress(ulong nodeAddress, IMemoryReader memoryReader, int maxDepth,
-			MemoryReadingCache cache)
+		static UITreeNode ReadUITreeFromAddressCore(ulong nodeAddress, IMemoryReader memoryReader, int maxDepth,
+			MemoryReadingCache cache, IDictionary<ulong, string> persistentTypeName)
 		{
 			cache ??= new MemoryReadingCache();
 
-			var uiNodeObjectMemory = memoryReader.ReadBytes(nodeAddress, 0x30);
-
-			if (!(0x30 == uiNodeObjectMemory?.Length))
+			Span<byte> uiNodeObjectMemory = stackalloc byte[0x30];
+			if (!memoryReader.ReadInto(nodeAddress, uiNodeObjectMemory))
 				return null;
 
+			// Type names resolved via the TYPE-object pointer are stable for the client's lifetime (CPython
+			// type objects are module-level and never move/GC), so we cache them ACROSS ticks in
+			// persistentTypeName — this removes ~2 reads per node for the (small) set of UI classes. Note the
+			// per-tick object-address cache below stays per-tick: an instance address can be reused next tick.
 			string getPythonTypeNameFromPythonTypeObjectAddress(ulong typeObjectAddress)
 			{
-				var typeObjectMemory = memoryReader.ReadBytes(typeObjectAddress, 0x20);
+				if (persistentTypeName != null && persistentTypeName.TryGetValue(typeObjectAddress, out var cachedName))
+					return cachedName;
 
-				if (!(typeObjectMemory?.Length == 0x20))
+				Span<byte> typeObjectMemory = stackalloc byte[0x20];
+				if (!memoryReader.ReadInto(typeObjectAddress, typeObjectMemory))
 					return null;
 
 				var tp_name = BitConverter.ToUInt64(typeObjectMemory[0x18..]);
@@ -462,16 +470,20 @@ namespace Eve64
 				if (!(nameBytes?.Contains((byte)0) ?? false))
 					return null;
 
-				return System.Text.Encoding.ASCII.GetString(nameBytes.TakeWhile(character => character != 0).ToArray());
+				var name = System.Text.Encoding.ASCII.GetString(nameBytes.TakeWhile(character => character != 0).ToArray());
+
+				if (persistentTypeName != null)
+					persistentTypeName[typeObjectAddress] = name;
+
+				return name;
 			}
 
 			string getPythonTypeNameFromPythonObjectAddress(ulong objectAddress)
 			{
 				return cache.GetPythonTypeNameFromPythonObjectAddress(objectAddress, objectAddress =>
 				{
-					var objectMemory = memoryReader.ReadBytes(objectAddress, 0x10);
-
-					if (!(objectMemory?.Length == 0x10))
+					Span<byte> objectMemory = stackalloc byte[0x10];
+					if (!memoryReader.ReadInto(objectAddress, objectMemory))
 						return null;
 
 					return getPythonTypeNameFromPythonTypeObjectAddress(BitConverter.ToUInt64(objectMemory[8..]));
@@ -493,25 +505,14 @@ namespace Eve64
 				https://github.com/python/cpython/blob/362ede2232107fc54d406bb9de7711ff7574e1d4/Objects/dictobject.c
 				*/
 
-				var dictMemory = memoryReader.ReadBytes(dictionaryAddress, 0x30);
-
-				//  Console.WriteLine($"dictMemory is {(dictMemory == null ? "not " : "")}ok for 0x{dictionaryAddress:X}");
-
-				if (!(dictMemory?.Length == 0x30))
+				Span<byte> dictMemory = stackalloc byte[0x30];
+				if (!memoryReader.ReadInto(dictionaryAddress, dictMemory))
 					return null;
-
-				var dictMemoryAsLongMemory = TransformMemoryContent.AsULongMemory(dictMemory);
-
-				//  var dictTypeName = getPythonTypeNameFromObjectAddress(dictionaryAddress);
-
-				//  Console.WriteLine($"Type name for dictionary 0x{dictionaryAddress:X} is '{dictTypeName}'.");
 
 				//  https://github.com/python/cpython/blob/362ede2232107fc54d406bb9de7711ff7574e1d4/Include/dictobject.h#L60-L89
 
-				var ma_fill = dictMemoryAsLongMemory.Span[2];
-				var ma_used = dictMemoryAsLongMemory.Span[3];
-				var ma_mask = dictMemoryAsLongMemory.Span[4];
-				var ma_table = dictMemoryAsLongMemory.Span[5];
+				var ma_mask = BitConverter.ToUInt64(dictMemory[(4 * 8)..]);
+				var ma_table = BitConverter.ToUInt64(dictMemory[(5 * 8)..]);
 
 				//  Console.WriteLine($"Details for dictionary 0x{dictionaryAddress:X}: type_name = '{dictTypeName}' ma_mask = 0x{ma_mask:X}, ma_table = 0x{ma_table:X}.");
 
@@ -725,7 +726,7 @@ namespace Eve64
 				return
 					listEntries
 						.ToArray()
-						.Select(childAddress => ReadUITreeFromAddress(childAddress, memoryReader, maxDepth - 1, cache))
+						.Select(childAddress => ReadUITreeFromAddressCore(childAddress, memoryReader, maxDepth - 1, cache, persistentTypeName))
 						.ToArray();
 			}
 
@@ -775,15 +776,44 @@ namespace Eve64
 		}
 
 		static public UITreeNode ReadUITreeFromAddress(ulong nodeAddress, IMemoryReader memoryReader, int maxDepth) =>
-			ReadUITreeFromAddress(nodeAddress, memoryReader, maxDepth, null);
+			ReadUITreeFromAddressCore(nodeAddress, memoryReader, maxDepth, null, null);
+
+		/// <summary>
+		/// As above, but reusing a caller-owned persistent type-name cache (type-object pointer → name) across
+		/// calls/ticks to cut ~2 memory reads per node. The cache must belong to ONE process/reader (type
+		/// pointers are only meaningful within a single client) and one thread at a time.
+		/// </summary>
+		static public UITreeNode ReadUITreeFromAddress(ulong nodeAddress, IMemoryReader memoryReader, int maxDepth,
+			IDictionary<ulong, string> persistentTypeName) =>
+			ReadUITreeFromAddressCore(nodeAddress, memoryReader, maxDepth, null, persistentTypeName);
 
 		static public IImmutableList<ulong> EnumeratePossibleAddressesForUIRootObjectsFromProcessId(int processId)
 		{
 			var memoryReader = new MemoryReaderFromLiveProcess(processId);
 
-			var (committedMemoryRegions, _) = ReadCommittedMemoryRegionsWithoutContentFromProcessId(processId);
+			var (committedMemoryRegions, _) = ReadCommittedMemoryRegionsFromProcessId(processId, readContent: false);
 
-			return EnumeratePossibleAddressesForUIRootObjects(committedMemoryRegions, memoryReader);
+			// Only scan writable regions — skips the bulk of the working set (read-only game assets/code) that
+			// can't hold Python object headers, across all three scan passes.
+			var scannableRegions =
+				committedMemoryRegions
+				.Where(region => IsScannableForPythonObjects(region.protection))
+				.Select(region => (baseAddress: region.baseAddress, length: (int)region.length))
+				.ToImmutableList();
+
+			var roots = EnumeratePossibleAddressesForUIRootObjects(scannableRegions, memoryReader);
+			if (0 < roots.Count)
+				return roots;
+
+			// Safety net: if the writable-only filter turned up nothing (unexpected memory layout), fall back
+			// to the original full-committed scan so attach never regresses — just slower for that one call.
+			Console.WriteLine("UIRoot scan: writable-only pass found 0 candidates; retrying full committed scan.");
+			var allRegions =
+				committedMemoryRegions
+				.Select(region => (baseAddress: region.baseAddress, length: (int)region.length))
+				.ToImmutableList();
+
+			return EnumeratePossibleAddressesForUIRootObjects(allRegions, memoryReader);
 		}
 
 		static public (IImmutableList<SampleMemoryRegion> memoryRegions, IImmutableList<string> logEntries) ReadCommittedMemoryRegionsWithContentFromProcessId(int processId)
@@ -807,7 +837,18 @@ namespace Eve64
 		public record SampleMemoryRegion(
 			ulong baseAddress,
 			ulong length,
+			int protection,
 			ReadOnlyMemory<byte>? content);
+
+		// Python objects (heap instances AND static/heap type objects) live only in WRITABLE committed memory:
+		// PAGE_READWRITE / PAGE_WRITECOPY (and their EXECUTE_* variants). The UIRoot scan reads every region's
+		// content three times, so skipping the huge read-only image/mapped regions (game assets, code, .rdata)
+		// cuts the scan several-fold. tp_name strings are still read directly by address, so read-only string
+		// data is reachable even though we don't SCAN it for object headers.
+		private const int WritableProtectionMask =
+			0x04 /*PAGE_READWRITE*/ | 0x08 /*PAGE_WRITECOPY*/ | 0x40 /*PAGE_EXECUTE_READWRITE*/ | 0x80 /*PAGE_EXECUTE_WRITECOPY*/;
+
+		static bool IsScannableForPythonObjects(int protection) => (protection & WritableProtectionMask) != 0;
 
 		static public (IImmutableList<SampleMemoryRegion> memoryRegions, IImmutableList<string> logEntries) ReadCommittedMemoryRegionsFromProcessId(
 			int processId,
@@ -817,8 +858,9 @@ namespace Eve64
 
 			void logLine(string lineText)
 			{
+				//  Collect for callers that want the log, but do NOT spam the console:
+				//  a full scan emits thousands of per-region lines (and once filled the temp disk).
 				logEntries.Add(lineText);
-				Console.WriteLine(lineText);
 			}
 
 			logLine("Reading from process " + processId + ".");
@@ -880,6 +922,7 @@ namespace Eve64
 				committedRegions.Add(new SampleMemoryRegion(
 					baseAddress: regionBaseAddress,
 					length: m.RegionSize,
+					protection: m.Protect,
 					content: regionContent));
 
 			} while (true);
@@ -926,6 +969,16 @@ namespace Eve64
 					return buffer;
 
 				return buffer;
+			}
+
+			public bool ReadInto(ulong startAddress, Span<byte> buffer)
+			{
+				UIntPtr numberOfBytesRead = UIntPtr.Zero;
+				if (!WinApi.ReadProcessMemory(processHandle, startAddress,
+					    ref System.Runtime.InteropServices.MemoryMarshal.GetReference(buffer),
+					    (UIntPtr)buffer.Length, ref numberOfBytesRead))
+					return false;
+				return numberOfBytesRead.ToUInt64() == (ulong)buffer.Length;
 			}
 		}
 
@@ -1011,31 +1064,28 @@ namespace Eve64
 				IImmutableList<ulong> typeObjectCandidatesAddresses)
 			{
 				if (typeObjectCandidatesAddresses.Count < 1)
-					yield break;
+					return [];
 
 				var typeAddressMin = typeObjectCandidatesAddresses.Min();
 				var typeAddressMax = typeObjectCandidatesAddresses.Max();
+				var typeAddressSet = typeObjectCandidatesAddresses.ToHashSet();   // O(1) membership in the hot loop
 
-				foreach (var memoryRegion in memoryRegionsOrderedByAddress)
+				IEnumerable<(ulong address, string tp_name)> InRegion((ulong baseAddress, int length) memoryRegion)
 				{
 					var memoryRegionContentAsULongArray = ReadMemoryRegionContentAsULongArray(memoryRegion);
 
 					if (memoryRegionContentAsULongArray == null)
-						continue;
+						yield break;
 
 					for (var candidateAddressIndex = 0; candidateAddressIndex < memoryRegionContentAsULongArray.Value.Length - 4; ++candidateAddressIndex)
 					{
-						var candidateAddressInProcess = memoryRegion.baseAddress + (ulong)candidateAddressIndex * 8;
-
 						var candidate_ob_type = memoryRegionContentAsULongArray.Value.Span[candidateAddressIndex + 1];
 
-						{
-							//  This check is redundant with the following one. It just implements a specialization to optimize runtime expenses.
-							if (candidate_ob_type < typeAddressMin || typeAddressMax < candidate_ob_type)
-								continue;
-						}
+						//  Cheap range gate before the set lookup.
+						if (candidate_ob_type < typeAddressMin || typeAddressMax < candidate_ob_type)
+							continue;
 
-						if (!typeObjectCandidatesAddresses.Contains(candidate_ob_type))
+						if (!typeAddressSet.Contains(candidate_ob_type))
 							continue;
 
 						var candidate_tp_name =
@@ -1045,45 +1095,45 @@ namespace Eve64
 						if (candidate_tp_name == null)
 							continue;
 
-						yield return (candidateAddressInProcess, candidate_tp_name);
+						yield return (memoryRegion.baseAddress + (ulong)candidateAddressIndex * 8, candidate_tp_name);
 					}
 				}
+
+				return memoryRegionsOrderedByAddress.AsParallel().SelectMany(InRegion).ToImmutableArray();
 			}
 
 			IEnumerable<ulong> EnumerateCandidatesForInstancesOfPythonType(
 				IImmutableList<ulong> typeObjectCandidatesAddresses)
 			{
 				if (typeObjectCandidatesAddresses.Count < 1)
-					yield break;
+					return [];
 
 				var typeAddressMin = typeObjectCandidatesAddresses.Min();
 				var typeAddressMax = typeObjectCandidatesAddresses.Max();
+				var typeAddressSet = typeObjectCandidatesAddresses.ToHashSet();
 
-				foreach (var memoryRegion in memoryRegionsOrderedByAddress)
+				IEnumerable<ulong> InRegion((ulong baseAddress, int length) memoryRegion)
 				{
 					var memoryRegionContentAsULongArray = ReadMemoryRegionContentAsULongArray(memoryRegion);
 
 					if (memoryRegionContentAsULongArray == null)
-						continue;
+						yield break;
 
 					for (var candidateAddressIndex = 0; candidateAddressIndex < memoryRegionContentAsULongArray.Value.Length - 4; ++candidateAddressIndex)
 					{
-						var candidateAddressInProcess = memoryRegion.baseAddress + (ulong)candidateAddressIndex * 8;
-
 						var candidate_ob_type = memoryRegionContentAsULongArray.Value.Span[candidateAddressIndex + 1];
 
-						{
-							//  This check is redundant with the following one. It just implements a specialization to reduce processing time.
-							if (candidate_ob_type < typeAddressMin || typeAddressMax < candidate_ob_type)
-								continue;
-						}
-
-						if (!typeObjectCandidatesAddresses.Contains(candidate_ob_type))
+						if (candidate_ob_type < typeAddressMin || typeAddressMax < candidate_ob_type)
 							continue;
 
-						yield return candidateAddressInProcess;
+						if (!typeAddressSet.Contains(candidate_ob_type))
+							continue;
+
+						yield return memoryRegion.baseAddress + (ulong)candidateAddressIndex * 8;
 					}
 				}
+
+				return memoryRegionsOrderedByAddress.AsParallel().SelectMany(InRegion).ToImmutableArray();
 			}
 
 			var uiRootTypeObjectCandidatesAddresses =
@@ -1108,6 +1158,10 @@ namespace Eve64
 
 			[DllImport("kernel32.dll")]
 			static public extern bool ReadProcessMemory(IntPtr hProcess, ulong lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, ref UIntPtr lpNumberOfBytesRead);
+
+			// Overload that reads straight into a caller buffer (Span/stackalloc) — no managed array allocation.
+			[DllImport("kernel32.dll")]
+			static public extern bool ReadProcessMemory(IntPtr hProcess, ulong lpBaseAddress, ref byte lpBuffer, UIntPtr nSize, ref UIntPtr lpNumberOfBytesRead);
 
 			[DllImport("kernel32.dll", SetLastError = true)]
 			static public extern bool CloseHandle(IntPtr hHandle);
@@ -1233,6 +1287,20 @@ namespace Eve64
 	public interface IMemoryReader
 	{
 		byte[]? ReadBytes(ulong startAddress, int length);
+
+		/// <summary>
+		/// Read exactly <paramref name="buffer"/>.Length bytes into a caller-provided buffer (typically a
+		/// <c>stackalloc</c> Span on the hot path), returning true only on a full read. The default falls back
+		/// to the allocating <see cref="ReadBytes"/>; live readers override it with a zero-allocation path.
+		/// </summary>
+		bool ReadInto(ulong startAddress, Span<byte> buffer)
+		{
+			var b = ReadBytes(startAddress, buffer.Length);
+			if (b == null || b.Length != buffer.Length)
+				return false;
+			b.CopyTo(buffer);
+			return true;
+		}
 	}
 
 	public class MemoryReaderFromProcessSample : IMemoryReader

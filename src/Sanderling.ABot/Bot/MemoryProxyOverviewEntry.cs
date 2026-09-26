@@ -28,6 +28,9 @@ namespace Sanderling.ABot.Bot
 			return memoryOverviewEntry.UiElement.ClickWithModifier(bot, VirtualKeyCode.CONTROL);
 		}
 
+		[Newtonsoft.Json.JsonIgnore]
+		public override IUIElement? SelectElement => memoryOverviewEntry.UiElement;
+
 		public override OverviewWindowEntryCommonIndications CommonIndications => memoryOverviewEntry.CommonIndications;
 
 		public override ISerializableBotTask GetApproachTask()

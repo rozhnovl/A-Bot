@@ -1,0 +1,61 @@
+@page "/purchases"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+@inject ProductionService Production
+
+<PageTitle>Закупки</PageTitle>
+<div class="page-heading compact-heading">
+    <div><div class="eyebrow">ОБЕСПЕЧЕНИЕ ПРОИЗВОДСТВА</div><h1>Закупки</h1><p class="heading-note">План закупок можно связать с конкретной производственной работой.</p></div>
+    <button class="btn btn-primary" @onclick="ToggleForm">+ Запланировать закупку</button>
+</div>
+<div class="insight-banner subtle-banner">
+    <div class="insight-icon amber-bg">↗</div>
+    <div class="insight-copy"><strong>К заказу: @Money(Production.Purchases.Where(p => p.Status != PurchaseStatus.Ordered).Sum(p => p.Total))</strong><span>@Production.Purchases.Count(p => p.Status != PurchaseStatus.Ordered) открытых позиций</span></div>
+    <a href="resources">Открыть ресурсы →</a>
+</div>
+
+@if (showForm)
+{
+    <div class="panel form-panel">
+        <div class="panel-heading"><div><h2>Новая закупка</h2><p>Укажите нужную работу, чтобы видеть назначение затрат в плане.</p></div><button class="close-button" @onclick="ToggleForm">×</button></div>
+        <div class="form-grid">
+            <label>Ресурс<input @bind="resource" placeholder="Название ресурса" /></label>
+            <label>Поставщик / регион<input @bind="supplier" placeholder="Jita" /></label>
+            <label>Количество<input type="number" min="0.01" step="any" @bind="quantity" /></label>
+            <label>Цена за единицу<input type="number" min="0" step="any" @bind="price" /></label>
+            <label>Нужно к<input type="date" @bind="dueDate" /></label>
+            <label>Для работы<select @bind="workId"><option value="0">Без привязки</option>@foreach (var work in Production.Works.Where(w => w.Status != WorkStatus.Done)) { <option value="@work.Id">@work.Product (#@work.Id)</option> }</select></label>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" @onclick="AddPurchase">Добавить закупку</button></div>
+    </div>
+}
+
+<section class="panel table-panel full-panel">
+    <div class="panel-heading"><div><h2>План закупок</h2><p>Открытые и уже заказанные позиции</p></div><span class="table-total">Всего @Money(Production.Purchases.Sum(p => p.Total))</span></div>
+    <div class="table-scroll"><table class="app-table"><thead><tr><th>Ресурс</th><th>Для работы</th><th>Количество</th><th>Цена / ед.</th><th>Поставщик</th><th>Нужно к</th><th>Статус</th><th>Итого</th></tr></thead><tbody>
+        @foreach (var purchase in Production.Purchases)
+        {
+            <tr><td><div class="item-cell"><span class="item-avatar mineral-avatar">▦</span><strong>@purchase.Resource</strong></div></td><td>@WorkName(purchase.WorkId)</td><td>@purchase.Quantity.ToString("N0")</td><td>@Money(purchase.UnitPrice)</td><td>@purchase.Supplier</td><td class="due-date">@purchase.DueDate.ToString("dd.MM.yyyy")</td><td><span class="status-pill @StatusClass(purchase.Status)">@StatusText(purchase.Status)</span></td><td><strong>@Money(purchase.Total)</strong></td></tr>
+        }
+    </tbody></table></div>
+</section>
+
+@code {
+    private bool showForm;
+    private string resource = "";
+    private string supplier = "";
+    private decimal quantity = 1;
+    private decimal price;
+    private int workId;
+    private DateTime dueDate = DateTime.Today.AddDays(2);
+    private void ToggleForm() => showForm = !showForm;
+    private void AddPurchase()
+    {
+        Production.AddPurchase(resource, quantity, price, supplier, dueDate, workId == 0 ? null : workId);
+        resource = ""; quantity = 1; price = 0; workId = 0; showForm = false;
+    }
+    private string WorkName(int? id) => id is null ? "—" : Production.Works.FirstOrDefault(w => w.Id == id)?.Product ?? $"#{id}";
+    private static string Money(decimal value) => $"{value:N0} ISK";
+    private static string StatusText(PurchaseStatus status) => status switch { PurchaseStatus.PartlyOrdered => "Частично", PurchaseStatus.Ordered => "Заказано", _ => "К заказу" };
+    private static string StatusClass(PurchaseStatus status) => status switch { PurchaseStatus.PartlyOrdered => "purple-pill", PurchaseStatus.Ordered => "green-pill", _ => "amber-pill" };
+}

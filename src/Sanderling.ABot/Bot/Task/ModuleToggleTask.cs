@@ -55,7 +55,11 @@ namespace Sanderling.ABot.Bot.Task
 		public ModuleToggleTask([NotNull] ShipFit.ModuleInfo module, VirtualKeyCode? modifier)
 		{
 			this.modules = [module.UiModule];
-			this.hotKey = [module.HotKey.NullIfEmpty()];
+			// When the module has no hotkey and no modifier, leave hotKey null so activation
+			// falls back to clicking the module button — that keeps a fit independent of the
+			// player's custom keybinds. A [null] entry here would instead try to press a null key.
+			var moduleHotKey = module.HotKey.NullIfEmpty();
+			this.hotKey = moduleHotKey == null ? null : [moduleHotKey];
 			if (modifier != null)
 				hotKey = [new[] { modifier.Value }.Concat(module.HotKey.NullIfEmpty()).ToArray()];
 		}

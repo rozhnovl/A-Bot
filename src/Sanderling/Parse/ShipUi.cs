@@ -23,7 +23,10 @@ namespace Sanderling.Parse
 
 		public string[] TextRow { set; get; }
 
+#pragma warning disable CS0618
+		[Obsolete("Not populated by the Eve64 parser — always null (assigned drone/weapon icons are not parsed yet).")]
 		public MemoryStruct.ShipUiTargetAssignedGroup[] Assigned => Raw?.Assigned;
+#pragma warning restore CS0618
 
 		public int? ChildLastInTreeIndex => Raw?.ChildLastInTreeIndex;
 
@@ -110,7 +113,9 @@ namespace Sanderling.Parse
 
 			Indication = Raw?.Indication;
 
+#pragma warning disable CS0618 // legacy speed-label parse; the Eve64 parser never fills SpeedLabel
 			SpeedMilliParsed = Raw?.SpeedLabel?.Text?.RegexMatchIfSuccess("(" + Number.DefaultNumberFormatRegexPatternAllowLeadingAndTrailingChars + @")\s*m/s")?.Groups[1]?.Value?.NumberParseDecimalMilli();
+#pragma warning restore CS0618
 		}
 	}
 
@@ -134,27 +139,43 @@ namespace Sanderling.Parse
 
 		public long Id => Raw?.Id ?? 0;
 
+		// Passthroughs of members the Eve64 parser never fills — obsolete like the raw members they wrap.
+#pragma warning disable CS0618
+		[Obsolete("Not populated by the Eve64 parser — always null.")]
 		public IUIElement Center => Raw?.Center;
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Ship gauges live in HitpointsPercent (0–100 percent) and Capacitor.LevelFromPmarksPercent.")]
 		public IShipHitpointsAndEnergy HitpointsAndEnergy => Raw?.HitpointsAndEnergy;
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship speed is not parsed yet).")]
 		public IUIElementText SpeedLabel => Raw?.SpeedLabel;
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship EWar indicators are not parsed yet).")]
 		public ShipUiEWarElement[] EWarElement => Raw?.EWarElement;
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Use ShipUi.StopButton.")]
 		public IUIElement ButtonSpeed0 => Raw?.ButtonSpeed0;
 
+		[Obsolete("Not populated by the Eve64 parser — always null. Use ShipUi.MaxSpeedButton.")]
 		public IUIElement ButtonSpeedMax => Raw?.ButtonSpeedMax;
 		public List<ShipUIModuleButton> ModuleButtons => Raw.ModuleButtons;
 		public ModuleButtonsRows ModuleButtonsRows => Raw.ModuleButtonsRows;
 
+		public MemoryStruct.Hitpoints HitpointsPercent => Raw?.HitpointsPercent;
+		public ShipUICapacitor Capacitor => Raw?.Capacitor;
+
+		[Obsolete("Not populated by the Eve64 parser — always null.")]
 		public IUIElementText[] Readout => Raw?.Readout;
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship speed is not parsed yet).")]
 		public long? SpeedMilli => Raw?.SpeedMilli ?? SpeedMilliParsed;
 
+		[Obsolete("Not populated by the Eve64 parser — always null (ship timers are not parsed yet).")]
 		public IShipUiTimer[] Timer => Raw?.Timer;
 
+		[Obsolete("Not populated by the Eve64 parser — always null (TODO in Eve64/Parser.cs).")]
 		public ISquadronsUI SquadronsUI => Raw?.SquadronsUI;
+#pragma warning restore CS0618
 	}
 
 	static public class ShipUiExtension

@@ -1,2 +1,28 @@
 # Visual Studio 2017 created stuff when opening the repository
 .vs/
+src/WebUI/WebUI/production.db*
+src/WebUI/WebUI/production-v2.db*
+src/WebUI/WebUI/.data-protection-keys/
+
+# build output
+bin/
+obj/
+
+# per-machine / local
+.claude/settings.local.json
+fleet.config.json
+
+# UI dumps, logs and per-run artifacts
+rawtree-*.json
+src/rawtree-*.json
+src/probe.json
+src/observation-*.jsonl
+dump-once-*/
+hangar-*/
+launch-*/
+probe-*/
+space-menu-*/
+mcp-dump-*/
+*.log
+lootledger.jsonl
+roomstats.jsonl

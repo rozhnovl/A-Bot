@@ -7,6 +7,8 @@ namespace Sanderling.Interface.MemoryStruct
 		string? SubCaptionLabelText { get; }
 		IInventory? SelectedContainerInventory { get; }
 		IUIElement? LootAllButton { get; }
+		/// <summary>Button that switches the container to List/Details view (where item names are columns).</summary>
+		IUIElement? SwitchToListViewButton { get; }
 	}
 
 	public interface IInventory

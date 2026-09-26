@@ -30,8 +30,11 @@ namespace Sanderling.ABot.Bot
 	{
 		/// <summary>Seconds of zero DPS a charge swap costs (EVE's fixed reload).</summary>
 		public const double ReloadSeconds = 10;
-		/// <summary>Only swap when the plan saves more than this on top of the reload — anti-flapping.</summary>
-		public const double MinSavedSeconds = 3;
+		/// <summary>
+		/// Only swap when the plan finishes the room at least this much sooner, reload already paid
+		/// (operator, 2026-09-27: leave Navy Nova only for a tangible 15+ s gain, "не на каждый чих").
+		/// </summary>
+		public const double MinSavedSeconds = 15;
 		private const int StableTicksRequired = 2;
 		private const int CommandCooldownMs = 15000;
 		/// <summary>EHP assumed for an enemy the stat DB doesn't know (it still gets a vote, just a blind one).</summary>

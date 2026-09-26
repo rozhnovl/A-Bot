@@ -167,8 +167,9 @@ namespace Sanderling.ABot.Bot
 				Check("300 Inferno can't pay for two reloads — stay on Nova", roomFew.First?.TypeId == NovaId && !roomFew.WantsSwap,
 					$"{roomFew.Seconds:F0}s vs {roomFew.SecondsIfStaying:F0}s on Nova");
 				var roomSeen = Scenario("7c) same room, hold read: 1000 Inferno aboard", queue, Stock(Hold(600, 200, inferno: 1000), Nova, 212), NovaId);
-				Check("Inferno chosen once seen in quantity", roomSeen.First?.TypeId == InfernoId && roomSeen.WantsSwap,
-					$"{roomSeen.Seconds:F0}s vs {roomSeen.SecondsIfStaying:F0}s on Nova (must beat it by > {AmmoController.MinSavedSeconds:F0}s after the {AmmoController.ReloadSeconds:F0}s reload)");
+				Check($"a few seconds of Inferno gain is below the {AmmoController.MinSavedSeconds:F0} s bar — stay on Nova",
+					!roomSeen.WantsSwap,
+					$"{roomSeen.Seconds:F0}s vs {roomSeen.SecondsIfStaying:F0}s on Nova (must beat it by >= {AmmoController.MinSavedSeconds:F0}s net of the {AmmoController.ReloadSeconds:F0}s reload)");
 			}
 
 			// 8. Room clear: back to the default, or down the fallback order when the default is gone.

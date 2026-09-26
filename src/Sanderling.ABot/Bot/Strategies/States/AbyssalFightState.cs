@@ -191,6 +191,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				cacheLooted = false;
 				reloadIssued = false;
 				gateWaitStartedAt = null;
+				chargeReturnStartedAt = null;
 			}
 			// The client already draws the cache wreck as looted: nothing to fly to. Known here, before
 			// the winding-down rules, so the looter heads for the conduit early instead of after the
@@ -435,6 +436,20 @@ namespace Sanderling.ABot.Bot.Strategies
 				if (closeInventoryTask != null)
 					return task.With(closeInventoryTask);
 
+				// Back to the DEFAULT charge before the next room (operator, 2026-09-27). A swap also fills
+				// the magazine, so the top-up below only matters when the default is already loaded. The
+				// wait is bounded: a hold without the default charge must not block the gate forever.
+				var returnTask = AmmoController.GetSwitchTask(bot, shipState.Fit, Array.Empty<IOverviewEntry>(),
+					out var returnReason, out var returnPending);
+				if (returnTask != null)
+					return task.With($"Loading the default charge before the gate — {returnReason}").With(returnTask);
+				if (returnPending)
+				{
+					chargeReturnStartedAt ??= StateStopwatch.Elapsed;
+					if (StateStopwatch.Elapsed - chargeReturnStartedAt.Value < TimeSpan.FromSeconds(ChargeReturnTimeoutSeconds))
+						return task.With($"Waiting for the default charge to load — {returnReason}");
+				}
+
 				// The gate is the last quiet moment of the room: never carry a partial magazine into
 				// the next spawn (operator's rule). Issued once per room; the reload runs while we fly.
 				if (!reloadIssued)
@@ -525,6 +540,10 @@ namespace Sanderling.ABot.Bot.Strategies
 		private bool reloadIssued;
 		/// <summary>When we arrived at the conduit and started waiting for the fleet.</summary>
 		private TimeSpan? gateWaitStartedAt;
+		/// <summary>When we started loading the default charge back before the gate.</summary>
+		private TimeSpan? chargeReturnStartedAt;
+		/// <summary>How long the gate may wait for the default charge to load (10 s reload + margin).</summary>
+		private const int ChargeReturnTimeoutSeconds = 40;
 		/// <summary>Which room we have already called the fleet regroup in (once per room).</summary>
 		private int regroupCalledInRoom = -1;
 		/// <summary>Rooms taken so far this run; bumped when the gate is activated.</summary>

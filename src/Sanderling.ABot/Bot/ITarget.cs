@@ -13,6 +13,8 @@
 		double? RemainingHitpointsFraction { get; }
 		ISerializableBotTask GetUnlockTask();
 		ISerializableBotTask GetOrbitTask();
+		/// <summary>Plain click on the target icon: makes this locked target the client's active one.</summary>
+		ISerializableBotTask GetMakeActiveTask();
 		bool WeaponAssigned { get; }
 		bool DroneAssigned { get; }
 	}

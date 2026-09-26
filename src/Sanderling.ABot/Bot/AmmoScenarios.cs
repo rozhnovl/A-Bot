@@ -35,6 +35,7 @@ namespace Sanderling.ABot.Bot
 			public bool MeTargeted => false;
 			public bool MeActiveTarget => false;
 			public long Id { get; }
+			public string? Tag => null;
 			public ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null) => null!;
 			public ISerializableBotTask GetSelectTask() => null!;
 			public IUIElement? SelectElement => null;

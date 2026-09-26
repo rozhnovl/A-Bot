@@ -69,5 +69,10 @@ namespace Sanderling.ABot.Bot
 		{
 			return memoryTarget.ClickWithModifier(bot, HotkeyRegistry.OrbitModifier);
 		}
+
+		public ISerializableBotTask GetMakeActiveTask()
+		{
+			return memoryTarget.ClickWithModifier(bot);
+		}
 	}
 }

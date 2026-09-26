@@ -234,9 +234,22 @@ namespace Sanderling.ABot.Bot
 			var info = weapon?.ModuleInfo;
 			if (weapon?.UINode == null || info == null) return null;
 			if (weapon.IsBusy) return null;
-			if (info.MaxCharges <= 0 || info.ChargeCount >= info.MaxCharges) return null;
+			// The HUD prints the charges left in ONE launcher of the group ("53" for a full LML II);
+			// MaxCharges/ChargeCount stay for parsers that expose the magazine directly.
+			var full = info.MaxCharges > 0 ? info.MaxCharges : Fit.Ammo?.MagazineRounds ?? 0;
+			var loaded = info.ChargeQuantity ?? (info.MaxCharges > 0 ? info.ChargeCount : (int?)null);
+			if (full <= 0 || loaded is not int rounds || rounds >= full) return null;
 
 			return weapon.UINode.ClickMenuEntryByRegexPattern(bot, "Reload.*");
+		}
+
+		/// <summary>Whether the Selected Item panel currently shows this overview entry.</summary>
+		public bool SelectedItemPanelShows(IOverviewEntry entry)
+		{
+			var shown = memory?.WindowSelectedItemView?.FirstOrDefault()?.SelectedItemName;
+			var wanted = entry?.Name ?? entry?.Type ?? "";
+			return !string.IsNullOrWhiteSpace(shown) && !string.IsNullOrWhiteSpace(wanted) &&
+			       FleetFireBoard.NamesMatch(shown, wanted);
 		}
 
 		/// <summary>

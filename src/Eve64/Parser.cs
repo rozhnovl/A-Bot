@@ -1063,7 +1063,10 @@ namespace Eve64
 						.Where(pair => entriesHeaders.Skip(pair.Index).Any())
 						.Select(pair => (entriesHeaders[pair.Index].HeaderText, pair.TrimmedText));
 				})
-				.ToDictionary(pair => pair.Item1, pair => pair.Item2);
+				// Two columns can carry the same header text ("Size", "Angular Velocity (deg/s)" seen live
+				// 2026-09-26); ToDictionary threw on the duplicate and the whole entry was lost that tick.
+				.GroupBy(pair => pair.Item1)
+				.ToDictionary(group => group.Key, group => group.First().Item2);
 
 			return new ListViewEntryResult
 			{

@@ -11,6 +11,12 @@ namespace Sanderling.ABot.Bot
 		bool MeTargeted { get; }
 		bool MeActiveTarget { get; }
 		long Id { get; }
+		/// <summary>
+		/// The fleet commander's tag on this row ("1".."9", "A".."Z") from the overview's Tag column,
+		/// or null. Tags override the bot's own kill order (operator, 2026-09-26). The column must be
+		/// enabled in the overview preset for tags to be visible to the bot.
+		/// </summary>
+		string? Tag { get; }
 		ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null);
 		ISerializableBotTask GetSelectTask();
 		/// <summary>

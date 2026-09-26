@@ -18,15 +18,30 @@ namespace Sanderling.ABot.Bot.Task
 				?.ToList();
 			// Room-aware ordering: how valuable a webber/neuter is depends on the room's total DPS.
 			var priorityOf = npcInfoProvider.TargetPriorityScorer(overview);
+			// The fleet commander's tags come first, in tag order ("1" before "2", digits before
+			// letters); everything untagged follows in the bot's own priority (operator, 2026-09-26).
 			var listOverviewEntryToAttack = offensiveOverviewEntries
 				?.Where(entry => entry.Distance <= shipFit.MaxTargetingRange)
 				?.Where(entry => entry.Name != "Vila Swarmer")
-				?.OrderBy(priorityOf)
+				?.OrderBy(TagRank)
+				?.ThenBy(priorityOf)
 				?.ThenBy(entry => entry?.Distance ?? int.MaxValue)
 				?.ToArray()
 				??[];
 			return listOverviewEntryToAttack;
 		}
+
+		/// <summary>Sort key for an FC tag: 1..9 for digits, 10.. for letters, int.MaxValue when untagged.</summary>
+		public static int TagRank(IOverviewEntry entry)
+		{
+			var tag = entry?.Tag?.Trim();
+			if (string.IsNullOrEmpty(tag)) return int.MaxValue;
+			if (tag.Length == 1 && char.IsDigit(tag[0]) && tag[0] != '0') return tag[0] - '0';
+			if (tag.Length == 1 && char.IsLetter(tag[0])) return 10 + (char.ToUpperInvariant(tag[0]) - 'A');
+			return int.MaxValue - 1;
+		}
+
+		public static bool IsTagged(IOverviewEntry entry) => TagRank(entry) < int.MaxValue - 1;
 	}
 	public class CombatTask(Bot bot, ShipFit shipFit, DronesContoller dronesController, PriorityManager priorityManager) : IBotTask
 	{
@@ -38,6 +53,16 @@ namespace Sanderling.ABot.Bot.Task
 
 		private Dictionary<long, int> lastTargetingAttemptSteps = new Dictionary<long, int>();
 		private int stepIndex = 0;
+
+		/// <summary>
+		/// Per client: the target we asked the client to make active, and when. EVE keeps a running
+		/// launcher on the target it was started on, so after the switch registers the launchers are
+		/// cycled off once and the normal fire logic starts them again on the new active target.
+		/// </summary>
+		private static readonly Dictionary<int, (string Name, long Tick)> ActiveSwitchByPid = new();
+		private const int ActiveSwitchCooldownMs = 5000;
+		/// <summary>Below this remaining fraction we finish the current target rather than switch away.</summary>
+		private const double FinishBelowFraction = 0.25;
 
 		public IEnumerable<IBotTask> Component
 		{
@@ -93,7 +118,16 @@ namespace Sanderling.ABot.Bot.Task
 				var cache = overviewProvider.Entries?.FirstOrDefault(NpcInfoProvider.IsAbyssalCache);
 				var candidates = listOverviewEntryToAttack.AsEnumerable();
 				if (cache != null && cache.Distance <= shipFit.MaxTargetingRange)
-					candidates = candidates.Append(cache);
+				{
+					// Pop the cache EARLY when what is left cannot break the tank (operator, 2026-09-26):
+					// the looter locks it first so it is the next thing the launchers turn to, and the
+					// wreck is ready to loot while the last rats die. Otherwise it is last on the list.
+					var roomIsHarmless = shipFit.SustainableIncomingDps > 0 &&
+					                     estimatedIncomingDps <= shipFit.SustainableIncomingDps;
+					candidates = roomIsHarmless && global::Sanderling.ABot.Bot.Strategies.AbyssalFightState.IsLooter(bot)
+						? candidates.Prepend(cache)
+						: candidates.Append(cache);
+				}
 				var candidateList = candidates.ToList();
 
 				var allowed = new List<IOverviewEntry>();
@@ -149,6 +183,51 @@ namespace Sanderling.ABot.Bot.Task
 					 candidateList.Any(e => FleetFireBoard.NamesMatch(selectedName, e.Name)));
 				if (selectedBlocked)
 					yield return targetSelected!.GetUnlockTask();
+
+				// ACTIVE TARGET FOLLOWS THE PRIORITY (operator, 2026-09-26). The launchers fire at the
+				// client's active target, which EVE picks by lock order. When a higher-priority rat — or
+				// one the FC tagged — is locked, make it active instead; a target that is nearly dead is
+				// finished first unless the FC's tag says otherwise. Because a running launcher stays on
+				// the target it was started on, the switch is followed by one off-cycle of the launchers
+				// so the fire logic restarts them on the new target.
+				var desiredActive = allowed
+					.Select(e => (Entry: e, Target: shipState.ActiveTargets.List?.FirstOrDefault(t =>
+						FleetFireBoard.NamesMatch(t.Name, e.Name))))
+					.FirstOrDefault(p => p.Target != null);
+				if (desiredActive.Target != null && !selectedBlocked)
+				{
+					var now = Environment.TickCount64;
+					var currentIsDesired = targetSelected != null &&
+					                       FleetFireBoard.NamesMatch(targetSelected.Name, desiredActive.Entry.Name);
+					(string Name, long Tick) pending;
+					lock (ActiveSwitchByPid)
+						ActiveSwitchByPid.TryGetValue(bot.Pid, out pending);
+
+					if (currentIsDesired && pending.Name != null && FleetFireBoard.NamesMatch(targetSelected!.Name, pending.Name))
+					{
+						// The switch registered: cycle the launchers so they pick the new target up.
+						lock (ActiveSwitchByPid)
+							ActiveSwitchByPid.Remove(bot.Pid);
+						var restartTask = shipState.GetSetModuleActiveTask(ShipFit.ModuleType.Weapon, false);
+						if (restartTask != null)
+						{
+							yield return new DiagnosticTask($"Active target is now {targetSelected.Name} — cycling the launchers onto it");
+							yield return restartTask;
+						}
+					}
+					else if (!currentIsDesired)
+					{
+						var currentNearlyDead = targetSelected?.RemainingHitpointsFraction is double left && left < FinishBelowFraction;
+						var mayLeaveCurrent = targetSelected == null || !currentNearlyDead || PriorityManager.IsTagged(desiredActive.Entry);
+						if (mayLeaveCurrent && now - pending.Tick >= ActiveSwitchCooldownMs)
+						{
+							lock (ActiveSwitchByPid)
+								ActiveSwitchByPid[bot.Pid] = (desiredActive.Entry.Name, now);
+							yield return new DiagnosticTask($"Making {desiredActive.Entry.Name} the active target (priority{(PriorityManager.IsTagged(desiredActive.Entry) ? $", FC tag {desiredActive.Entry.Tag}" : "")})");
+							yield return desiredActive.Target.GetMakeActiveTask();
+						}
+					}
+				}
 
 				// Fire only at a target the overview positively calls an enemy (or one the fire board
 				// already handed us): never at a friendly, never at something we cannot identify.

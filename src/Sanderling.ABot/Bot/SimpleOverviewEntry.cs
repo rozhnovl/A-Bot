@@ -23,6 +23,7 @@ namespace Sanderling.ABot.Bot
 		public bool MeTargeted { get; }
 		public bool MeActiveTarget { get; }
 		public long Id { get; }
+		public virtual string? Tag => null;
 		public abstract ISerializableBotTask ClickMenuEntryByRegexPattern(string orbit, string km);
 		public abstract ISerializableBotTask GetSelectTask();
 		/// <summary>Never serialized: UIElement holds parent back-references (self-referencing loop).</summary>

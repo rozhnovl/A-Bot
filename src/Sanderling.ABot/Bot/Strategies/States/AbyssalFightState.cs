@@ -171,10 +171,19 @@ namespace Sanderling.ABot.Bot.Strategies
 			var listOverviewEntryToAttack = priorityManager.GetEnemies(overviewProvider);
 			if (listOverviewEntryToAttack.Any())
 			{
+				// A spawn on grid = a room that still has to be cleared: reset the end-of-room
+				// bookkeeping here rather than on our own gate count, which a hand-pressed gate skips.
 				changingRoom = false;
 				gateActivatedAt = null;
+				cacheLooted = false;
+				reloadIssued = false;
+				gateWaitStartedAt = null;
 			}
 			var estimatedIncomingDps = npcInfoProvider.CalculateApproximateDps(overviewProvider);
+			// What is left on grid cannot break the tank: the room is winding down. Everything that
+			// follows may start the end-of-room work (cache, conduit) while the last rats die.
+			var roomIsHarmless = shipState.Fit.SustainableIncomingDps > 0 &&
+			                     estimatedIncomingDps <= shipState.Fit.SustainableIncomingDps;
 			var orbitBeacon = overviewProvider.Entries?.Where(npcInfoProvider.IsOrbitBeacon)
 				                  ?.OrderBy(npcInfoProvider.CalcTargetPriority)?.FirstOrDefault() ??
 			                  coreCache ?? conduit;
@@ -185,7 +194,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			// ENTERING A ROOM: get the ship moving on an anchor BEFORE opening fire. A Hawk that starts
 			// shooting while sitting still eats the whole spawn's applied damage; the orbit is the tank
 			// (operator's order: orbit first, then regroup, then fight).
-			if (conduit != null && listOverviewEntryToAttack.Any() &&
+			if (conduit != null && listOverviewEntryToAttack.Any() && !roomIsHarmless &&
 			    shipState.Maneuver == ShipManeuverType.None && orbitBeacon != null)
 			{
 				task.With($"Entering room — orbiting {orbitBeacon} before engaging");
@@ -204,14 +213,34 @@ namespace Sanderling.ABot.Bot.Strategies
 
 			// NO THREAT: when the room cannot out-damage the tank, stop trading volleys at range and go
 			// collect the loot — the guns keep firing at whatever is locked while we fly (operator).
-			var roomIsHarmless = shipState.Fit.SustainableIncomingDps > 0 &&
-			                     estimatedIncomingDps <= shipState.Fit.SustainableIncomingDps;
 			var lootableWreck = overviewProvider.Entries?.FirstOrDefault(e =>
 				NpcInfoProvider.IsWreckName(e.Name) && NpcInfoProvider.IsAbyssalCacheName(e.Name));
-			if (roomIsHarmless && lootableWreck != null && IsLooter(bot))
+			if (roomIsHarmless && lootableWreck != null && IsLooter(bot) && !cacheLooted)
 			{
 				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — looting early");
 				goto looting;
+			}
+
+			// Flying to the cache while the room is still being cleared saves the trip afterwards
+			// (operator, 2026-09-26): when the spawn cannot break the tank and the cache is not popped
+			// yet, the looter heads there now — the launchers keep firing on the way.
+			if (roomIsHarmless && IsLooter(bot) && coreCache != null && !coreCache.Name.Contains("Wreck") &&
+			    coreCache.Distance > 2500 && shipState.Maneuver != ShipManeuverType.Approach &&
+			    listOverviewEntryToAttack.Any())
+			{
+				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — flying to the cache early");
+				return task.With(coreCache.GetApproachTask());
+			}
+
+			// ROOM WINDING DOWN: the wings — and the looter once the cache is done — head for the
+			// conduit now, so the fleet is already gathered when the last rat dies. The launchers keep
+			// firing on the way (light missiles reach 59 km).
+			if (roomIsHarmless && listOverviewEntryToAttack.Any() && conduit != null &&
+			    conduit.Distance > GateGatherRangeM && shipState.Maneuver != ShipManeuverType.Approach &&
+			    (!IsLooter(bot) || cacheLooted || coreCache == null))
+			{
+				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — heading for the conduit early");
+				return task.With(conduit.GetApproachTask());
 			}
 
 			// COMBAT FIRST: tank / lock / shoot / drones take priority over repositioning and looting.
@@ -258,7 +287,10 @@ namespace Sanderling.ABot.Bot.Strategies
 			{
 				task.With($"Incoming DPS is {estimatedIncomingDps}. No need to avoid");
 				//TODO should not be switching from target obit
-				if (shipState.Maneuver != ShipManeuverType.Approach &&
+				// A harmless room needs no anchor: a ship that has stopped at the cache or the conduit
+				// must stay there, not fly back to the beacon.
+				if (!roomIsHarmless &&
+				    shipState.Maneuver != ShipManeuverType.Approach &&
 				    shipState.Maneuver != ShipManeuverType.KeepAtRange
 				    && shipState.Maneuver != ShipManeuverType.Orbit)
 					//TODO HERE
@@ -332,73 +364,104 @@ namespace Sanderling.ABot.Bot.Strategies
 			}
 			else
 			{
-				if (coreCache != null)
+				// END OF ROOM — the operator's protocol (2026-09-26): the looter empties the cache wreck,
+				// everybody flies to the conduit, and the fleet takes the gate together once every ship
+				// is within GateGatherRangeM. Wings no longer wait at the wreck: an emptied wreck stays on
+				// grid, which left them holding forever on 2026-09-26. They go and wait at the conduit.
+				var cacheWreck = coreCache != null && coreCache.Name.Contains("Wreck") ? coreCache : null;
+				if (cacheWreck != null && IsLooter(bot) && !cacheLooted)
 				{
-					if (coreCache.Name.Contains("Wreck"))
+					var lootWindowProvider = inventoryProvider.GetLootableWindow();
+					if (lootWindowProvider is { IsEmpty: false })
+						return task.With(lootWindowProvider.GetClickLootButtonTask());
+					if (lootWindowProvider is { IsEmpty: true })
 					{
-						// Only the lead loots. Observed live 2026-09-18: all three ships flew at the same
-						// cache wreck at once and stalled there. Wings hold until the wreck is gone.
-						if (!IsLooter(bot))
-							return task.With("Not the looter — holding while the lead loots the cache");
-
-						var lootWindowProvider = inventoryProvider.GetLootableWindow();
-
-						if (lootWindowProvider is { IsEmpty: false })
-						{
-							return task.With(lootWindowProvider.GetClickLootButtonTask());
-						}
-
-						if (coreCache.Distance < 2500)
-							return task.With(coreCache.ClickMenuEntryByRegexPattern("Open Cargo"));
+						// Loot All has been taken. The wreck stays on grid empty, so remember that for
+						// this room instead of re-opening it forever.
+						cacheLooted = true;
+						task.With("Cache emptied — heading for the conduit");
+					}
+					else
+					{
+						if (cacheWreck.Distance < 2500)
+							return task.With(cacheWreck.ClickMenuEntryByRegexPattern("Open Cargo"));
 						if (shipState.Maneuver != ShipManeuverType.Approach)
-						{
-							return task.With(coreCache.GetApproachTask());
-						}
+							return task.With(cacheWreck.GetApproachTask());
+						return task.With("Flying to the cache wreck");
 					}
 				}
-				else if (offensiveOverviewEntries.IsNullOrEmpty())
-				{
-					// No conduit on grid means we are not standing in a cleared abyssal room at all —
-					// e.g. still in known space next to the Abyssal Trace. Never dereference it blind.
-					if (conduit == null)
-						return task.With("No enemies and no conduit on grid — nothing to jump into");
 
-					// The gate is the last quiet moment of the room: never carry a partial magazine into
-					// the next spawn (operator's rule).
+				if (!offensiveOverviewEntries.IsNullOrEmpty())
+					return task;
+
+				// No conduit on grid means we are not standing in a cleared abyssal room at all —
+				// e.g. still in known space next to the Abyssal Trace. Never dereference it blind.
+				if (conduit == null)
+					return task.With("No enemies and no conduit on grid — nothing to jump into");
+
+				var closeInventoryTask = inventoryProvider.GetCloseWindowTask();
+				if (closeInventoryTask != null)
+					return task.With(closeInventoryTask);
+
+				// The gate is the last quiet moment of the room: never carry a partial magazine into
+				// the next spawn (operator's rule). Issued once per room; the reload runs while we fly.
+				if (!reloadIssued)
+				{
+					reloadIssued = true;
 					var topUpTask = shipState.GetReloadTask();
 					if (topUpTask != null)
 						return task.With("Topping the launchers up before taking the gate").With(topUpTask);
-
-					// "Activate Gate" is a one-shot command: the ship then flies to the conduit by itself.
-					// Clicking it every tick only re-opens the menu and interrupts the approach, so after
-					// the click we simply wait out the flight.
-					if (gateActivatedAt.HasValue &&
-					    StateStopwatch.Elapsed - gateActivatedAt.Value < TimeSpan.FromSeconds(GateApproachWaitSeconds))
-						return task.With("Gate activated — flying to the conduit, waiting");
-
-					task.With("Room finished, time to jump");
-					if (!changingRoom)
-					{
-						changingRoom = true;
-						stats?.AdvanceRoom();
-					}
-					roomIndex++;
-					gateActivatedAt = StateStopwatch.Elapsed;
-					// Operator's path: left-click the conduit, then press Activate Gate on the Selected
-					// Item panel — no right-click menu. The menu stays as a fallback for clients/panels
-					// where the button is not exposed.
-					var panelGateTask = shipState.GetSelectedItemActionTask(conduit, "activate|jump");
-					if (panelGateTask != null)
-					{
-						// The select click alone is not the activation: keep the wait ungated until the
-						// panel actually carries the button.
-						gateActivatedAt = null;
-						return task.With(panelGateTask);
-					}
-
-					gateActivatedAt = StateStopwatch.Elapsed;
-					return task.With(conduit.ClickMenuEntryByRegexPattern("Activate Gate"));
 				}
+
+				// "Activate Gate" is a one-shot command: the ship then flies to the conduit by itself.
+				// Clicking it every tick only re-opens the menu and interrupts the approach, so after
+				// the click we simply wait out the flight.
+				if (gateActivatedAt.HasValue &&
+				    StateStopwatch.Elapsed - gateActivatedAt.Value < TimeSpan.FromSeconds(GateApproachWaitSeconds))
+					return task.With("Gate activated — flying to the conduit, waiting");
+
+				// Gather on the conduit: approach until inside the gather range.
+				if (conduit.Distance > GateGatherRangeM)
+				{
+					gateWaitStartedAt = null;
+					FleetGateBoard.Report(bot.Pid, conduit.Distance, ready: false);
+					if (shipState.Maneuver != ShipManeuverType.Approach)
+						return task.With($"Room clear — flying to the conduit ({conduit.Distance} m)")
+							.With(conduit.GetApproachTask());
+					return task.With($"Room clear — approaching the conduit ({conduit.Distance} m)");
+				}
+
+				// Wait for the rest of the fleet, then everybody jumps at once. A ship that never gets
+				// here (dead, autopilot off, solo run) cannot hold us forever: the wait times out.
+				FleetGateBoard.Report(bot.Pid, conduit.Distance, ready: true);
+				gateWaitStartedAt ??= StateStopwatch.Elapsed;
+				var waited = StateStopwatch.Elapsed - gateWaitStartedAt.Value;
+				var fleetReady = FleetGateBoard.AllReady(out var fleetDetail);
+				if (!fleetReady && waited < TimeSpan.FromSeconds(GateSyncTimeoutSeconds))
+					return task.With($"At the conduit — waiting for the fleet ({fleetDetail}; {waited.TotalSeconds:F0} s)");
+
+				task.With(fleetReady
+					? $"Fleet gathered at the conduit ({fleetDetail}) — taking the gate"
+					: $"Fleet not complete after {waited.TotalSeconds:F0} s ({fleetDetail}) — taking the gate anyway");
+
+				// Operator's path: left-click the conduit, then press Activate Gate on the Selected
+				// Item panel — no right-click menu. The menu stays as a fallback for clients/panels
+				// where the button is not exposed. The select click alone is not the activation, so
+				// the room bookkeeping below only happens once the panel actually shows the conduit.
+				var panelGateTask = shipState.GetSelectedItemActionTask(conduit, "activate|jump");
+				if (panelGateTask != null && !shipState.SelectedItemPanelShows(conduit))
+					return task.With("Selecting the conduit for the Activate Gate button").With(panelGateTask);
+
+				if (!changingRoom)
+				{
+					changingRoom = true;
+					stats?.AdvanceRoom();
+				}
+				FleetGateBoard.Forget(bot.Pid);
+				gateWaitStartedAt = null;
+				roomIndex++;
+				gateActivatedAt = StateStopwatch.Elapsed;
+				return task.With(panelGateTask ?? conduit.ClickMenuEntryByRegexPattern("Activate Gate"));
 			}
 
 			return task;
@@ -408,7 +471,7 @@ namespace Sanderling.ABot.Bot.Strategies
 		/// Whether this client is the one that picks loot up. The fleet role comes from the client
 		/// config (tank / wing-1 / …); a solo runner has no role and always loots.
 		/// </summary>
-		private static bool IsLooter(Bot bot) =>
+		internal static bool IsLooter(Bot bot) =>
 			string.IsNullOrEmpty(bot.Role) ||
 			bot.Role.Contains("tank", StringComparison.OrdinalIgnoreCase) ||
 			bot.Role.Contains("lead", StringComparison.OrdinalIgnoreCase);
@@ -416,9 +479,20 @@ namespace Sanderling.ABot.Bot.Strategies
 		/// <summary>How long we let the ship fly to the conduit after "Activate Gate" before re-issuing it.</summary>
 		private const int GateApproachWaitSeconds = 25;
 
+		/// <summary>Everybody must be this close to the conduit before the fleet takes the gate.</summary>
+		private const int GateGatherRangeM = 3000;
+		/// <summary>How long a ship at the conduit waits for the rest of the fleet before jumping alone.</summary>
+		private const int GateSyncTimeoutSeconds = 60;
+
 		private bool enteringAbyss;
 		private bool changingRoom;
 		private TimeSpan? gateActivatedAt;
+		/// <summary>The looter has emptied this room's cache wreck (the empty wreck stays on grid).</summary>
+		private bool cacheLooted;
+		/// <summary>The pre-gate top-up reload was issued in this room.</summary>
+		private bool reloadIssued;
+		/// <summary>When we arrived at the conduit and started waiting for the fleet.</summary>
+		private TimeSpan? gateWaitStartedAt;
 		/// <summary>Which room we have already called the fleet regroup in (once per room).</summary>
 		private int regroupCalledInRoom = -1;
 		/// <summary>Rooms taken so far this run; bumped when the gate is activated.</summary>

@@ -21,6 +21,8 @@ namespace Sanderling.ABot.Bot
 		bool ShouldUseTractorForLooting { get; }
 		ISerializableBotTask? GetTurnOnAlwaysActiveModulesTask();
 		ISerializableBotTask? GetSetModuleActiveTask(ShipFit.ModuleType type, bool shouldBeActive);
+		/// <summary>Whether the Selected Item panel currently shows this overview entry.</summary>
+		bool SelectedItemPanelShows(IOverviewEntry entry);
 		ISerializableBotTask? GetAttackTasks();
 		ISerializableBotTask GetNextTankingModulesTask(double estimatedIncomingDps, double enemyNeutGjPerSec = 0);
 		ISerializableBotTask? GetReloadTask();

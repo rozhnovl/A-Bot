@@ -365,7 +365,9 @@ namespace Sanderling.ABot.Bot
 			lock (Gate)
 			{
 				state.Stock.ObserveCargo(hold);
-				state.Stock.ObserveLauncher(loadedName, info?.ChargeQuantity);
+				// The HUD prints the count of ONE launcher (53 for a full LML II); the group holds that × launchers.
+				state.Stock.ObserveLauncher(loadedName,
+					info?.ChargeQuantity is int perLauncher ? perLauncher * Math.Max(plan.LauncherCount, 1) : null);
 			}
 		}
 

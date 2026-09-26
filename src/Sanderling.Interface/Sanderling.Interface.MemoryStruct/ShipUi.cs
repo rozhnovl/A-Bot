@@ -144,9 +144,9 @@ namespace Sanderling.Interface.MemoryStruct
 		/// <summary>Loaded charge/crystal type id, read from the module's main icon when present.</summary>
 		public int? ChargeTypeId { get; set; }
 		/// <summary>
-		/// Charges loaded right now, summed over the stacked/grouped modules behind this one button
-		/// (the HUD's own <c>quantity</c> entry: 4 grouped launchers × 53 = 212). Null when the client
-		/// did not expose it; 0 is a real "launchers are empty".
+		/// Charges loaded in ONE module of the group behind this button — the HUD's own <c>quantity</c>
+		/// entry (a full LML II shows 53; seen live counting 53 → 51 → … → 2 → 53 on reload). Null when
+		/// the client did not expose it; 0 is a real "launchers are empty".
 		/// </summary>
 		public int? ChargeQuantity { get; set; }
 		public int ChargeCount { get; set; }

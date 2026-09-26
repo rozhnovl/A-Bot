@@ -28,6 +28,12 @@ namespace Sanderling.Interface.MemoryStruct
 		public string? ObjectType { get; set; }
 		public string? ObjectAlliance { get; set; }
 		public ColorComponents? IconSpriteColorPercent { get; set; }
+		/// <summary>
+		/// Texture of the row's main icon sprite, e.g. <c>res:/UI/Texture/Shared/Brackets/wreckNPC.png</c>
+		/// for a wreck that still holds loot and <c>…/wreckLootedNPC.png</c> for an emptied one
+		/// (verified live 2026-09-26).
+		/// </summary>
+		public string? IconTexturePath { get; set; }
 		public HashSet<string> NamesUnderSpaceObjectIcon { get; set; }
 		public List<ColorComponents> BgColorFillsPercent { get; set; } 
 		public List<string> RightAlignedIconsHints { get; set; }

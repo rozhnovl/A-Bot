@@ -235,11 +235,12 @@ internal static class UiSummary
                 typeId = b.ModuleInfo?.ModuleId,
                 name = b.ModuleInfo?.ModuleId is int typeId ? ModuleTypes.Lookup(typeId)?.Name : null,
                 active = b.IsActive,
+                deactivating = b.IsDeactivating,
                 busy = b.IsBusy ? true : (bool?)null,
                 hilite = b.IsHiliteVisible ? true : (bool?)null,
                 ramp = b.RampRotationMilli,
                 chargeTypeId = b.ModuleInfo?.ChargeTypeId,
-                charges = b.ModuleInfo is { MaxCharges: > 0 } mi ? $"{mi.ChargeCount}/{mi.MaxCharges}" : null,
+                charges = b.ModuleInfo?.ChargeQuantity,
             }).ToArray(),
             buttons = new
             {
@@ -259,6 +260,7 @@ internal static class UiSummary
             armorPermille = t.Hitpoints?.Armor,
             hullPermille = t.Hitpoints?.Struct,
             selected = t.IsSelected,
+            tag = t.Tag,
         }).ToArray();
 
     private static object Overview(ParsedUserInterface m, int max)
@@ -274,6 +276,9 @@ internal static class UiSummary
                     name = e.ObjectName,
                     type = e.ObjectType,
                     distanceM = e.ObjectDistanceInMeters,
+                    tag = e.CellsTexts?.FirstOrDefault(kv => string.Equals(kv.Key?.Trim(), "Tag", StringComparison.OrdinalIgnoreCase)).Value is { Length: > 0 } tagText ? tagText.Trim() : null,
+                    icon = e.IconTexturePath?.Split('/').LastOrDefault(),
+                    emptyWreck = e.IconTexturePath?.Contains("wreckLooted", StringComparison.OrdinalIgnoreCase) == true ? true : (bool?)null,
                     enemy = IsEnemy(e) ? true : (bool?)null,
                     attackingMe = e.CommonIndications?.AttackingMe == true ? true : (bool?)null,
                     targetingMe = e.CommonIndications?.Targeting == true ? true : (bool?)null,

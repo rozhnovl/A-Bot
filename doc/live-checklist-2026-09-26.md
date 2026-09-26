@@ -13,18 +13,21 @@
       emergencyStop = null. Помнить: сервер держит DLL — перед сборкой его останавливать.
 
 ## 1. Парсер (дампы, без движения) — `dump_diagnostics` / `find_ui query=…`
-- [ ] **Модуль**: `find_ui query=ModuleButton_` → у бустера видны `isDeactivating`, `ramp_active`, `online`,
-      `quantity`. Тест: включить бустер рукой, кликнуть выключение и в течение 2 с снять дамп →
-      `isDeactivating: True`, в parsed.json `IsDeactivating: true`. В этот момент бот НЕ должен кликать слот.
+- [x] **Модуль** (проверено 27.09 через `toggle_module Medium0` + опрос `get_ui ship` каждые 0,3 с):
+      работающий бустер — `active: true`; после клика «выкл» в течение цикла `active: true, deactivating: true`,
+      затем оба false. У ещё не включавшегося в этой сессии модуля `ramp_active` отсутствует — парсер
+      считает его выключенным по наличию `isDeactivating`. Замечание: первый клик после простоя может не
+      дойти (видимо, уходит на фокус окна) — второй срабатывает.
 - [ ] **Пусковые**: `quantity` = 53 при полном заряде (это счётчик ОДНОЙ пусковой, не суммы); после залпа
       уменьшается; после Reload снова 53. В логе Ammo: «rounds: … Nova 812» после чтения карго
       (600 в трюме + 4×53 в пусковых); до чтения карго — «hold not read yet».
-- [ ] **Врек**: снять дамп строки обзора врека бочки ДО лута и ПОСЛЕ Loot All. В логе строка
-      `Cache wreck icon: [...] looted=…` — сравнить имена узлов под иконкой / texturePath / цвет.
-      Цель: найти признак «пустой врек» и завести `IOverviewEntry.IsEmptyWreck`.
-- [ ] **Тег**: ФК ставит тег «1» на цель, цель залочена у всех. (а) колонка Tag в обзоре показывает «1»;
-      (б) дамп элемента цели (`find_ui query=<имя цели>`) → где нарисован тег (LabelText / отдельный узел).
-      Сейчас парсится: колонка обзора + эвристика «одиночный символ 1–9/A–Z среди LabelText цели».
+- [x] **Врек** (проверено 26.09 на Guristas-вреках): иконка строки `iconSprite._texturePath` =
+      `…/Brackets/wreckNPC.png` у врека с лутом и `…/Brackets/wreckLootedNPC.png` у пустого →
+      `IOverviewEntry.IsEmptyWreck`, в `get_ui` поля `icon` / `emptyWreck`. Осталось убедиться, что врек
+      абиссальной бочки использует те же текстуры.
+- [x] **Тег** (проверено 27.09): колонка Tag обзора → `tag: "1"` у Pithum Annihilator; на залоченной цели
+      тег — отдельная метка `EveLabelMediumBold` под `iconPar` → `IShipUiTarget.Tag = "1"`; в `get_ui`
+      у обзора и целей поле `tag`. Активная цель — узел `ActiveTargetIndicator` (`selected: true`).
 - [ ] **Selected Item**: выделить conduit → в панели есть кнопка `selectedItemActivate…` (иначе бот уйдёт в меню).
 - [ ] **Меню пусковой**: ПКМ по группе → пункты с полными именами «Caldari Navy Nova Light Missile»,
       «Nova Fury Light Missile» (путь смены боеприпаса).

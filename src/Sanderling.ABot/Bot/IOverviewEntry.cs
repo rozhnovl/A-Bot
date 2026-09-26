@@ -23,6 +23,10 @@ namespace Sanderling.ABot.Bot
 		/// wrecks so the marker of an EMPTY wreck can be found live (operator: "различимо по иконке").
 		/// </summary>
 		IReadOnlyCollection<string> IconNames { get; }
+		/// <summary>Texture of the row's main icon (see the memory-struct entry); null when unknown.</summary>
+		string? IconTexturePath { get; }
+		/// <summary>A wreck the client already draws as looted (icon <c>wreckLooted*.png</c>): nothing to take.</summary>
+		bool IsEmptyWreck { get; }
 		ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null);
 		ISerializableBotTask GetSelectTask();
 		/// <summary>

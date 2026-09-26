@@ -32,6 +32,11 @@ namespace Sanderling.ABot.Bot
 		[Newtonsoft.Json.JsonIgnore]
 		public override IUIElement? SelectElement => memoryOverviewEntry.UiElement;
 
+		public override string? IconTexturePath => memoryOverviewEntry.IconTexturePath;
+
+		public override bool IsEmptyWreck =>
+			memoryOverviewEntry.IconTexturePath?.Contains("wreckLooted", StringComparison.OrdinalIgnoreCase) == true;
+
 		public override IReadOnlyCollection<string> IconNames =>
 			memoryOverviewEntry.NamesUnderSpaceObjectIcon ?? (IReadOnlyCollection<string>)System.Array.Empty<string>();
 

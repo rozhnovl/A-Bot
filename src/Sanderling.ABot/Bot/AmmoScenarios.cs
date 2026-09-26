@@ -37,6 +37,8 @@ namespace Sanderling.ABot.Bot
 			public long Id { get; }
 			public string? Tag => null;
 			public IReadOnlyCollection<string> IconNames => Array.Empty<string>();
+			public string? IconTexturePath => null;
+			public bool IsEmptyWreck => false;
 			public ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null) => null!;
 			public ISerializableBotTask GetSelectTask() => null!;
 			public IUIElement? SelectElement => null;

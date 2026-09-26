@@ -21,5 +21,7 @@ namespace Sanderling.Interface.MemoryStruct
 			get;
 		}
 		public int? Distance { get; }
+		/// <summary>The FC's tag drawn on the target icon ("1".."9", "A".."Z"), or null (Eve64: EveLabelMediumBold under iconPar).</summary>
+		string? Tag { get; }
 	}
 }

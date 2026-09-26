@@ -33,7 +33,7 @@ namespace Sanderling.ABot.Bot
 			{
 				// A lone "1".."9" / "A".."Z" line among the target's labels is the FC's tag (to be
 				// confirmed live: the tag is drawn on the icon, its node may or may not be a label).
-				Tag = memoryTarget.LabelText
+				Tag = memoryTarget.Tag ?? memoryTarget.LabelText
 					.Select(lt => Regex.Replace(lt ?? "", "<.*?>", "").Trim())
 					.FirstOrDefault(t => t.Length == 1 && (char.IsDigit(t[0]) && t[0] != '0' || char.IsUpper(t[0])));
 				var splittedName = memoryTarget.LabelText

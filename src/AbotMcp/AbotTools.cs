@@ -201,6 +201,26 @@ public sealed class AbotTools
             });
         });
 
+    [McpServerTool(Name = "toggle_module", Destructive = true),
+     Description("Left-click a fitted module button by slot as get_ui lists it (e.g. 'Medium0', 'High0'): toggles the module exactly the way the bot does. LIVE sends the click; dry-run only reports.")]
+    public static string ToggleModule(
+        [Description("slot as in get_ui ship.modules, e.g. Medium0")] string slot,
+        [Description("pid, title substring or role; optional with a single client")] string? client = null)
+        => Guard(() =>
+        {
+            var host = Fleet.Resolve(client);
+            return host.WithLock(() =>
+            {
+                var parsed = host.Perceive();
+                var button = (parsed?.ShipUi as Sanderling.Interface.MemoryStruct.ShipUi)?.ModuleButtons?
+                    .FirstOrDefault(b => string.Equals($"{b.Rack}{b.SlotIndex}", slot, StringComparison.OrdinalIgnoreCase));
+                if (button?.UINode is null) return $"error: no module button in slot '{slot}' (see get_ui ship.modules)";
+                var what = $"left-click module {slot} (typeId {button.ModuleInfo?.ModuleId}, " +
+                           $"active={button.IsActive?.ToString() ?? "?"}, deactivating={button.IsDeactivating?.ToString() ?? "?"})";
+                return host.Execute(Input.Click(button.UINode, Input.ParseButton("left"), Input.ParseModifiers(null), false), what);
+            });
+        });
+
     [McpServerTool(Name = "click_at", Destructive = true),
      Description("Click absolute screen coordinates (use screenshot's mapping). Bypasses the occlusion check — prefer click(id) when an element id exists.")]
     public static string ClickAt(

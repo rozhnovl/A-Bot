@@ -215,7 +215,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			// collect the loot — the guns keep firing at whatever is locked while we fly (operator).
 			var lootableWreck = overviewProvider.Entries?.FirstOrDefault(e =>
 				NpcInfoProvider.IsWreckName(e.Name) && NpcInfoProvider.IsAbyssalCacheName(e.Name));
-			if (roomIsHarmless && lootableWreck != null && IsLooter(bot) && !cacheLooted)
+			if (roomIsHarmless && lootableWreck != null && !lootableWreck.IsEmptyWreck && IsLooter(bot) && !cacheLooted)
 			{
 				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — looting early");
 				goto looting;
@@ -370,8 +370,13 @@ namespace Sanderling.ABot.Bot.Strategies
 				// grid, which left them holding forever on 2026-09-26. They go and wait at the conduit.
 				var cacheWreck = coreCache != null && coreCache.Name.Contains("Wreck") ? coreCache : null;
 				if (cacheWreck != null)
-					// Ground truth for the empty-wreck marker: what the row's icon carries before and after Loot All.
-					task.With($"Cache wreck icon: [{string.Join(", ", cacheWreck.IconNames)}] looted={cacheLooted}");
+					task.With($"Cache wreck icon {cacheWreck.IconTexturePath?.Split('/').LastOrDefault()} empty={cacheWreck.IsEmptyWreck} looted={cacheLooted}");
+				if (cacheWreck != null && cacheWreck.IsEmptyWreck && !cacheLooted)
+				{
+					// The client already draws the wreck as looted — nothing to fly to.
+					cacheLooted = true;
+					task.With("Cache wreck is empty — heading for the conduit");
+				}
 				if (cacheWreck != null && IsLooter(bot) && !cacheLooted)
 				{
 					var lootWindowProvider = inventoryProvider.GetLootableWindow();

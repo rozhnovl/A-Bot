@@ -40,6 +40,8 @@ namespace Sanderling.Parse
 
 		public string[] LabelText => Raw?.LabelText;
 
+		public string? Tag => Raw?.Tag;
+
 		public RectInt? Region => Raw?.Region ?? RectInt.Empty;
 
 		public MemoryStruct.IUIElement RegionInteraction => Raw?.RegionInteraction;

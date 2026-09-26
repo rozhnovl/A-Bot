@@ -605,7 +605,14 @@ namespace Eve64
 				SlotIndex = slotIndex,
 				// Keep an absent signal unknown. Treating an unreadable ramp as false makes an
 				// always-on hardener receive a second toggle, which switches it back off.
-				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool?,
+				// A button that has not cycled yet in this client session carries no ramp_active at all
+				// (both shield boosters on a fresh client, 2026-09-27); the client still exposes
+				// isDeactivating for it, which proves the button is live — and the module is OFF.
+				// Without this fallback the bot would never switch such a module on ("unknown ramp").
+				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool?
+				           ?? (TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")) is bool
+					           ? false
+					           : (bool?)null),
 				IsDeactivating = TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")),
 				IsHiliteVisible = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
 				IsBusy = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "busy"),
@@ -914,6 +921,14 @@ namespace Eve64
 				             string.Equals(node.NameProperty, "myActiveTargetIndicator",
 					             StringComparison.OrdinalIgnoreCase));
 
+			// The fleet commander's tag is its own bold label on the icon (EveLabelMediumBold under
+			// iconPar: "1", "A"), separate from the name/distance labels (verified live 2026-09-26).
+			var tag = targetNode.UINode
+				.ListDescendants()
+				.Where(node => node.PythonObjectTypeName == "EveLabelMediumBold")
+				.Select(node => GetStringPropertyFromDictEntries("_setText", node)?.Trim())
+				.FirstOrDefault(text => !string.IsNullOrEmpty(text) && text.Length <= 2);
+
 			var assignedContainerNode = targetNode
 				.ListDescendantsWithDisplayRegion()
 				.Where(node =>
@@ -949,6 +964,7 @@ namespace Eve64
 			return new ShipUiTarget(targetNode.AsUiElement())
 			{
 				IsSelected = isActiveTarget,
+				Tag = tag,
 				Distance = textsTopToBottom.Select(ParseDistance).Where(e => e.HasValue).FirstOrDefault(),
 				RegionInteractionElement = barAndImageCont.AsUiElement(),
 				LabelText = textsTopToBottom.ToArray(),
@@ -1136,10 +1152,12 @@ namespace Eve64
 				.ListDescendantsWithDisplayRegion()
 				.FirstOrDefault(node => node.UINode.PythonObjectTypeName == "SpaceObjectIcon");
 
-			var iconSpriteColorPercent = spaceObjectIconNode?
+			var iconSpriteNode = spaceObjectIconNode?
 				.ListDescendantsWithDisplayRegion()
-				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "iconSprite")?
-				.UINode.GetColorPercentFromDictEntries();
+				.FirstOrDefault(node => node.UINode.GetNameFromDictEntries() == "iconSprite");
+			var iconSpriteColorPercent = iconSpriteNode?.UINode.GetColorPercentFromDictEntries();
+			// The sprite's texture tells a looted wreck from a full one (wreckLootedNPC.png vs wreckNPC.png).
+			var iconTexturePath = iconSpriteNode?.UINode.GetTexturePathFromDictEntries();
 
 			var namesUnderSpaceObjectIcon = spaceObjectIconNode?
 				.UINode.ListDescendants()
@@ -1178,6 +1196,7 @@ namespace Eve64
 				UINode = overviewEntryNode,
 				TextsLeftToRight = textsLeftToRight,
 				CellsTexts = listViewEntry.CellsTexts,
+				IconTexturePath = iconTexturePath,
 				ObjectDistance = objectDistance,
 				ObjectDistanceInMeters = objectDistanceInMeters,
 				ObjectName = listViewEntry.CellsTexts.TryGetValue("Name", out var name) ? name : null,
@@ -2224,6 +2243,7 @@ namespace Eve64
 		public string? ObjectType { get; set; }
 		public string? ObjectAlliance { get; set; }
 		public ColorComponents? IconSpriteColorPercent { get; set; }
+		public string? IconTexturePath { get; set; }
 		public HashSet<string> NamesUnderSpaceObjectIcon { get; set; } = new();
 		public List<ColorComponents> BgColorFillsPercent { get; set; } = new();
 		public List<string> RightAlignedIconsHints { get; set; } = new();

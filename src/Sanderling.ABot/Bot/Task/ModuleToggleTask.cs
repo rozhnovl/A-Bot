@@ -43,8 +43,11 @@ namespace Sanderling.ABot.Bot.Task
 
 		public string ToJson()
 		{
-			return
-				$"{nameof(ModuleToggleTask)}[{(hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : string.Empty /*TODO module.TooltipLast.Value.LabelText.FirstOrDefault()?.Text)*/)}]";
+			// Name the slot and type so the log shows WHICH module was clicked (2026-09-27: the bot was
+			// seen clicking a passive BCS and the log only said "ModuleToggleTask[]").
+			var slots = string.Join(",", modules.Select(m => $"{m?.Rack}{m?.SlotIndex}:{m?.ModuleInfo?.ModuleId}"));
+			var keys = hotKey != null ? string.Join("+", hotKey.Select(h => h.ToString())) : string.Empty;
+			return $"{nameof(ModuleToggleTask)}[{slots}{(keys.Length > 0 ? " " + keys : "")}]";
 		}
 
 		public ModuleToggleTask([NotNull] ShipUIModuleButton module)

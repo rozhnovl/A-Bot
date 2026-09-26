@@ -19,6 +19,7 @@ namespace Sanderling.ABot.Bot
 			this.bot = bot;
 			this.memory = bot.MemoryMeasurementAtTime.Value;
 			Maneuver = memory?.ShipUi?.Indication?.ManeuverType ?? ShipManeuverType.None;
+			ManeuverTarget = memory?.ShipUi?.Indication?.ManeuverTarget;
 			//TODO
 			/*Maneuver = (memory?.ShipUi?.Indication?.LabelText?.Any(lt => lt.Text == "Keeping at Range") ?? false)
 				? ShipManeuverTypeEnum.KeepAtRange
@@ -33,6 +34,21 @@ namespace Sanderling.ABot.Bot
 		public bool ManeuverStartPossible => memory.ManeuverStartPossible();
 
 		public ShipManeuverType Maneuver { get; }
+		/// <summary>What the HUD says the maneuver is aimed at ("Triglavian Biocombinative Cache Wreck"), or null.</summary>
+		public string? ManeuverTarget { get; }
+
+		/// <summary>
+		/// True only when the ship is approaching THIS object. "Maneuver == Approach" alone is not
+		/// enough: on 2026-09-27 the tank kept approaching the looted wreck while the gate rule saw
+		/// "already approaching" and never sent it to the conduit.
+		/// </summary>
+		public bool IsApproaching(IOverviewEntry? entry)
+		{
+			if (Maneuver != ShipManeuverType.Approach) return false;
+			if (string.IsNullOrWhiteSpace(ManeuverTarget)) return true;   // target unreadable: trust the maneuver
+			var wanted = entry?.Name ?? entry?.Type ?? "";
+			return string.IsNullOrWhiteSpace(wanted) || FleetFireBoard.NamesMatch(ManeuverTarget, wanted);
+		}
 
 		public DronesContoller Drones { get; }
 
@@ -239,6 +255,10 @@ namespace Sanderling.ABot.Bot
 			var full = info.MaxCharges > 0 ? info.MaxCharges : Fit.Ammo?.MagazineRounds ?? 0;
 			var loaded = info.ChargeQuantity ?? (info.MaxCharges > 0 ? info.ChargeCount : (int?)null);
 			if (full <= 0 || loaded is not int rounds || rounds >= full) return null;
+
+			// A cycling launcher cannot reload: stop the group first, let the last cycle finish.
+			if (weapon.IsDeactivating == true) return null;
+			if (weapon.AppearsActive) return Fit.GetWeapon()?.EnsureActive(bot, false, false);
 
 			return weapon.UINode.ClickMenuEntryByRegexPattern(bot, "Reload.*");
 		}

@@ -609,8 +609,11 @@ namespace Eve64
 				// (both shield boosters on a fresh client, 2026-09-27); the client still exposes
 				// isDeactivating for it, which proves the button is live — and the module is OFF.
 				// Without this fallback the bot would never switch such a module on ("unknown ramp").
+				// Passive modules (BCS, cap battery) carry isDeactivating too but never a def_effect —
+				// they must stay "unknown" (null) or the bot clicks them forever (live, 2026-09-27).
 				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool?
-				           ?? (TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")) is bool
+				           ?? (moduleButtonNode.UINode.DictEntriesOfInterest.ContainsKey("def_effect") &&
+				               TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")) is bool
 					           ? false
 					           : (bool?)null),
 				IsDeactivating = TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")),

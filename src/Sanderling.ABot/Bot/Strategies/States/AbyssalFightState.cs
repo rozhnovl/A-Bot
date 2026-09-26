@@ -132,13 +132,22 @@ namespace Sanderling.ABot.Bot.Strategies
 			var conduit = conduits.FirstOrDefault(e => (e.Name ?? e.Type).Contains("Transfer"))
 			              ?? conduits.FirstOrDefault(e => !(e.Name ?? e.Type).Contains("Origin"))
 			              ?? conduits.FirstOrDefault();
-			if (conduit == null && LeavingAbyssTimestamp.HasValue &&
+			// Being in the abyss is NOT the same as seeing the conduit: the tank's shorter overview hid
+			// the Transfer Conduit in room 2 (2026-09-27) and the bot idled under fire for 46 s, sure it
+			// had left. Enemies, the cache, any Triglavian/abyssal structure — each proves we are still
+			// inside; only a grid with none of those is "outside" (or the jump tunnel).
+			var abyssSigns = conduit != null || coreCache != null ||
+			                 (overviewProvider.Entries?.Any(e =>
+				                 e.IsEnemy ||
+				                 (((e.Name ?? "") + " " + (e.Type ?? "")) is var label &&
+				                  (label.Contains("Triglavian") || label.Contains("Automata") ||
+				                   label.Contains("Pylon") || label.Contains("Extraction") ||
+				                   (label.Contains("Abyssal") && !label.Contains("Abyssal Trace"))))) ?? false);
+			if (!abyssSigns && LeavingAbyssTimestamp.HasValue &&
 			    LeavingAbyssTimestamp.Value.Add(TimeSpan.FromSeconds(46)) > StateStopwatch.Elapsed)
 				return task.With(
 					$"Left abyss. Waiting {LeavingAbyssTimestamp.Value.Add(TimeSpan.FromMinutes(1.2)) - StateStopwatch.Elapsed} to leave invulnerability");
-			/*dbContext.Spawns.Add(new AbyssEnemySpawn()
-				{Enemies = overviewProvider.Entries.Select(e => e.Name).ToArray(), Id = Guid.NewGuid(), Time = DateTime.Now});*/
-			if (conduit == null)
+			if (!abyssSigns)
 			{
 				if (enteredAbyss)
 				{
@@ -157,6 +166,10 @@ namespace Sanderling.ABot.Bot.Strategies
 			{
 				enteringAbyss = false;
 				enteredAbyss = true;
+				// Tell the fleet board we are alive in here; a spawn on grid also clears our "jumped" mark.
+				FleetGateBoard.Heartbeat(bot.Pid, roomClear: !(overviewProvider.Entries?.Any(e => e.IsEnemy) ?? false));
+				if (conduit == null)
+					task.With("In the abyss but no conduit on the overview — enlarge or scroll the overview so the Transfer Conduit is visible");
 			}
 
 			var turnOnAlwaysActiveModulesTask = shipState.GetTurnOnAlwaysActiveModulesTask();
@@ -179,6 +192,11 @@ namespace Sanderling.ABot.Bot.Strategies
 				reloadIssued = false;
 				gateWaitStartedAt = null;
 			}
+			// The client already draws the cache wreck as looted: nothing to fly to. Known here, before
+			// the winding-down rules, so the looter heads for the conduit early instead of after the
+			// last rat (seen 2026-09-27: the flag was only set at the very end of the tick).
+			if (coreCache != null && coreCache.IsEmptyWreck)
+				cacheLooted = true;
 			var estimatedIncomingDps = npcInfoProvider.CalculateApproximateDps(overviewProvider);
 			// What is left on grid cannot break the tank: the room is winding down. Everything that
 			// follows may start the end-of-room work (cache, conduit) while the last rats die.
@@ -225,7 +243,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			// (operator, 2026-09-26): when the spawn cannot break the tank and the cache is not popped
 			// yet, the looter heads there now — the launchers keep firing on the way.
 			if (roomIsHarmless && IsLooter(bot) && coreCache != null && !coreCache.Name.Contains("Wreck") &&
-			    coreCache.Distance > 2500 && shipState.Maneuver != ShipManeuverType.Approach &&
+			    coreCache.Distance > 2500 && !shipState.IsApproaching(coreCache) &&
 			    listOverviewEntryToAttack.Any())
 			{
 				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — flying to the cache early");
@@ -236,7 +254,7 @@ namespace Sanderling.ABot.Bot.Strategies
 			// conduit now, so the fleet is already gathered when the last rat dies. The launchers keep
 			// firing on the way (light missiles reach 59 km).
 			if (roomIsHarmless && listOverviewEntryToAttack.Any() && conduit != null &&
-			    conduit.Distance > GateGatherRangeM && shipState.Maneuver != ShipManeuverType.Approach &&
+			    conduit.Distance > GateGatherRangeM && !shipState.IsApproaching(conduit) &&
 			    (!IsLooter(bot) || cacheLooted || coreCache == null))
 			{
 				task.With($"Incoming {estimatedIncomingDps} DPS is within the tank — heading for the conduit early");
@@ -252,7 +270,13 @@ namespace Sanderling.ABot.Bot.Strategies
 				new PriorityManager(shipState.Fit, npcInfoProvider));
 			foreach (var ct in combatTask.Component)
 			{
-				if (ct is DiagnosticTask) continue;
+				// Keep the combat module's explanations (fire board, active target, ammo) in the log,
+				// but never as the tick's action — a log-only task produced motion-less ticks before.
+				if (ct is DiagnosticTask diagnostic)
+				{
+					task.With(diagnostic.ToJson());
+					continue;
+				}
 				return task.With((ISerializableBotTask)ct);
 			}
 
@@ -393,7 +417,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					{
 						if (cacheWreck.Distance < 2500)
 							return task.With(cacheWreck.ClickMenuEntryByRegexPattern("Open Cargo"));
-						if (shipState.Maneuver != ShipManeuverType.Approach)
+						if (!shipState.IsApproaching(cacheWreck))
 							return task.With(cacheWreck.GetApproachTask());
 						return task.With("Flying to the cache wreck");
 					}
@@ -433,7 +457,7 @@ namespace Sanderling.ABot.Bot.Strategies
 				{
 					gateWaitStartedAt = null;
 					FleetGateBoard.Report(bot.Pid, conduit.Distance, ready: false);
-					if (shipState.Maneuver != ShipManeuverType.Approach)
+					if (!shipState.IsApproaching(conduit))
 						return task.With($"Room clear — flying to the conduit ({conduit.Distance} m)")
 							.With(conduit.GetApproachTask());
 					return task.With($"Room clear — approaching the conduit ({conduit.Distance} m)");
@@ -465,7 +489,7 @@ namespace Sanderling.ABot.Bot.Strategies
 					changingRoom = true;
 					stats?.AdvanceRoom();
 				}
-				FleetGateBoard.Forget(bot.Pid);
+				FleetGateBoard.MarkJumped(bot.Pid);
 				gateWaitStartedAt = null;
 				roomIndex++;
 				gateActivatedAt = StateStopwatch.Elapsed;

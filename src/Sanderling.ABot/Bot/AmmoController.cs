@@ -379,9 +379,25 @@ namespace Sanderling.ABot.Bot
 			Bot bot,
 			ShipFit fit,
 			IReadOnlyList<IOverviewEntry>? killOrder,
-			out string reason)
+			out string reason) =>
+			GetSwitchTask(bot, fit, killOrder, out reason, out _);
+
+		/// <summary>
+		/// As <see cref="GetSwitchTask(Bot, ShipFit, IReadOnlyList{IOverviewEntry}?, out string)"/>, and
+		/// <paramref name="holdFire"/> tells the combat loop that a swap is pending: EVE cannot change
+		/// charges in a cycling launcher, so the group is switched OFF first, the swap is clicked once
+		/// it has stopped, and the fire logic must not switch it back on in between (operator,
+		/// 2026-09-27: "бот пытается сменить боеприпасы не выключая оружие").
+		/// </summary>
+		public static ISerializableBotTask? GetSwitchTask(
+			Bot bot,
+			ShipFit fit,
+			IReadOnlyList<IOverviewEntry>? killOrder,
+			out string reason,
+			out bool holdFire)
 		{
 			reason = "";
+			holdFire = false;
 			var plan = fit?.Ammo;
 			if (plan is null || bot is null || plan.Charges.Count == 0)
 				return null;
@@ -417,9 +433,26 @@ namespace Sanderling.ABot.Bot
 
 				if (now - state.LastCommandTick < CommandCooldownMs)
 					return null;
-
-				state.LastCommandTick = now;
 			}
+
+			// From here on the swap is decided: nobody may switch the launchers back on until it is done.
+			holdFire = true;
+
+			// A cycling launcher cannot change charges: stop the group first and let its last cycle
+			// finish (isDeactivating), then click the charge.
+			if (weapon.IsDeactivating == true || weapon.IsBusy)
+			{
+				reason += " — waiting for the launchers to stop";
+				return null;
+			}
+			if (weapon.AppearsActive)
+			{
+				reason += " — stopping the launchers first";
+				return fit.GetWeapon()?.EnsureActive(bot, false, false);
+			}
+
+			lock (Gate)
+				state.LastCommandTick = now;
 
 			// The launcher group's context menu lists every charge in the cargo hold by its full name;
 			// clicking one loads it into the whole group.

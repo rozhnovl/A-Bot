@@ -11,6 +11,10 @@ namespace Sanderling.ABot.Bot
 		/// <summary>Capacitor charge 0–100%, or null when the gauge is unreadable this tick.</summary>
 		int? CapacitorPercent { get; }
 		ShipManeuverType Maneuver { get; }
+		/// <summary>What the HUD says the maneuver is aimed at, or null.</summary>
+		string? ManeuverTarget { get; }
+		/// <summary>True only when the ship is approaching this object (type AND target).</summary>
+		bool IsApproaching(IOverviewEntry? entry);
 		[NotNull]
 		DronesContoller Drones { get; }
 		[NotNull]

@@ -112,7 +112,9 @@ namespace Sanderling.ABot.Bot.Task
 				// Ammo comes before target selection: a reload costs ~10 s of DPS, so it must happen while
 				// the kill queue says so, not after we have committed to a target. The queue is the
 				// priority-ordered enemy list, so the planner sees the same order we will shoot in.
-				var ammoTask = AmmoController.GetSwitchTask(bot, shipFit, listOverviewEntryToAttack, out var ammoReason);
+				var ammoTask = AmmoController.GetSwitchTask(bot, shipFit, listOverviewEntryToAttack, out var ammoReason, out var holdFire);
+				if (holdFire)
+					yield return new DiagnosticTask($"Ammo swap pending — launchers held off ({ammoReason}).");
 				if (ammoTask != null)
 				{
 					yield return new DiagnosticTask($"Ammo swap — {ammoReason}.");
@@ -241,7 +243,7 @@ namespace Sanderling.ABot.Bot.Task
 
 				// Fire only at a target the overview positively calls an enemy (or one the fire board
 				// already handed us): never at a friendly, never at something we cannot identify.
-				if (targetSelected != null && !selectedBlocked && (selectedAllowed || selectedIsEnemy))
+				if (targetSelected != null && !selectedBlocked && (selectedAllowed || selectedIsEnemy) && !holdFire)
 				{
 					foreach (var droneTask in dronesController.GetDronesAttackTasks(targetSelected))
 						yield return droneTask;

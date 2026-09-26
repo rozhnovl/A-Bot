@@ -125,6 +125,12 @@ namespace Sanderling.Interface.MemoryStruct
 		/// <summary>Zero-based physical slot number, used for the F1..F8 hotkey mapping.</summary>
 		public int? SlotIndex { get; set; }
 		public bool? IsActive { get; set; }
+		/// <summary>
+		/// The client's own <c>isDeactivating</c> flag: the module was told to stop and is finishing
+		/// its last cycle. Clicking it again in that state CANCELS the stop — which is how a shield
+		/// booster got stuck on (Tiara Parvi, 2026-09-26). Null when the client did not expose it.
+		/// </summary>
+		public bool? IsDeactivating { get; set; }
 		public bool IsHiliteVisible { get; set; }
 		public bool IsBusy { get; set; }
 		public int? RampRotationMilli { get; set; }

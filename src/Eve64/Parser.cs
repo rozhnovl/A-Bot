@@ -606,6 +606,7 @@ namespace Eve64
 				// Keep an absent signal unknown. Treating an unreadable ramp as false makes an
 				// always-on hardener receive a second toggle, which switches it back off.
 				IsActive = moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("ramp_active") as bool?,
+				IsDeactivating = TryReadBool(moduleButtonNode.UINode.DictEntriesOfInterest.GetValueOrDefault("isDeactivating")),
 				IsHiliteVisible = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "hilite"),
 				IsBusy = slotNode.Children.Any(c => c.NodeWithRegion.UiNode.PythonObjectTypeName == "busy"),
 				RampRotationMilli = rampRotationMilli
@@ -646,6 +647,20 @@ namespace Eve64
 				chargeQuantity = TryReadInt(rawQuantity);
 
 			return new ModuleInfo { ModuleId = typeId, ChargeTypeId = chargeTypeId, ChargeQuantity = chargeQuantity };
+		}
+
+		/// <summary>Best-effort bool out of a raw dict entry (bool, 0/1, "True"/"False").</summary>
+		private static bool? TryReadBool(object raw)
+		{
+			switch (raw)
+			{
+				case null: return null;
+				case bool b: return b;
+				case int i: return i != 0;
+				case long l: return l != 0;
+				case string s when bool.TryParse(s.Trim(), out var parsed): return parsed;
+				default: return null;
+			}
 		}
 
 		/// <summary>Best-effort int out of a raw dict entry (int/long/double/string or a big-int wrapper).</summary>

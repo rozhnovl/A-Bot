@@ -1,4 +1,5 @@
-﻿using Sanderling.Interface.MemoryStruct;
+﻿using System.Collections.Generic;
+using Sanderling.Interface.MemoryStruct;
 
 namespace Sanderling.ABot.Bot
 {
@@ -17,6 +18,11 @@ namespace Sanderling.ABot.Bot
 		/// enabled in the overview preset for tags to be visible to the bot.
 		/// </summary>
 		string? Tag { get; }
+		/// <summary>
+		/// Names of the nodes under the row's space-object icon, straight from the client. Logged for
+		/// wrecks so the marker of an EMPTY wreck can be found live (operator: "различимо по иконке").
+		/// </summary>
+		IReadOnlyCollection<string> IconNames { get; }
 		ISerializableBotTask ClickMenuEntryByRegexPattern(string path1, string path2 = null);
 		ISerializableBotTask GetSelectTask();
 		/// <summary>

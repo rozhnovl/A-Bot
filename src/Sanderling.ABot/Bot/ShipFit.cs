@@ -282,29 +282,6 @@ namespace Sanderling.ABot.Bot
 			public ShipUIModuleButton UiModule { get; set; }
 			public int OptimalRange = 4000;
 
-			/// <summary>
-			/// A click on a running module only schedules its deactivation at the end of the cycle; a
-			/// second click before that cancels it. Shield boosters cycle in 2 s and ticks come every
-			/// 1.5 s, so clicking every tick is exactly how a booster gets "stuck on" (Tiara Parvi,
-			/// 2026-09-26). Module infos are rebuilt every tick, so the debounce is a static map per
-			/// client + slot.
-			/// </summary>
-			private const int ToggleDebounceMs = 3500;
-			private static readonly Dictionary<string, long> LastToggleTick = new();
-
-			private ISerializableBotTask? Toggle(Bot bot)
-			{
-				var key = $"{bot?.Pid}:{UiModule.Rack}{UiModule.SlotIndex}";
-				var now = Environment.TickCount64;
-				lock (LastToggleTick)
-				{
-					if (LastToggleTick.TryGetValue(key, out var last) && now - last < ToggleDebounceMs)
-						return null;
-					LastToggleTick[key] = now;
-				}
-				return new ModuleToggleTask(this, null);
-			}
-
 			public ISerializableBotTask? EnsureActive(Bot bot, bool shouldBeActive, bool shouldBeOverloaded)
 			{
 				if (UiModule is null) return null;
@@ -313,14 +290,19 @@ namespace Sanderling.ABot.Bot
 					//TODO
 					//if (shouldBeOverloaded && !(UiModule.OverloadOn ?? false))
 					//	return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
+					// Winding down but wanted on: one click cancels the pending stop.
+					if (UiModule.IsDeactivating == true) return new ModuleToggleTask(this, null);
 					if (UiModule.AppearsActive) return null;
 					// Unknown ramp_active: do not guess-click (would toggle a running module off).
 					if (UiModule.IsActive is null) return null;
-					return Toggle(bot);
+					return new ModuleToggleTask(this, null);
 				}
 
+				// Already winding down: a second click would CANCEL the stop (the stuck booster of
+				// 2026-09-26). Let the cycle finish.
+				if (UiModule.IsDeactivating == true) return null;
 				if (UiModule.AppearsActive)
-					return Toggle(bot);
+					return new ModuleToggleTask(this, null);
 				//if (!shouldBeOverloaded && (UiModule.OverloadOn ?? false))
 				//	return new ModuleToggleTask(this, VirtualKeyCode.SHIFT);
 

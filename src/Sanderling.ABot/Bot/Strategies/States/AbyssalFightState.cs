@@ -369,6 +369,9 @@ namespace Sanderling.ABot.Bot.Strategies
 				// is within GateGatherRangeM. Wings no longer wait at the wreck: an emptied wreck stays on
 				// grid, which left them holding forever on 2026-09-26. They go and wait at the conduit.
 				var cacheWreck = coreCache != null && coreCache.Name.Contains("Wreck") ? coreCache : null;
+				if (cacheWreck != null)
+					// Ground truth for the empty-wreck marker: what the row's icon carries before and after Loot All.
+					task.With($"Cache wreck icon: [{string.Join(", ", cacheWreck.IconNames)}] looted={cacheLooted}");
 				if (cacheWreck != null && IsLooter(bot) && !cacheLooted)
 				{
 					var lootWindowProvider = inventoryProvider.GetLootableWindow();

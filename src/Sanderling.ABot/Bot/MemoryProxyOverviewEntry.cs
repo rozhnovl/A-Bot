@@ -32,6 +32,9 @@ namespace Sanderling.ABot.Bot
 		[Newtonsoft.Json.JsonIgnore]
 		public override IUIElement? SelectElement => memoryOverviewEntry.UiElement;
 
+		public override IReadOnlyCollection<string> IconNames =>
+			memoryOverviewEntry.NamesUnderSpaceObjectIcon ?? (IReadOnlyCollection<string>)System.Array.Empty<string>();
+
 		public override string? Tag
 		{
 			get

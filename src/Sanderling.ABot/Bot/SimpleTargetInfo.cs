@@ -31,7 +31,14 @@ namespace Sanderling.ABot.Bot
 				Name = string.Empty;
 			else
 			{
-				var splittedName = memoryTarget.LabelText.Select(lt => lt.Replace("<center>", string.Empty));
+				// A lone "1".."9" / "A".."Z" line among the target's labels is the FC's tag (to be
+				// confirmed live: the tag is drawn on the icon, its node may or may not be a label).
+				Tag = memoryTarget.LabelText
+					.Select(lt => Regex.Replace(lt ?? "", "<.*?>", "").Trim())
+					.FirstOrDefault(t => t.Length == 1 && (char.IsDigit(t[0]) && t[0] != '0' || char.IsUpper(t[0])));
+				var splittedName = memoryTarget.LabelText
+					.Where(lt => Regex.Replace(lt ?? "", "<.*?>", "").Trim() != Tag)
+					.Select(lt => lt.Replace("<center>", string.Empty));
 				Name = string.Join(" ", splittedName);
 				if (Name.Contains("["))
 					Name = Name.Substring(0, Name.IndexOf("["));
@@ -47,6 +54,7 @@ namespace Sanderling.ABot.Bot
 		public int Distance { get; }
 		public int AssignedEffectsCount { get; }
 		public string Name { get; }
+		public string? Tag { get; }
 
 		public double? RemainingHitpointsFraction
 		{

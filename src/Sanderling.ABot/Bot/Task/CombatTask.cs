@@ -32,16 +32,22 @@ namespace Sanderling.ABot.Bot.Task
 		}
 
 		/// <summary>Sort key for an FC tag: 1..9 for digits, 10.. for letters, int.MaxValue when untagged.</summary>
-		public static int TagRank(IOverviewEntry entry)
+		public static int TagRank(IOverviewEntry entry) => TagRankOf(entry?.Tag);
+
+		/// <summary>Best of the overview row's tag and the tag drawn on the locked target.</summary>
+		public static int TagRank(IOverviewEntry entry, ITarget? target) =>
+			Math.Min(TagRankOf(entry?.Tag), TagRankOf(target?.Tag));
+
+		public static int TagRankOf(string? rawTag)
 		{
-			var tag = entry?.Tag?.Trim();
+			var tag = rawTag?.Trim();
 			if (string.IsNullOrEmpty(tag)) return int.MaxValue;
 			if (tag.Length == 1 && char.IsDigit(tag[0]) && tag[0] != '0') return tag[0] - '0';
 			if (tag.Length == 1 && char.IsLetter(tag[0])) return 10 + (char.ToUpperInvariant(tag[0]) - 'A');
 			return int.MaxValue - 1;
 		}
 
-		public static bool IsTagged(IOverviewEntry entry) => TagRank(entry) < int.MaxValue - 1;
+		public static bool IsTagged(IOverviewEntry entry, ITarget? target = null) => TagRank(entry, target) < int.MaxValue - 1;
 	}
 	public class CombatTask(Bot bot, ShipFit shipFit, DronesContoller dronesController, PriorityManager priorityManager) : IBotTask
 	{
@@ -193,7 +199,10 @@ namespace Sanderling.ABot.Bot.Task
 				var desiredActive = allowed
 					.Select(e => (Entry: e, Target: shipState.ActiveTargets.List?.FirstOrDefault(t =>
 						FleetFireBoard.NamesMatch(t.Name, e.Name))))
-					.FirstOrDefault(p => p.Target != null);
+					.Where(p => p.Target != null)
+					// Tags drawn on the locked targets count too (the overview column may be hidden).
+					.OrderBy(p => PriorityManager.TagRank(p.Entry, p.Target))
+					.FirstOrDefault();
 				if (desiredActive.Target != null && !selectedBlocked)
 				{
 					var now = Environment.TickCount64;
@@ -218,12 +227,13 @@ namespace Sanderling.ABot.Bot.Task
 					else if (!currentIsDesired)
 					{
 						var currentNearlyDead = targetSelected?.RemainingHitpointsFraction is double left && left < FinishBelowFraction;
-						var mayLeaveCurrent = targetSelected == null || !currentNearlyDead || PriorityManager.IsTagged(desiredActive.Entry);
+						var mayLeaveCurrent = targetSelected == null || !currentNearlyDead || PriorityManager.IsTagged(desiredActive.Entry, desiredActive.Target);
 						if (mayLeaveCurrent && now - pending.Tick >= ActiveSwitchCooldownMs)
 						{
 							lock (ActiveSwitchByPid)
 								ActiveSwitchByPid[bot.Pid] = (desiredActive.Entry.Name, now);
-							yield return new DiagnosticTask($"Making {desiredActive.Entry.Name} the active target (priority{(PriorityManager.IsTagged(desiredActive.Entry) ? $", FC tag {desiredActive.Entry.Tag}" : "")})");
+							var tag = desiredActive.Entry.Tag ?? desiredActive.Target.Tag;
+							yield return new DiagnosticTask($"Making {desiredActive.Entry.Name} the active target (priority{(PriorityManager.IsTagged(desiredActive.Entry, desiredActive.Target) ? $", FC tag {tag}" : "")})");
 							yield return desiredActive.Target.GetMakeActiveTask();
 						}
 					}

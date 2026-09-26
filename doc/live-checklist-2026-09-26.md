@@ -1,0 +1,52 @@
+# Чеклист живой проверки перед следующим заходом (трио Hawk, T3 Fierce Dark)
+
+Состояние кода: коммиты e8ee232 (планировщик боеприпасов) и 9b40589 + следующий (финал комнаты,
+активная цель по приоритету, теги, состояние модуля). Всё ниже НЕ проверено на живом клиенте.
+
+## 0. Подготовка
+- [ ] Три клиента запущены, флот собран. В попапе филамента должно быть **«Activate for fleet»**, а не
+      «Activate» (26.09 было «Activate» — флота не было, корабли зашли по отдельности).
+- [ ] До старта бота **нет открытых попапов активации**: первый `bot_step` нажмёт его немедленно.
+- [ ] В пресете обзора включена колонка **Tag** (сейчас только Type/Size/Name/Distance).
+- [ ] Карго: Caldari Navy Nova ≥ 600, Nova Fury ≥ 200, Navy Cap Booster 400 ×5, паста; инвентарь в List view.
+- [ ] `start-abot-live.ps1 -RunProfile Hawk_T3` при открытых клиентах → `list_clients`: все attached,
+      emergencyStop = null. Помнить: сервер держит DLL — перед сборкой его останавливать.
+
+## 1. Парсер (дампы, без движения) — `dump_diagnostics` / `find_ui query=…`
+- [ ] **Модуль**: `find_ui query=ModuleButton_` → у бустера видны `isDeactivating`, `ramp_active`, `online`,
+      `quantity`. Тест: включить бустер рукой, кликнуть выключение и в течение 2 с снять дамп →
+      `isDeactivating: True`, в parsed.json `IsDeactivating: true`. В этот момент бот НЕ должен кликать слот.
+- [ ] **Пусковые**: `quantity` = 53 при полном заряде (это счётчик ОДНОЙ пусковой, не суммы); после залпа
+      уменьшается; после Reload снова 53. В логе Ammo: «rounds: … Nova 812» после чтения карго
+      (600 в трюме + 4×53 в пусковых); до чтения карго — «hold not read yet».
+- [ ] **Врек**: снять дамп строки обзора врека бочки ДО лута и ПОСЛЕ Loot All. В логе строка
+      `Cache wreck icon: [...] looted=…` — сравнить имена узлов под иконкой / texturePath / цвет.
+      Цель: найти признак «пустой врек» и завести `IOverviewEntry.IsEmptyWreck`.
+- [ ] **Тег**: ФК ставит тег «1» на цель, цель залочена у всех. (а) колонка Tag в обзоре показывает «1»;
+      (б) дамп элемента цели (`find_ui query=<имя цели>`) → где нарисован тег (LabelText / отдельный узел).
+      Сейчас парсится: колонка обзора + эвристика «одиночный символ 1–9/A–Z среди LabelText цели».
+- [ ] **Selected Item**: выделить conduit → в панели есть кнопка `selectedItemActivate…` (иначе бот уйдёт в меню).
+- [ ] **Меню пусковой**: ПКМ по группе → пункты с полными именами «Caldari Navy Nova Light Missile»,
+      «Nova Fury Light Missile» (путь смены боеприпаса).
+
+## 2. Поведение — сначала по одному `bot_step`, затем `autopilot start`
+- [ ] Вход: readiness OK → «Activate for fleet» → все трое в одном кармане (в `status` одна и та же система).
+- [ ] Комната: «Entering room — orbiting …» до стрельбы; лок пачкой; стрельба только по IsEnemy.
+- [ ] Активная цель: лог «Making <цель> the active target (priority…)» → следующий тик
+      «Active target is now … — cycling the launchers onto it» → в HUD пусковые бьют новую цель.
+      Не должно быть переключений чаще, чем раз в 5 с, и ухода с цели ниже 25% HP (кроме тега ФК).
+- [ ] Тег ФК: помеченная цель становится активной раньше приоритета Smith.
+- [ ] Затухание комнаты (DPS на гриде ≤ 120): лутер лочит бочку первой → «flying to the cache early» →
+      после вскрытия «looting early» → Loot All → «Cache emptied — heading for the conduit»;
+      винги: «heading for the conduit early», при этом продолжают стрелять.
+- [ ] Финал: «Topping the launchers up» (или уже 53), «Room clear — flying to the conduit», «At the conduit —
+      waiting for the fleet (pid: ready / N m out)», «Fleet gathered … — taking the gate» у всех трёх с разницей
+      ≤ 2 тика; никто не ждёт дольше 60 с; все прыгают; бот не жмёт ворота повторно 25 с.
+- [ ] Бустеры: после боя ни один не остаётся включённым (кап не течёт при 0 DPS); в логе нет серии
+      ModuleToggleTask на один слот.
+- [ ] Ammo: в комнате с Лешаками — «Ammo swap — Nova Fury Light Missile first: …»; в T3 без BS — без свапов.
+- [ ] Emergency stop (Ctrl+Alt+K) → `resume` → `autopilot start` восстанавливают работу.
+
+## 3. Что сохранить после прогона
+- `abotmcp-console.log` (в scratchpad сессии) и `abotmcp-live.log`, все `mcp-dump-*`, `lootledger.jsonl`,
+  `roomstats.jsonl`; время каждой комнаты (входим ↔ ворота).
